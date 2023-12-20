@@ -19,44 +19,69 @@ body {
 /* Chip */
 
 .chip {
-  @apply inline-flex items-center gap-x-2 rounded-full py-1 px-2.5 text-xs bg-neutral-100 capitalize;
+  @apply inline-flex items-center gap-x-2 rounded-full py-1 px-2.5 text-xs capitalize;
 }
 
+.chip-false {
+  @apply chip bg-neutral-100;
+}
+
+.chip-dark,
 .chip-true {
-  @apply bg-neutral-950 text-white;
+  @apply chip bg-neutral-950 text-white;
+}
+
+.chip-sm {
+  @apply inline-flex items-center gap-x-2 rounded-full py-1 px-2.5 text-xs capitalize;
 }
 
 /* Buttons */
 
 .btn,
 .btn-primary,
+.btn-secondary,
+.btn-danger,
 .btn-sm,
 .btn-primary-sm,
+.btn-secondary-sm,
+.btn-danger-sm,
 .btn-icon,
 .btn-icon-primary,
+.btn-icon-secondary,
+.btn-icon-danger,
 .btn-icon-sm,
-.btn-icon-primary-sm {
+.btn-icon-primary-sm,
+.btn-icon-secondary-sm,
+.btn-icon-danger-sm {
   @apply inline-flex cursor-pointer border font-medium rounded-xl transition-colors items-center gap-x-2 flex-initial disabled:cursor-not-allowed disabled:opacity-60;
 }
 
 .btn,
-.btn-primary {
+.btn-primary,
+.btn-secondary,
+.btn-danger {
   @apply py-1.5 px-3 lg:py-2 lg:px-4;
 }
 
 .btn-icon,
-.btn-icon-primary {
+.btn-icon-primary,
+.btn-icon-secondary,
+.btn-icon-danger {
   @apply p-2.5 lg:p-3;
 }
 
 .btn-sm,
-.btn-primary-sm {
-  @apply py-1 px-2 text-sm;
+.btn-primary-sm,
+.btn-secondary-sm,
+.btn-danger-sm {
+  @apply py-1 px-2 text-sm rounded-lg;
 }
 
 .btn-icon-sm,
-.btn-icon-primary-sm {
-  @apply p-1.5 text-sm;
+.btn-icon-primary-sm,
+.btn-icon-secondary-sm,
+.btn-icon-danger-sm {
+  @apply p-1.5 text-sm rounded-lg;
 }
 
 .btn-primary,
@@ -80,6 +105,27 @@ button.btn-icon-primary-sm {
   @apply enabled:hover:bg-neutral-700 enabled:hover:border-neutral-700;
 }
 
+.btn-secondary,
+.btn-secondary-sm,
+.btn-icon-secondary,
+.btn-icon-secondary-sm {
+  @apply border-transparent bg-transparent;
+}
+
+a.btn-secondary,
+a.btn-secondary-sm,
+a.btn-icon-secondary,
+a.btn-icon-secondary-sm {
+  @apply hover:bg-neutral-100 hover:border-neutral-100;
+}
+
+button.btn-secondary,
+button.btn-secondary-sm,
+button.btn-icon-secondary,
+button.btn-icon-secondary-sm {
+  @apply enabled:hover:bg-neutral-100 enabled:hover:border-neutral-100;
+}
+
 .btn,
 .btn-sm,
 .btn-icon,
@@ -101,10 +147,31 @@ button.btn-icon-sm {
   @apply enabled:hover:bg-neutral-100;
 }
 
+.btn-danger,
+.btn-danger-sm,
+.btn-icon-danger,
+.btn-icon-danger-sm {
+  @apply border-red-500 bg-red-500 text-white;
+}
+
+a.btn-danger,
+a.btn-danger-sm,
+a.btn-icon-danger,
+a.btn-icon-danger-sm {
+  @apply hover:bg-red-600 hover:border-red-600;
+}
+
+button.btn-danger,
+button.btn-danger-sm,
+button.btn-icon-danger,
+button.btn-icon-danger-sm {
+  @apply enabled:hover:bg-red-600 enabled:hover:border-red-600;
+}
+
 /* Sidebar */
 
 .sidebar-trigger {
-  @apply fixed bottom-4 left-4 z-50 p-3 text-white bg-neutral-950 rounded-full cursor-pointer hover:bg-neutral-700 transition-all;
+  @apply fixed bottom-4 left-4 z-50 p-3 text-white bg-neutral-950 rounded-full cursor-pointer hover:bg-neutral-700 transition-all custom-shadow lg:hidden;
 }
 
 .sidebar-overlay {
@@ -116,7 +183,7 @@ button.btn-icon-sm {
 }
 
 .sidebar-content {
-  @apply fixed inset-y-0 z-10 w-72 flex flex-col invisible opacity-0 z-150 -translate-x-full lg:visible lg:opacity-100 lg:z-50 lg:translate-x-0 transition-all;
+  @apply fixed inset-y-0 z-10 w-72 flex flex-col invisible opacity-0 z-150 custom-shadow -translate-x-full lg:visible lg:opacity-100 lg:z-auto lg:translate-x-0 lg:shadow-none	transition-all;
 }
 
 .sidebar-active .sidebar-content {
@@ -380,7 +447,7 @@ fieldset .field:last-child {
 /* File browser: list layout */
 
 .fb-files.fb-files-list {
-  @apply flex flex-col gap-y-2;
+  @apply flex flex-col;
 }
 
 .fb-files.fb-files-list .fb-files-item-content {
@@ -498,7 +565,7 @@ fieldset .field:last-child {
 }
 
 .modal-close {
-  @apply link !p-3 -my-3 -mr-2;
+  @apply btn-icon-secondary -my-2.5 -mr-2 lg:-my-3 lg:-mr-2.5;
 }
 
 .modal-body {
@@ -687,6 +754,17 @@ fieldset .field:last-child {
   @apply pl-4 ml-1 border-l-2 border-l-neutral-300;
 }
 
+.tiptap img,
+.tiptap svg,
+.tiptap video,
+.tiptap canvas,
+.tiptap audio,
+.tiptap iframe,
+.tiptap embed,
+.tiptap object {
+  @apply inline-block;
+}
+
 /* Table */
 
 .table {
@@ -715,14 +793,16 @@ fieldset .field:last-child {
 }
 
 .table th.primary-field,
-.table td.primary-field {
+.table td.primary-field,
+.table td.folder {
   @apply max-w-[1px] w-full truncate;
 }
 
 .table th.primary-field,
 .table td.primary-field,
 .table th.actions,
-.table td.actions {
+.table td.actions,
+.table td.folder {
   @apply table-cell lg:table-cell;
 }
 

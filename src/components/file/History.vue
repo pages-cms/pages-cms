@@ -6,9 +6,9 @@
     </button>
   </template>
   <template v-else-if="commits.length">
-    <Dropdown>
+    <Dropdown :dropdownClass="'!max-w-none !lg:max-w-full min-w-36'">
       <template #trigger>
-        <button class="link group-[.dropdown-active]:bg-neutral-100" :class="[ elementClass ]">
+        <button class="btn-secondary group-[.dropdown-active]:bg-neutral-100" :class="[ elementClass ]">
           <div class="truncate"><span class="hidden lg:inline">Updated </span>{{ moment(commits[0].commit.author.date).fromNow() }}</div>
         </button>
       </template>
@@ -16,7 +16,7 @@
           <ul>
             <li v-for="commit in commits.slice(0, 5)">
               <a :href="commit.html_url" :title="commit.commit.message" target="_blank" class="link">
-                <img v-if="commit.author" :src="commit.author.avatar_url" class="h-5 w-5 rounded-full"/>
+                <img v-if="commit.author" :src="commit.author.avatar_url" class="h-5 w-5 rounded-full hidden lg:block"/>
                 <div class="truncate">
                   <span class="truncate">{{ moment(commit.commit.author.date).fromNow() }}</span>
                 </div>

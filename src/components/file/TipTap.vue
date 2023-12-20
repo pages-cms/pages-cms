@@ -50,6 +50,17 @@
           </svg>
           <div class="tooltip-top">Image</div>
         </button>
+        <!-- Link -->
+        <button
+          @click="linkUrl = editor.isActive('link') ? editor.getAttributes('link').href : ''; linkUrlPrev = linkUrl; linkModal.openModal();"
+          class="tiptap-control group relative"
+          :class="{ 'tiptap-control-active': editor.isActive('link') }"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12.7076 18.3639L11.2933 19.7781C9.34072 21.7308 6.1749 21.7308 4.22228 19.7781C2.26966 17.8255 2.26966 14.6597 4.22228 12.7071L5.63649 11.2929M18.3644 12.7071L19.7786 11.2929C21.7312 9.34024 21.7312 6.17441 19.7786 4.22179C17.826 2.26917 14.6602 2.26917 12.7076 4.22179L11.2933 5.636M8.50045 15.4999L15.5005 8.49994"/>
+          </svg>
+          <div class="tooltip-top">Link</div>
+        </button>
         <!-- Unordered list -->
         <button
           @click="editor.chain().focus().toggleBulletList().run()"
@@ -60,6 +71,28 @@
             <path d="M21 12L9 12M21 6L9 6M21 18L9 18M5 12C5 12.5523 4.55228 13 4 13C3.44772 13 3 12.5523 3 12C3 11.4477 3.44772 11 4 11C4.55228 11 5 11.4477 5 12ZM5 6C5 6.55228 4.55228 7 4 7C3.44772 7 3 6.55228 3 6C3 5.44772 3.44772 5 4 5C4.55228 5 5 5.44772 5 6ZM5 18C5 18.5523 4.55228 19 4 19C3.44772 19 3 18.5523 3 18C3 17.4477 3.44772 17 4 17C4.55228 17 5 17.4477 5 18Z"/>
           </svg>
           <div class="tooltip-top">Bullet list</div>
+        </button>
+        <!-- Align left -->
+        <button
+          @click="editor.chain().focus().setTextAlign('left').run()"
+          class="tiptap-control group relative"
+          :class="{ 'tiptap-control-active': editor.isActive({ textAlign: 'left' }) }"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 10H3M20 6H3M20 14H3M16 18H3"/>
+          </svg>
+          <div class="tooltip-top">Align left</div>
+        </button>
+        <!-- Center -->
+        <button
+          @click="editor.chain().focus().setTextAlign('center').run()"
+          class="tiptap-control group relative"
+          :class="{ 'tiptap-control-active': editor.isActive({ textAlign: 'center' }) }"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 10H6M21 6H3M21 14H3M18 18H6"/>
+          </svg>
+          <div class="tooltip-top">Center</div>
         </button>
         <!-- Remove format -->
         <button
@@ -90,6 +123,24 @@
                   :class="{ 'bg-neutral-100': editor.isActive('strike') }"
                 >
                   Strikethrough
+                </button>
+              </li>
+              <li>
+                <button
+                  @click="editor.chain().focus().setTextAlign('justify').run()"
+                  class="link w-full"
+                  :class="{ 'bg-neutral-100': editor.isActive({ textAlign: 'justify' }) }"
+                >
+                  Justify
+                </button>
+              </li>
+              <li>
+                <button
+                  @click="editor.chain().focus().setTextAlign('right').run()"
+                  class="link w-full"
+                  :class="{ 'bg-neutral-100': editor.isActive({ textAlign: 'right' }) }"
+                >
+                  Aligh right
                 </button>
               </li>
               <li>
@@ -138,7 +189,7 @@
   </div>
   <!-- Inser image modal -->
   <Modal ref="insertImageModal" :customClass="'modal-file-browser'">
-    <template #header>Select an image</template>
+    <template #header>Insert an image</template>
     <template #content>
       <div class="relative">
         <FileBrowser
@@ -159,6 +210,25 @@
       </footer>
     </template>
   </Modal>
+  <!-- Link modal -->
+  <Modal ref="linkModal">
+    <template #header>{{ linkUrlPrev === '' ? 'Add a link' : 'Update a link' }}</template>
+    <template #content>
+      <input class="w-full" type="url" placeholder="https://example.com" v-model="linkUrl"/>
+      <footer class="flex justify-end text-sm gap-x-2 mt-3">
+        <button class="btn-icon-danger mr-auto group relative" @click="editor.chain().focus().unsetLink().run();linkModal.closeModal();" :disabled="!editor.isActive('link')">
+          <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8.5 15.5L15.5 8.49998M9 4V2M15 20V22M4 9H2M20 15H22M4.91421 4.91421L3.5 3.5M19.0858 19.0857L20.5 20.4999M12 17.6568L9.87871 19.7781C8.31662 21.3402 5.78396 21.3402 4.22186 19.7781C2.65976 18.216 2.65976 15.6833 4.22186 14.1212L6.34318 11.9999M17.6569 11.9999L19.7782 9.87859C21.3403 8.31649 21.3403 5.78383 19.7782 4.22174C18.2161 2.65964 15.6835 2.65964 14.1214 4.22174L12 6.34306"/>
+          </svg>
+          <div class="tooltip-top">Remove link</div>
+        </button>
+        <button class="btn" @click="linkModal.closeModal()">Cancel</button>
+        <button class="btn-primary" @click="setLink();">
+          {{ linkUrlPrev === '' ? 'Add' : 'Update' }}
+        </button>
+      </footer>
+    </template>
+  </Modal>
 </template>
 
 <script setup>
@@ -168,6 +238,9 @@ import { marked } from 'marked';
 import TurndownService from 'turndown';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image'
+import Link from '@tiptap/extension-link'
+import TextAlign from '@tiptap/extension-text-align'
+
 import githubImg from '@/services/githubImg';
 import Dropdown from '@/components/utils/Dropdown.vue';
 import FileBrowser from '@/components/FileBrowser.vue';
@@ -186,6 +259,9 @@ const props = defineProps({
   private: { type: Boolean, default: false },
 });
 const insertImageModal = ref(null);
+const linkModal = ref(null);
+const linkUrl = ref('');
+const linkUrlPrev = ref('');
 const imageSelection = ref([]);
 const isEditorFocused = ref(false);
 const status = ref('loading');
@@ -241,12 +317,24 @@ const setContent = async () => {
 const editor = useEditor({
   extensions: [
     StarterKit,
-    Image.configure({ inline: true })
+    Image.configure({ inline: true }),
+    Link.configure({ openOnClick: false, }),
+    TextAlign.configure({ types: ['heading', 'paragraph'], }),
   ],
   onUpdate: ({ editor }) => {
     emit('update:modelValue', exportContent(editor.getHTML()));
   },
 });
+
+const setLink = () => {
+  if (linkUrl.value === '') {
+    editor.value.chain().focus().extendMarkRange('link').unsetLink().run();
+    linkModal.value.closeModal();
+  } else {
+    editor.value.chain().focus().extendMarkRange('link').setLink({ href: linkUrl.value }).run()
+    linkModal.value.closeModal();
+  }
+};
 
 onMounted(async () => {
   await setContent();

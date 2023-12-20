@@ -253,6 +253,7 @@ export default function useGithub() {
   const logout = async () => {
     try {
       // await axios.post(import.meta.env.VITE_CLOUDFLARE_WORKERS + '/revoke?token=' + token.value);
+      // await axios.post('/auth/revoke?token=' + token.value);
       clearToken();
     } catch (error) {
       console.error('Failed to revoke token:', error);

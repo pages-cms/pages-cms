@@ -16,7 +16,7 @@
   <template v-else>
     <!-- Header (navigation + history + actions) -->
     <header class="z-50 sticky top-0 bg-white border-b border-neutral-200 flex gap-x-1 lg:gap-x-2 items-center py-1 px-2 lg:py-2 lg:px-4">
-      <router-link v-if="schema && schema.type && (schema.type == 'collection')" :to="{ name: 'content', params: { name: name } }" class="link">
+      <router-link v-if="schema && schema.type && (schema.type == 'collection')" :to="{ name: 'content', params: { name: name } }" class="btn-icon-secondary lg:py-2 lg:px-4">
         <svg class="shrink-0 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
           <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -69,7 +69,7 @@
     </header>
     <!-- Fields -->
     <main class="max-w-4xl mx-auto p-4 lg:p-8">
-      <h1 v-if="displayTitle" class="font-semibold text-4xl mb-8">{{ displayTitle }}</h1>
+      <h1 v-if="displayTitle" class="font-semibold text-2xl lg:text-4xl mb-8">{{ displayTitle }}</h1>
       <template v-if="model">
         <template v-if="mode === 'yfm'">
           <template v-if="schema && schema.fields">

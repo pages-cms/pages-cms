@@ -10,6 +10,7 @@
   "dependencies": {
     "@tiptap/extension-image": "^2.1.13",
     "@tiptap/extension-link": "^2.1.13",
+    "@tiptap/extension-text-align": "^2.1.13",
     "@tiptap/pm": "^2.1.13",
     "@tiptap/starter-kit": "^2.1.13",
     "@tiptap/vue-3": "^2.1.13",
@@ -38,6 +39,7 @@
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
     "vite": "^4.4.9",
-    "vite-plugin-rewrite-all": "^1.0.1"
+    "vite-plugin-rewrite-all": "^1.0.1",
+    "wrangler": "^3.21.0"
   }
 }

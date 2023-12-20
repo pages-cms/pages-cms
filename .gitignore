@@ -13,13 +13,13 @@ dist
 dist-ssr
 coverage
 *.local
+wrangler.toml
 
 /cypress/videos/
 /cypress/screenshots/
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
+.vscode
 .idea
 *.suo
 *.ntvs*

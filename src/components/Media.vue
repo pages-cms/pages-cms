@@ -2,7 +2,7 @@
   <main class="relative min-h-screen">
     <div class="max-w-screen-3xl mx-auto p-4 lg:p-8">
       <header class="flex gap-x-2">
-        <h1 class="font-semibold text-4xl mb-8 tracking-tight">Media</h1>
+        <h1 class="font-semibold text-2xl lg:text-4xl mb-8 tracking-tight">Media</h1>
       </header>
       <FileBrowser
         :owner="owner"

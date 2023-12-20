@@ -1,5 +1,5 @@
 url: 'https://localhost:8080'
-media: files
+media: images
 media_prefix: '/'
 
 content:
