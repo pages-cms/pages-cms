@@ -26,7 +26,9 @@ export async function onRequest(context) {
     const responseData = await response.json();
     
     if (responseData.access_token) {
-      return Response.redirect(`${env.BASE_URL}/?access_token=${responseData.access_token}`, 302);
+      const redirectUrl = new URL(env.BASE_URL);
+      redirectUrl.searchParams.set('access_token', responseData.access_token);
+      return Response.redirect(redirectUrl, 302);
     } else {
       throw new Error('Access token not found');
     }
