@@ -350,7 +350,7 @@ const editor = useEditor({
     handleDrop: async function(view, event, slice, moved) {
       if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length) {
         const files = Array.from(event.dataTransfer.files);
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/bmp', 'image/tif', 'image/tiff'];
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/apng', 'image/avif', 'image/gif', 'image/svg+xml', 'image/x-icon', 'image/bmp', 'image/tif', 'image/tiff'];
         const { schema } = view.state;
         const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
         let position = coordinates.pos;
@@ -367,7 +367,7 @@ const editor = useEditor({
               }
             }
           } else {
-            notifications.notify('Only images can be uploaded (JPEG, PNG, GIF, SVG, TIFF and BMP).', 'error');
+            notifications.notify('Only images can be uploaded (JPEG, PNG, WEBP, APNG, AVIF, GIF, SVG, ICO, TIFF and BMP).', 'error');
           }
         }
         return true;
