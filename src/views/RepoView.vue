@@ -221,7 +221,7 @@ const setRepo = async () => {
   }
 
   // We retrieve the list of branches
-  const repoBranches = await github.getBranches(repoStore.owner, props.repo);
+  const repoBranches = await github.getBranches(repoStore.owner, props.repo, repoDetails.default_branch);
   branches.value = repoBranches;
 
   if (repoBranches.length === 0) {

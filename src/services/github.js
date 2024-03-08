@@ -6,6 +6,7 @@ import { ref } from 'vue';
 import axios from 'axios';
 import router from '@/router';
 import notifications from '@/services/notifications';
+import { githubApiGet } from '../utils';
 
 const token = ref(localStorage.getItem('token') || null);
 
@@ -104,18 +105,15 @@ const getRepo = async (owner, name) => {
   }
 };
 
-const getBranches = async (owner, name) => {
+// TODO - to list all the branches we need to implement request with GH pagination - add max to 100
+//https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api
+const getBranches = async (owner, name, defaultBranch) => {
   try {
     const url = `https://api.github.com/repos/${owner}/${name}/branches`;
-    const response = await axios.get(url, {
-      params: {
-        timestamp: Date.now(),
-      },
-      headers: {
-        Authorization: `Bearer ${token.value}`
-      },
-    });
-    return response.data.map(branch => branch.name);
+    const repoBranches = await githubApiGet(url, {per_page: 100});
+    
+    const branchNames = repoBranches.map(branch => branch.name).filter((branchName) => branchName !== defaultBranch)
+    return [defaultBranch, ...branchNames];
   } catch (error) {
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       handleAuthError();
