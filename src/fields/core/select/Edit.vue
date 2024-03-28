@@ -1,5 +1,5 @@
 <template>
-  <select class="select w-full" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
+  <select class="select w-full" :id="props.field.name" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
     <option v-for="option in normalizedOptions" :key="option.value" :value="option.value">
       {{ option.label }}
     </option>

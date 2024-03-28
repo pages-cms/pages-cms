@@ -2,6 +2,7 @@
   <input
     class="input w-full"
     type="text"
+    :id="props.field.name"
     :value="modelValue"
     @input="$emit('update:modelValue', $event.target.value)"
     :maxlength="field.options?.maxlength"

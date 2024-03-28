@@ -1,6 +1,7 @@
 <template>
   <input
     class="input w-full"
+    :id="props.field.name"
     :type="inputType"
     :value="formattedValue"
     @input="updateModelValue($event.target.value)"

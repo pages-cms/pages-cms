@@ -2,6 +2,7 @@
   <input
     class="input w-full"
     type="number"
+    :id="props.field.name"
     :value="modelValue"
     @input="updateModelValue($event.target.value)"
     :min="props.field.options?.min || null"
