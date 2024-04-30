@@ -1,5 +1,10 @@
 {
   "name": "pages-cms",
+  "description": "A user-friendly CMS for static site generators.",
+  "license": "MIT",
+  "author": {
+    "name": "Ronan Berder"
+  },
   "version": "0.3.0",
   "private": true,
   "type": "module",
