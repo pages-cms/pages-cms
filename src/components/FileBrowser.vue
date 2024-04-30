@@ -196,11 +196,11 @@ import Upload from '@/components/file/Upload.vue';
 
 // Categories for filtering
 const extensionCategories = {
-  image: ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp', 'tif', 'tiff'],
+  image: ['jpg', 'jpeg', 'png', 'apng', 'webp', 'avif', 'ico', 'cur', 'gif', 'svg', 'bmp', 'tif', 'tiff'],
   document: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'vxls', 'xlsx', 'txt', 'rtf'],
-  video: ['mp4', 'avi', 'mov', 'wmv', 'flv'],
-  audio: ['mp3', 'wav', 'aac', 'ogg', 'flac'],
-  compressed: ['zip', 'rar', '7z', 'tar', 'gz', 'tgz']
+  video: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mpeg', 'webm', 'ogv', 'ts', '3gp', '3g2'],
+  audio: ['mp3', 'wav', 'aac', 'ogg', 'flac', 'weba', 'oga', 'opus', 'mid', 'midi', '3gp', '3g2'],
+  compressed: ['zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'bz', 'bz2']
 }
 
 const route = useRoute();
