@@ -10,6 +10,13 @@ import notifications from '@/services/notifications';
 const token = ref(localStorage.getItem('token') || null);
 const profile = ref(null);
 
+const gh = axios.create({
+  baseURL: 'https://api.github.com',
+  headers: {
+    Authorization: `Bearer ${token.value}`,
+  },
+});
+
 // TODO: rework this to be called (and cached) at the App.js level
 
 const setToken = (value) => {
@@ -45,12 +52,9 @@ const handleError = (message, action, error) => {
 const getProfile = async () => {
   if (profile.value) return profile.value;
   try {
-    const response = await axios.get('https://api.github.com/user', {
+    const response = await gh.get('/user', {
       params: {
         timestamp: Date.now(),
-      },
-      headers: {
-        Authorization: `Bearer ${token.value}`,
       },
     });
     profile.value = response.data;
@@ -66,12 +70,9 @@ const getProfile = async () => {
 
 const getOrganizations = async () => {
   try {
-    const response = await axios.get('https://api.github.com/user/orgs', {
+    const response = await gh.get('/user/orgs', {
       params: {
         timestamp: Date.now(),
-      },
-      headers: {
-        Authorization: `Bearer ${token.value}`,
       },
     });
     return response.data;
@@ -88,13 +89,10 @@ const searchRepos = async (query, writeAccessOnly = false) => {
   // TODO: only show valid repos (PAT)
   if (!query) return { items: [] };
   try {
-    const response = await axios.get('https://api.github.com/search/repositories', {
+    const response = await gh.get('/search/repositories', {
       params: {
         q: `${query} in:name fork:true`,
         timestamp: Date.now(),
-      },
-      headers: {
-        Authorization: `Bearer ${token.value}`,
       },
     });
     
@@ -110,13 +108,10 @@ const searchRepos = async (query, writeAccessOnly = false) => {
 
 const getRepo = async (owner, name) => {
   try {
-    const url = `https://api.github.com/repos/${owner}/${name}`;
+    const url = `/repos/${owner}/${name}`;
     const response = await axios.get(url, {
       params: {
         timestamp: Date.now(),
-      },
-      headers: {
-        Authorization: `Bearer ${token.value}`,
       },
     });
     return response.data;
@@ -131,17 +126,13 @@ const getRepo = async (owner, name) => {
 
 const copyRepoTemplate = async (templateOwner, templateRepo, name, owner = null) => {
   try {
-    const url = `https://api.github.com/repos/${templateOwner}/${templateRepo}/generate`;
+    const url = `/repos/${templateOwner}/${templateRepo}/generate`;
     const body = {
       private: true,
       name: name
     };
     if (owner) body.owner = owner;
-    const response = await axios.post(url, body, {
-      headers: {
-        Authorization: `Bearer ${token.value}`
-      },
-    });
+    const response = await gh.post(url, body);
 
     return response.data;
   } catch (error) {
@@ -155,13 +146,10 @@ const copyRepoTemplate = async (templateOwner, templateRepo, name, owner = null)
 
 const getBranch = async (owner, name, branch) => {
   try {
-    const url = `https://api.github.com/repos/${owner}/${name}/branches/${branch}`;
-    const response = await axios.get(url, {
+    const url = `/repos/${owner}/${name}/branches/${branch}`;
+    const response = await gh.get(url, {
       params: {
         timestamp: Date.now()
-      },
-      headers: {
-        Authorization: `Bearer ${token.value}`
       },
     });
     return response.data;
@@ -176,15 +164,12 @@ const getBranch = async (owner, name, branch) => {
 
 const getBranches = async (owner, name, perPage = 100, page = 1) => {
   try {
-    const url = `https://api.github.com/repos/${owner}/${name}/branches`;
-    const response = await axios.get(url, {
+    const url = `/repos/${owner}/${name}/branches`;
+    const response = await gh.get(url, {
       params: {
         timestamp: Date.now(),
         per_page: perPage,
         page
-      },
-      headers: {
-        Authorization: `Bearer ${token.value}`
       },
     });
     return response.data;
@@ -200,25 +185,17 @@ const getBranches = async (owner, name, perPage = 100, page = 1) => {
 const createBranch = async (owner, repo, baseBranch, newBranchName) => {
   try {
     // Step 1: Get the latest commit SHA of the base branch
-    const branchInfoUrl = `https://api.github.com/repos/${owner}/${repo}/branches/${baseBranch}`;
-    const branchInfo = await axios.get(branchInfoUrl, {
-      headers: {
-        Authorization: `Bearer ${token.value}`
-      }
-    });
+    const branchInfoUrl = `/repos/${owner}/${repo}/branches/${baseBranch}`;
+    const branchInfo = await gh.get(branchInfoUrl);
     const baseSha = branchInfo.data.commit.sha;
 
     // Step 2: Create the new branch using the base SHA
-    const createBranchUrl = `https://api.github.com/repos/${owner}/${repo}/git/refs`
+    const createBranchUrl = `/repos/${owner}/${repo}/git/refs`
     const createBranchBody = {
       ref: `refs/heads/${newBranchName}`,
       sha: baseSha
     };
-    const createBranch = await axios.post(createBranchUrl, createBranchBody, {
-      headers: {
-        Authorization: `Bearer ${token.value}`,
-      }
-    });
+    const createBranch = await gh.post(createBranchUrl, createBranchBody);
     return createBranch.data;
   } catch (error) {
     if (error.response.status === 401 || error.response.status === 403) {
@@ -233,8 +210,8 @@ const getContents = async (owner, repo, branch = 'HEAD', path = '', useGraphql =
   if (useGraphql) {
     // The GraphQL query list the files AND their content (unlike the REST query)
     try {
-      const response = await axios.post(
-        'https://api.github.com/graphql',
+      const response = await gh.post(
+        '/graphql',
         {
           query: `
             query ($owner: String!, $repo: String!, $expression: String!) {
@@ -263,9 +240,6 @@ const getContents = async (owner, repo, branch = 'HEAD', path = '', useGraphql =
           params: {
             timestamp: Date.now(),
           },
-          headers: {
-            Authorization: `Bearer ${token.value}`,
-          },
         }
       );
       
@@ -279,14 +253,11 @@ const getContents = async (owner, repo, branch = 'HEAD', path = '', useGraphql =
     }
   } else {
     try {
-      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-      const response = await axios.get(url, {
+      const url = `/repos/${owner}/${repo}/contents/${path}`;
+      const response = await gh.get(url, {
         params: {
           ref: branch,
           timestamp: Date.now()
-        },
-        headers: {
-          Authorization: `Bearer ${token.value}`
         },
       });
 
@@ -304,14 +275,13 @@ const getContents = async (owner, repo, branch = 'HEAD', path = '', useGraphql =
 const getFile = async (owner, repo, branch = null, path, raw = false) => {
   try {
     const accept = raw ? 'application/vnd.github.v3.raw' : 'application/vnd.github.v3+json';
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+    const url = `/repos/${owner}/${repo}/contents/${path}`;
     let params = { timestamp: Date.now() };
     if (branch) params.ref = branch;
-    const response = await axios.get(url, {
+    const response = await gh.get(url, {
       params,
       headers: {
         Accept: accept,
-        Authorization: `Bearer ${token.value}`
       },
     });
 
@@ -327,15 +297,12 @@ const getFile = async (owner, repo, branch = null, path, raw = false) => {
 
 const getCommits = async (owner, repo, branch, path) => {
   try {
-    const url = `https://api.github.com/repos/${owner}/${repo}/commits`;
-    const response = await axios.get(url, {
+    const url = `/repos/${owner}/${repo}/commits`;
+    const response = await gh.get(url, {
       params: {
         sha: branch,
         path: path,
         timestamp: Date.now()
-      },
-      headers: {
-        Authorization: `Bearer ${token.value}`
       },
     });
 
@@ -382,7 +349,7 @@ const saveFile = async (owner, repo, branch, path, content, sha = null, retryCre
   };
 
   while (attempt < attemptsMax) {
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${currentPath}`;
+    const url = `/repos/${owner}/${repo}/contents/${currentPath}`;
 
     try {
       const params = {
@@ -392,9 +359,7 @@ const saveFile = async (owner, repo, branch, path, content, sha = null, retryCre
       };
       if (sha) params.sha = sha;
 
-      const response = await axios.put(url, params, {
-        headers: { Authorization: `Bearer ${token.value}` },
-      });
+      const response = await gh.put(url, params);
 
       // Notify if the file was saved under a new name to avoid conflict
       if (currentPath !== path) {
@@ -429,7 +394,7 @@ const saveFile = async (owner, repo, branch, path, content, sha = null, retryCre
 };
 
 const deleteFile = async (owner, repo, branch, path, sha) => {
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const url = `/repos/${owner}/${repo}/contents/${path}`;
 
   const params = {
     message: `Delete ${path} (via Pages CMS)`,
@@ -439,9 +404,6 @@ const deleteFile = async (owner, repo, branch, path, sha) => {
 
   try {
     const response = await axios.delete(url, {
-      headers: {
-        Authorization: `Bearer ${token.value}`
-      },
       data: params
     });
 
@@ -465,10 +427,7 @@ const deleteFile = async (owner, repo, branch, path, sha) => {
 const renameFile = async (owner, repo, branch, oldPath, newPath) => {
   // Step 1: Get the current branch commit SHA
   const getCurrentBranchSHA = async () => {
-    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/branches/${branch}`, {
-      headers: {
-        Authorization: `Bearer ${token.value}`,
-      },
+    const response = await gh.get(`/repos/${owner}/${repo}/branches/${branch}`, {
       params: {
         timestamp: Date.now()
       },
@@ -478,10 +437,7 @@ const renameFile = async (owner, repo, branch, oldPath, newPath) => {
 
   // Step 2: Get the current tree
   const getCurrentTree = async (sha) => {
-    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/git/trees/${sha}?recursive=1`, {
-      headers: {
-        Authorization: `Bearer ${token.value}`,
-      },
+    const response = await gh.get(`/repos/${owner}/${repo}/git/trees/${sha}?recursive=1`, {
       params: {
         timestamp: Date.now()
       },
@@ -491,12 +447,9 @@ const renameFile = async (owner, repo, branch, oldPath, newPath) => {
 
   // Step 3: Create a new tree
   const createNewTree = async (tree) => {
-    const response = await axios.post(`https://api.github.com/repos/${owner}/${repo}/git/trees`, 
+    const response = await gh.post(`/repos/${owner}/${repo}/git/trees`,
       { tree },
-      { 
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
+      {
         params: {
           timestamp: Date.now()
         },
@@ -507,16 +460,13 @@ const renameFile = async (owner, repo, branch, oldPath, newPath) => {
 
   // Step 4: Create a commit for the new tree
   const createCommitForNewTree = async (treeSha, parentSha) => {
-    const response = await axios.post(`https://api.github.com/repos/${owner}/${repo}/git/commits`, 
+    const response = await gh.post(`/repos/${owner}/${repo}/git/commits`,
       {
         message: `Rename ${oldPath} to ${newPath}`,
         tree: treeSha,
         parents: [parentSha]
       },
       { 
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
         params: {
           timestamp: Date.now()
         },
@@ -527,12 +477,9 @@ const renameFile = async (owner, repo, branch, oldPath, newPath) => {
 
   // Step 5: Point the branch at the new commit
   const updateBranch = async (commitSha) => {
-    await axios.patch(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`, 
+    await gh.patch(`/repos/${owner}/${repo}/git/refs/heads/${branch}`,
       { sha: commitSha },
-      { 
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
+      {
         params: {
           timestamp: Date.now()
         },
