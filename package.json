@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler pages dev -- npm run vite",
+    "dev": "wrangler pages dev --proxy 5173 --ip 0.0.0.0 -- npm run vite",
     "vite": "vite",
     "build": "vite build",
     "preview": "vite preview"

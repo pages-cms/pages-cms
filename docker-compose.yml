@@ -1,0 +1,11 @@
+services:
+  cms:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports: 
+      - "8788:8788"
+      - "5173:5173"
+    environment:
+      - GITHUB_CLIENT_ID=FILL_IN
+      - GITHUB_CLIENT_SECRET=FILL_IN
