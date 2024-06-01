@@ -12,8 +12,8 @@ dist
 dist-ssr
 coverage
 *.local
-.*
-!.dev.vars.example
+*.vars
+
 
 wrangler.toml
 
