@@ -69,13 +69,13 @@
                 <li><hr class="border-t border-neutral-150 dark:border-neutral-750 my-1"/></li>
                 <li>
                   <button class="link w-full" @click="view.order = 'asc'">
-                    Ascendant
+                    Ascending
                     <Icon v-if="view.order === 'asc'" name="Check" class="h-4 w-4 stroke-2 shrink-0 ml-auto"/>
                   </button>
                 </li>
                 <li>
                   <button class="link w-full" @click="view.order = 'desc'">
-                    Descendant
+                    Descending
                     <Icon v-if="view.order === 'desc'" name="Check" class="h-4 w-4 stroke-2 shrink-0 ml-auto"/>
                   </button>
                 </li>
