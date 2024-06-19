@@ -123,8 +123,10 @@
 
 /* File browser modal */
 
-.modal-file-browser .modal-box {
-  @apply w-[calc(100vw-14rem)];
+@media (min-width: theme('screens.md')) {
+  .modal-file-browser .modal-box {
+    @apply w-[calc(100vw-20rem)];
+  }
 }
 
 .modal-body .fb-files {
