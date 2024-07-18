@@ -55,7 +55,7 @@
     "@tiptap/suggestion": "^2.4.0",
     "@uiw/codemirror-theme-github": "^4.22.1",
     "@uiw/react-codemirror": "^4.22.1",
-    "@vercel/postgres": "^0.8.0",
+    "@vercel/postgres": "^0.9.0",
     "arctic": "^1.8.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
