@@ -30,16 +30,15 @@ This online version is identical to what's in this repo, but you can also instal
 
 ### Deploy on Vercel
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpages-cms%2Fpages-cms%2Ftree%2Fnext&env=CRYPTO_KEY,GITHUB_CLIENT_ID,GITHUB_CLIENT_SECRET&project-name=pages-cms&repository-name=pages-cms&redirect-url=https%3A%2F%2Fpagescms.org)
+
 1. **Create a GitHub OAuth app**: go to [your Developer Settings](https://github.com/settings/developers) and [create a New OAuth App](https://github.com/settings/applications/new) (or alternatively create one for one of your organizations) with the following settings:
     - **Application name**: `Pages CMS`
     - **Homepage URL**: `https://pagescms.org`
     - **Authorization callback URL**: `https://example.com` (we'll get back to this later on).
-2. **Create the Vercel project**: you can use the deploy button below or fork this repo and [deploy it yourself](https://vercel.com/docs/deployments/overview). You will need to define a few environment variables:
+2. **Create the Vercel project**: you can use the deploy button above or fork this repo and [deploy it yourself](https://vercel.com/docs/deployments/overview). You will need to define a few environment variables:
   - `CRYPTO_KEY`: a random base64 string. You can generate one with the following command: `openssl rand -base64 32`.
   - `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`: as provided by GitHub when you created the OAuth app.
-  
-  [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpages-cms%2Fpages-cms%2Ftree%2Fnext&env=CRYPTO_KEY,GITHUB_CLIENT_ID,GITHUB_CLIENT_SECRET&project-name=pages-cms&repository-name=pages-cms&redirect-url=https%3A%2F%2Fpagescms.org)
-
 3. **Create a database and connect it**: go to the "Storage" tab in your Vercel project, create a [Postgres database](https://vercel.com/docs/storage/vercel-postgres) and connect it.
 4. **Pull the repo locally and install dependencies**: git clone the repository you forked in step 2, then run `npm install`.
 5. **Create the tables**: [link your project](https://vercel.com/docs/cli/project-linking) with `vercel link`, then run `vercel env pull .env.local`, which should copy all the environment variables from your Vercel project into the `.env.local` file. Now run `npx drizzle-kit migrate` to create the tables in your Vercel Posgres database.
