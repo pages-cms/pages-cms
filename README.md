@@ -1,72 +1,54 @@
-# Pages CMS
+This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-[Pages CMS](https://pagescms.org) is an Open Source Content Management System built for static websites (Jekyll, Next.js, VuePress, Hugo, etc).
+## Getting Started
 
-It allows you to edit your website's content directly on GitHub via a user-friendly interface.
+First, run the development server:
 
-<p align="center">
-<img src="https://pagescms.org/media/screenshots/collection-dark@2x.png">
-</p>
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-## Documentation
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-For full documentation, go to [pagescms.org/docs](https://pagescms.org/docs)
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## How it works
+This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
 
-Pages CMS is built as a [Vue.js](https://vuejs.org/) app with a few serverless functions to handle the Github login.
+## Learn More
 
-It is intended to be deployed with [Cloudflare Pages](https://pages.cloudflare.com/), using [Cloudflare Workers](https://workers.cloudflare.com/) (referred to as functions [functions](https://developers.cloudflare.com/pages/functions/)) for the serverless code.
+To learn more about Next.js, take a look at the following resources:
 
-In a nutshell:
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-- The serverless functions are just facilitating the OAuth dance (and logout) between the client and GitHub. The GitHub OAuth token is actually stored in the client.
-- Once logged in, the Vue app lets you select the repo (and branch) where your content may be at.
-- You can configure each repo/branch by adding a `.pages.yml` that describes the content structure and related settings (e.g. media folder).
-- The Vue app acts as a user-friendly interface on top of the GitHub API to manage content related files in your repo. With it you can search and filter collections, create/edit/delete entries, upload media...
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
 
-## Get started
+## Deploy on Vercel
 
-### Use online
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-The easiest way to get started is to use [the online version of Pages CMS](https://app.pagescms.org). You'll be able to log in with your GitHub account and get the latest version of Pages CMS.
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
 
-This online version is identical to what's in this repo and as mentioned above, nothing is saved in the backend (OAuth tokens are saved on the client side).
+# TODO
 
-But you can also install your own version locally or deploy it (for free) on Cloudflare following the steps below.
-
-### Install locally
-
-To get a local version up and running:
-
-1. **Install dependencies**: `npm install`.
-1. **Create a GitHub OAuth app**: 0n GitHub, go to [your Developer Settings](https://github.com/settings/developers) and [create a New OAuth App](https://github.com/settings/applications/new) (or alternatively create one for one of your organizations). You can use the following settings for your development environment:
-    - Application name: `Pages CMS (dev)`
-    - Homepage URL: `https://pagescms.org`
-    - Authorization callback URL: `http://localhost:8788/auth/callback`
-1. **Create a file for environment variables**: copy `.dev.vars.exmple` into `.dev.vars` and replace `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` with the values you got for your GitHub OAuth app. You shouldn't have to modify `BASE_URL`.
-1. **Run it**: `npm run dev`. This should [run the app locally with Wrangler](https://developers.cloudflare.com/pages/functions/local-development/) (allowing us to run the serverless functions locally).
-1. **Visit [localhost:8788](http://localhost:8788)**.
-
-### Deploy on Cloudflare
-
-1. **Prerequisite**: you'll need a [Cloudflare](https://cloudflare.com) account (it's free). Once you have one:
-1. **Create a [Cloudflare Pages](https://developers.cloudflare.com/pages/) app**:
-    1. From your account dashboard, go to `Workers & Pages`, then click on `Create application` and select the `Pages` tab.
-    1. From there you can connect your GitHub account and select the repo you want to deploy (assuming you've [forked pages-cms/pages-cms](https://github.com/pages-cms/pages-cms/fork)).
-    1. Cloudflare will give you a public URL (e.g. https://pages-cms-123.pages.dev).
-1. **Create a GitHub OAuth app**: same as for local, go to [your Developer Settings](https://github.com/settings/developers) and [create a New OAuth App](https://github.com/settings/applications/new) (or alternatively create one for one of your organizations) with the following settings:
-    - **Application name**: `Pages CMS`
-    - **Homepage URL**: `https://pagescms.org`
-    - **Authorization callback URL**: `https://pages-cms-123.pages.dev/auth/callback` (replace `https://pages-cms-123.pages.dev` with whatever URL Cloudflare generated for you, or the custom domain you set up)
-1. **Add the environment variables to Cloudflare**:
-    1. Go back to your Cloudflare Pages app, click on the `Settings` tab and select `Environment variables` in the sidebar.
-    1. Fill in `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` with the values you got from GitHub.
-    1. You will also need to set `BASE_URL` to the URL that was given to you when you create the Cloudflare Pages app (e.g.  `https://pages-cms-123.pages.dev`).
-1. **Open the app link** (e.g. `https://pages-cms-123.pages.dev`).
-
-Cloudflare has very generous free tiers and can also host your actual website. It's a great alternative to GitHub Pages, Netlify or Vercel.
-
-## License
-
-Everything in this repo is released under the [MIT License](LICENSE).
+- Seems .env.local gets picked up over dev.vars 
+- openssl rand -base64 32
+- Check if basePath needs to be added to fetch calls 
+- Do we need to check origin for actions?
+- fields: [ {date: date} ] breaks things. Probably because we excpect a name. Probably want to normalize post zod validation to make sure we don't use a broken config
+- Try and redirect users to the same file/collection/item when switching branches
+- Test that settings = false indeed works
+- For email users, need to check ALL actions are allowed (e.g. getMedia)
+- Clean up entry to use same clean return from backend and frontend update logic
+- Drag and drop lists
+- Drag and drop upload
+- Review middleawre
+- Add normalize function (e.g. for date fields -> Options.min )
+// TODO: take into account settings (if subpaths are disabled)
+- IMPORTANT: apply validation/parsing on fields when reading it for collection/editor. These should not be sent to the client if they're not in the schema

@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1720499347311,
+      "tag": "0000_shallow_jetstream",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+.ProseMirror {
+  @apply rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background min-h-[8.5rem];
+}
+
+.ProseMirror-focused {
+  @apply outline-none ring-2 ring-ring ring-offset-2;
+}
+
+.ProseMirror h1 {
+  @apply mt-10 scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl;
+}
+
+.ProseMirror h2 {
+  @apply mt-10 scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0;
+}
+
+.ProseMirror h2 {
+  @apply mt-8 scroll-m-20 text-2xl font-semibold tracking-tight;
+}
+
+.ProseMirror p {
+  @apply [&:not(:first-child)]:mt-6;
+}
+
+.ProseMirror code {
+  @apply bg-muted py-1 px-1.5 rounded-md;
+}
+
+.ProseMirror pre {
+  @apply [&:not(:first-child)]:mt-6;
+}
+
+.ProseMirror pre code {
+  @apply block bg-muted p-2;
+}
+
+.ProseMirror a {
+  @apply font-medium text-primary underline decoration-dotted underline-offset-4;
+}
+
+.ProseMirror blockquote {
+  @apply mt-6 border-l-2 pl-6 italic;
+}
+
+.ProseMirror ul {
+  @apply my-6 ml-6 list-disc [&>li]:mt-2;
+}
+
+.ProseMirror ol {
+  @apply my-6 ml-6 list-decimal [&>li]:mt-2;
+}
+
+.ProseMirror table {
+  @apply w-full;
+}
+
+.ProseMirror table tr {
+  @apply m-0 border-t p-0 even:bg-muted;
+}
+
+.ProseMirror table th {
+  @apply border px-4 py-2 text-left font-bold [&[align=center]]:text-center [&[align=right]]:text-right;
+}
+
+.ProseMirror table td {
+  @apply border px-4 py-2 text-left [&[align=center]]:text-center [&[align=right]]:text-right;
+}
+
+.tiptap p.is-empty::before {
+  @apply text-muted-foreground float-left	h-0 pointer-events-none	content-[attr(data-placeholder)];
+}
+
+.tiptap p > img + .ProseMirror-separator,
+.tiptap img.ProseMirror-separator,
+.tiptap p > img + .ProseMirror-separator + .ProseMirror-trailingBreak,
+.tiptap pre code .ProseMirror-trailingBreak {
+  @apply !hidden;
+}
+
+.tiptap img,
+.tiptap svg,
+.tiptap video,
+.tiptap canvas,
+.tiptap audio,
+.tiptap iframe,
+.tiptap embed,
+.tiptap object {
+  @apply inline-block;
+}
+
+.tippy-box {
+  @apply transition-all;
+}
+
+div[data-tippy-root] {
+  @apply transition-all;
+}
