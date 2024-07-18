@@ -39,35 +39,22 @@ This online version is identical to what's in this repo, but you can also instal
   - `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`: as provided by GitHub when you created the OAuth app.
   
   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpages-cms%2Fpages-cms%2Ftree%2Fnext&env=CRYPTO_KEY,GITHUB_CLIENT_ID,GITHUB_CLIENT_SECRET&project-name=pages-cms&repository-name=pages-cms&redirect-url=https%3A%2F%2Fpagescms.org)
-  
 3. **Create a database and connect it**: go to the "Storage" tab in your Vercel project, create a [Postgres database](https://vercel.com/docs/storage/vercel-postgres) and connect it.
-4. **Pull the repo locally**: git clone
-5. **
-6. **Update your GitHub OAuth app**: once your Vercel project is created, go back to your GitHub Oauth app settings and update the authorization callback URL to be something like `https://example.vercel.app/api/auth/github`, replacing `https://example.vercel.app` with the URL of your Vercel project.
+4. **Pull the repo locally and install dependencies**: git clone the repository you forked in step 2, then run `npm install`.
+5. **Create the tables**: run `vercel env pull .env.local`, which should copy all the environment variables from your Vercel project into the `.env.local` file.
+6. **Update your GitHub OAuth app**: go back to your GitHub Oauth app settings and update the authorization callback URL to be something like `https://example.vercel.app/api/auth/github`, replacing `https://example.vercel.app` with the URL of your Vercel project.
+7. **Test it**: go to the URL provided by Vercel for your project and try to log in with your GitHub account.
 
+ ## Development
 
-To get a local version up and running:
+ TO run the app locally, you'll still need a Vercel database. Follow the steps above ("Deploy on Vercel") and then do the following:
 
-1. **Install dependencies**: `npm install`.
-1. **Create a GitHub OAuth app**: 0n GitHub, go to [your Developer Settings](https://github.com/settings/developers) and [create a New OAuth App](https://github.com/settings/applications/new) (or alternatively create one for one of your organizations). You can use the following settings for your development environment:
-    - Application name: `Pages CMS (dev)`
-    - Homepage URL: `https://pagescms.org`
-    - Authorization callback URL: `http://localhost:3000/auth/callback`
-1. 
-1. **Create a file for environment variables**: copy `.env.local.example` into `.env.local` and update the environment variables with the values from your GitHub  `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` with the values you got for your GitHub OAuth app. You shouldn't have to modify `BASE_URL`.
-1. **Run it**: `npm run dev`.
-1. **Visit [localhost:8788](http://localhost:3000)**.
+1. **Create a new GitHub Oauth app**: same steps as above, however the authorization callback URL should be `https://localhost:3000`. You can name the app differently (e.g. "Pages CMS (dev)").
+2. **Update your environment variables**: update the values of `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` in the `.env.local` file with the values you got from new GitHub OAuth app.
+3. **Run it**: go to 
+
+If you want to use different databases for development, create a new one on Vercel and update the  environment variables in the `.env.local` file.
 
 ## License
 
 Everything in this repo is released under the [MIT License](LICENSE).
-
-https://vercel.com/docs/storage/vercel-postgres/quickstart
-
-
-Pull Postgres environment variables
-
- need to pull them into your local environment to access your Postgres database.
-
-vercel env pull .env.development.local
-npx drizzle-kit push
