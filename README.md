@@ -1,54 +1,73 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Pages CMS
 
-## Getting Started
+[Pages CMS](https://pagescms.org) is an Open Source Content Management System built for static websites (Jekyll, Next.js, VuePress, Hugo, etc).
 
-First, run the development server:
+It allows you to edit your website's content directly on GitHub via a user-friendly interface.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+<p align="center">
+<img src="https://pagescms.org/media/screenshots/collection-dark@2x.png">
+</p>
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Documentation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Go to [pagescms.org/docs](https://pagescms.org/docs).
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Built with
 
-## Learn More
+- [Next.js](https://nextjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [drizzle](https://orm.drizzle.team/)
+- [Vercel](https://vercel.com/) (including [Vercel Posgres](https://vercel.com/docs/storage/vercel-postgres))
 
-To learn more about Next.js, take a look at the following resources:
+## Get started
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Use online
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+The easiest way to get started is to use [the online version of Pages CMS](https://next.pagescms.org). You'll be able to log in with your GitHub account and get the latest version of Pages CMS.
 
-## Deploy on Vercel
+This online version is identical to what's in this repo, but you can also install your own version locally or deploy it (for free) on Vercel following the steps below.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Deploy on Vercel
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+1. **Create a GitHub OAuth app**: go to [your Developer Settings](https://github.com/settings/developers) and [create a New OAuth App](https://github.com/settings/applications/new) (or alternatively create one for one of your organizations) with the following settings:
+    - **Application name**: `Pages CMS`
+    - **Homepage URL**: `https://pagescms.org`
+    - **Authorization callback URL**: `https://example.com` (we'll get back to this later on).
+2. **Create the Vercel project**: you can use the deploy button below or fork this repo and [deploy it yourself](https://vercel.com/docs/deployments/overview). You will need to define a few environment variables:
+  - `CRYPTO_KEY`: a random base64 string. You can generate one with the following command: `openssl rand -base64 32`.
+  - `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`: as provided by GitHub when you created the OAuth app.
+  
+  [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpages-cms%2Fpages-cms%2Ftree%2Fnext&env=CRYPTO_KEY,GITHUB_CLIENT_ID,GITHUB_CLIENT_SECRET&project-name=pages-cms&repository-name=pages-cms&redirect-url=https%3A%2F%2Fpagescms.org)
+  
+3. **Create a database and connect it**: go to the "Storage" tab in your Vercel project, create a [Postgres database](https://vercel.com/docs/storage/vercel-postgres) and connect it.
+4. **Pull the repo locally**: git clone
+5. **
+6. **Update your GitHub OAuth app**: once your Vercel project is created, go back to your GitHub Oauth app settings and update the authorization callback URL to be something like `https://example.vercel.app/api/auth/github`, replacing `https://example.vercel.app` with the URL of your Vercel project.
 
-# TODO
 
-- Seems .env.local gets picked up over dev.vars 
-- openssl rand -base64 32
-- Check if basePath needs to be added to fetch calls 
-- Do we need to check origin for actions?
-- fields: [ {date: date} ] breaks things. Probably because we excpect a name. Probably want to normalize post zod validation to make sure we don't use a broken config
-- Try and redirect users to the same file/collection/item when switching branches
-- Test that settings = false indeed works
-- For email users, need to check ALL actions are allowed (e.g. getMedia)
-- Clean up entry to use same clean return from backend and frontend update logic
-- Drag and drop lists
-- Drag and drop upload
-- Review middleawre
-- Add normalize function (e.g. for date fields -> Options.min )
-// TODO: take into account settings (if subpaths are disabled)
-- IMPORTANT: apply validation/parsing on fields when reading it for collection/editor. These should not be sent to the client if they're not in the schema
+To get a local version up and running:
+
+1. **Install dependencies**: `npm install`.
+1. **Create a GitHub OAuth app**: 0n GitHub, go to [your Developer Settings](https://github.com/settings/developers) and [create a New OAuth App](https://github.com/settings/applications/new) (or alternatively create one for one of your organizations). You can use the following settings for your development environment:
+    - Application name: `Pages CMS (dev)`
+    - Homepage URL: `https://pagescms.org`
+    - Authorization callback URL: `http://localhost:3000/auth/callback`
+1. 
+1. **Create a file for environment variables**: copy `.env.local.example` into `.env.local` and update the environment variables with the values from your GitHub  `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` with the values you got for your GitHub OAuth app. You shouldn't have to modify `BASE_URL`.
+1. **Run it**: `npm run dev`.
+1. **Visit [localhost:8788](http://localhost:3000)**.
+
+## License
+
+Everything in this repo is released under the [MIT License](LICENSE).
+
+https://vercel.com/docs/storage/vercel-postgres/quickstart
+
+
+Pull Postgres environment variables
+
+ need to pull them into your local environment to access your Postgres database.
+
+vercel env pull .env.development.local
+npx drizzle-kit push

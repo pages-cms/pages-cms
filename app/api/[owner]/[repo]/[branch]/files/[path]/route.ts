@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { Octokit } from "octokit";
 import { writeFns } from "@/fields/registry";
-import { parseConfig, normalizeConfig } from "@/lib/config";
+import { configVersion, parseConfig, normalizeConfig } from "@/lib/config";
 import { stringify } from "@/lib/serialization";
 import { deepMap, generateZodSchema, getSchemaByName, sanitizeObject } from "@/lib/schema";
 import { getConfig, updateConfig } from "@/lib/utils/config";
@@ -109,7 +109,7 @@ export async function POST(
         repo: params.repo,
         branch: params.branch,
         sha: response?.data.content?.sha as string,
-        version: process.env.CONFIG_VERSION ?? "0.0",
+        version: configVersion ?? "0.0",
         file: data.content,
         object: configObject
       };

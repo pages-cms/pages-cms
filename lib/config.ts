@@ -3,6 +3,8 @@ import { getFileExtension, extensionCategories } from "@/lib/utils/file";
 import { ConfigSchema } from "@/lib/configSchema";
 import { z } from "zod";
 
+const configVersion = "2.0";
+
 const parseConfig = (content: string) => {
   const document = YAML.parseDocument(content, { strict: false, prettyErrors: false });
 
@@ -191,4 +193,4 @@ const parseAndValidateConfig = (content: string) => {
   return { document, parseErrors, validationErrors };
 };
 
-export { parseConfig, normalizeConfig, validateConfig, parseAndValidateConfig };
+export { configVersion, parseConfig, normalizeConfig, validateConfig, parseAndValidateConfig };

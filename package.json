@@ -4,18 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && npx drizzle-kit migrate",
     "start": "next start",
     "lint": "next lint",
-    "pages:build": "npx @cloudflare/next-on-pages",
-    "preview": "npm run pages:build && wrangler pages dev",
-    "deploy": "npm run pages:build && wrangler pages deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
-    "db:wipe": "node db/scripts.mjs wipe",
-    "db:migrate": "node db/scripts.mjs migrate",
-    "db:tables": "node db/scripts.mjs tables",
-    "db:schema": "node db/scripts.mjs schema",
-    "db:content": "node db/scripts.mjs content"
+    "db:migrate": "npx drizzle-kit migrate"
   },
   "dependencies": {
     "@codemirror/lang-html": "^6.4.9",

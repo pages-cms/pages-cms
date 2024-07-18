@@ -1,7 +1,7 @@
 import { getUser } from "@/lib/utils/user";
 import { getConfig, saveConfig, updateConfig } from "@/lib/utils/config";
 import { Octokit } from "octokit";
-import { parseConfig, normalizeConfig } from "@/lib/config";
+import { configVersion, parseConfig, normalizeConfig } from "@/lib/config";
 import { ConfigProvider } from "@/contexts/config-context";
 import { RepoLayout } from "@/components/repo/repo-layout";
 import { EmptyCreate } from "@/components/empty-create";
@@ -49,7 +49,7 @@ export default async function Layout({
 
     // TODO: make it resilient to config not found (e.g. DB down)
 
-    if (savedConfig && savedConfig.sha === response.data.sha && savedConfig.version === process.env.CONFIG_VERSION) {
+    if (savedConfig && savedConfig.sha === response.data.sha && savedConfig.version === configVersion) {
       // Config in DB and up-to-date
       config = savedConfig;
     } else {
@@ -58,7 +58,7 @@ export default async function Layout({
       const configObject = normalizeConfig(parsedConfig.document.toJSON());
       
       config.sha = response.data.sha;
-      config.version = process.env.CONFIG_VERSION ?? "0.0";
+      config.version = configVersion ?? "0.0";
       config.file = configFile;
       config.object = configObject;
 
