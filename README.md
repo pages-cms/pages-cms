@@ -42,7 +42,7 @@ This online version is identical to what's in this repo, but you can also instal
 
 3. **Create a database and connect it**: go to the "Storage" tab in your Vercel project, create a [Postgres database](https://vercel.com/docs/storage/vercel-postgres) and connect it.
 4. **Pull the repo locally and install dependencies**: git clone the repository you forked in step 2, then run `npm install`.
-5. **Create the tables**: run `vercel env pull .env.local`, which should copy all the environment variables from your Vercel project into the `.env.local` file. Then run `npx drizzle-kit migrate` to create the tables in your Vercel Posgres database.
+5. **Create the tables**: [link your project](https://vercel.com/docs/cli/project-linking) with `vercel link`, then run `vercel env pull .env.local`, which should copy all the environment variables from your Vercel project into the `.env.local` file. Now run `npx drizzle-kit migrate` to create the tables in your Vercel Posgres database.
 6. **Update your GitHub OAuth app**: go back to your GitHub Oauth app settings and update the authorization callback URL to be something like `https://example.vercel.app/api/auth/github`, replacing `https://example.vercel.app` with the URL of your Vercel project.
 7. **Test it**: go to the URL provided by Vercel for your project and try to log in with your GitHub account.
 
