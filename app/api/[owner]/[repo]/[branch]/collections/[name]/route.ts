@@ -1,3 +1,5 @@
+export const maxDuration = 30;
+
 import { type NextRequest } from "next/server";
 import { Octokit } from "octokit";
 import { readFns } from "@/fields/registry";
