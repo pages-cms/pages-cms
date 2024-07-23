@@ -364,8 +364,8 @@ export function CollectionView({
 
   return (
     <>
-      <div className="flex-1 flex flex-col">
-        <header className="flex mb-4 items-center gap-x-2">
+      <div className="flex-1 flex flex-col space-y-6">
+        <header className="flex items-center gap-x-2">
           <div className="flex-1">
             <PathBreadcrumb path={path || schema.path} rootPath={schema.path} handleNavigate={handleNavigate}/>
           </div>
@@ -397,7 +397,7 @@ export function CollectionView({
             <>
               <CollectionTable columns={columns} data={filesData} search={search} setSearch={setSearch} initialState={initialState} />
               {foldersData && foldersData.length > 0
-                ? <div className="mt-4 space-y-4">
+                ? <div className="space-y-4">
                     <h2 className="font-medium text-md">Folders</h2>
                     <ul className="grid grid-cols-4 gap-2">
                       {foldersData.map((item, index) => 

@@ -64,7 +64,7 @@ export function CollectionTable<TData extends TableData>({
   });
 
   return (
-    <>
+    <div className="space-y-2">
       <Table className="border-separate border-spacing-0 text-base"> 
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -152,6 +152,6 @@ export function CollectionTable<TData extends TableData>({
           </div>
         </footer>
       }
-    </>
+    </div>
   )
 }

@@ -232,8 +232,8 @@ const MediaView = ({
   }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <header className="flex mb-4 items-center gap-x-2">
+    <div className="flex-1 flex flex-col space-y-4">
+      <header className="flex items-center gap-x-2">
         <PathBreadcrumb path={path} rootPath={config.object.media.input} handleNavigate={handleNavigate}/>
         <FolderCreate path={path} type="media" onCreate={handleFolderCreate}>
           <Button type="button" variant="outline" className="ml-auto" size="icon-sm">
