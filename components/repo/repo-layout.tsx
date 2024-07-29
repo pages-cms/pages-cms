@@ -36,14 +36,14 @@ export function RepoLayout({
           <RepoSidebar/>
         </aside>
         <main className="flex flex-col flex-1 relative h-screen overflow-hidden">
-          <div className="h-14 xl:h-0 border-b xl:border-0"></div>
+          <div className="h-14 xl:h-0"></div>
           <div className="flex-1 overflow-auto scrollbar p-4 md:p-6">
             {children}
           </div>
         </main>
       </div>
       <div className="xl:hidden">
-        <div className="fixed top-0 left-0 h-14 flex items-center px-4 md:px-6">
+        <div className="fixed top-0 left-0 right-0 bg-background border-b h-14 flex items-center px-4 md:px-6">
           <Button variant="outline" size="icon" className="gap-x-2" onClick={() => setMenuOpen(true)}>
             <Menu className="h-4 w-4" />
           </Button>

@@ -21,12 +21,13 @@ import { Thumbnail } from "@/components/thumbnail";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Folder,
+  CornerLeftUp,
+  Ban,
+  EllipsisVertical,  
   File,
-  EllipsisVertical,
-  Upload,
+  Folder,
   FolderPlus,
-  Ban
+  Upload
 } from "lucide-react";
 
 const MediaView = ({
@@ -135,6 +136,11 @@ const MediaView = ({
     }
   }
 
+  const handleNavigateParent = () => {
+    if (!path || path === config.object.media.input) return;
+    handleNavigate(getParentPath(path));
+  }
+
   const handleSelect = useCallback((path: string) => {
     setSelected((prevSelected) => {
       let newSelected = prevSelected;
@@ -234,7 +240,12 @@ const MediaView = ({
   return (
     <div className="flex-1 flex flex-col space-y-4">
       <header className="flex items-center gap-x-2">
-        <PathBreadcrumb path={path} rootPath={config.object.media.input} handleNavigate={handleNavigate}/>
+        <div className="sm:flex-1">
+          <PathBreadcrumb path={path} rootPath={config.object.media.input} handleNavigate={handleNavigate} className="hidden sm:block"/>
+          <Button onClick={handleNavigateParent} size="icon-sm" variant="outline" className="shrink-0 sm:hidden" disabled={!path || path === config.object.media.input}>
+            <CornerLeftUp className="w-4 h-4"/>
+          </Button>
+        </div>
         <FolderCreate path={path} type="media" onCreate={handleFolderCreate}>
           <Button type="button" variant="outline" className="ml-auto" size="icon-sm">
             <FolderPlus className="h-3.5 w-3.5"/>

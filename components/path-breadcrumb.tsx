@@ -22,10 +22,12 @@ import { Home } from "lucide-react";
 const PathBreadcrumb = ({
   path = "",
   rootPath,
+  className,
   handleNavigate
 }: {
   path?: string;
   rootPath: string;
+  className?: string;
   handleNavigate: (newPath: string) => void
 }) => {
   const normalizedPath = normalizePath(path);
@@ -51,7 +53,7 @@ const PathBreadcrumb = ({
   }
 
   return pathArray.length > 0
-    ? <Breadcrumb>
+    ? <Breadcrumb className={className}>
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink onClick={() => handleNavigate(rootPath)} className="cursor-pointer">

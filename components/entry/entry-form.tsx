@@ -2,10 +2,21 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useForm, useFieldArray, Control, useFormContext } from "react-hook-form";
+import {
+  useForm,
+  useFieldArray,
+  useFormState,
+  Control,
+  useFormContext
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { editComponents, supportsList } from "@/fields/registry";
-import { initializeState, getDefaultValue, generateZodSchema, sanitizeObject } from "@/lib/schema";
+import {
+  initializeState,
+  getDefaultValue,
+  generateZodSchema,
+  sanitizeObject
+} from "@/lib/schema";
 import { Field } from "@/types/field";
 import { EntryHistoryBlock, EntryHistoryDropdown } from "./entry-history";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -46,7 +57,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
 
-function SortableItem({
+const SortableItem = ({
   id,
   type,
   children
@@ -54,7 +65,7 @@ function SortableItem({
   id: string,
   type: string,
   children: React.ReactNode
-}) {
+}) => {
   const {
     attributes,
     isDragging,
@@ -77,9 +88,9 @@ function SortableItem({
       {children}
     </div>
   );
-}
+};
 
-function ListField({
+const ListField = ({
   control,
   field,
   fieldName,
@@ -89,11 +100,12 @@ function ListField({
   field: Field;
   fieldName: string;
   renderFields: (fields: Field[], parentName?: string) => React.ReactNode;
-}) {
+}) => {
   const { fields: arrayFields, append, remove, move } = useFieldArray({
     control,
     name: fieldName,
   });
+  const { errors } = useFormState({ control });
 
   const { setValue, watch } = useFormContext();
   const fieldValues = watch(fieldName);
@@ -127,49 +139,67 @@ function ListField({
       setValue(fieldName, updatedValues);
     }
   };
-
+  
   return (
-    <fieldset key={fieldName} className="space-y-2">
-      {field.label !== false && (
-        <legend className="text-sm font-medium">
-          {field.label || field.name}
+    <FormField
+      name={fieldName}
+      control={control}
+      render={({ field: formField, fieldState: { error } }) => (
+        <FormItem>
+          {field.label !== false &&
+            <FormLabel className="text-sm font-medium">
+              {field.label || field.name}
+            </FormLabel>
+          }
           {field.required && (
             <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>
           )}
-        </legend>
+          <div className="space-y-2">
+            <DndContext sensors={sensors} modifiers={modifiers} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={arrayFields.map(item => item.id)} strategy={verticalListSortingStrategy}>
+                {arrayFields.map((arrayField, index) => (
+                  <SortableItem key={arrayField.id} id={arrayField.id} type={field.type}>
+                    <div className="grid gap-6 flex-1">
+                      {field.type === "object" && field.fields
+                        ? renderFields(field.fields, `${fieldName}.${index}`)
+                        : renderSingleField(field, `${fieldName}.${index}`, control, false)}
+                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon-sm" className="h-8" onClick={() => remove(index)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Remove entry
+                      </TooltipContent>
+                    </Tooltip>
+                  </SortableItem>
+                ))}
+              </SortableContext>
+            </DndContext>
+            
+            {typeof field.list === "object" && field.list?.max && arrayFields.length >= field.list.max
+              ? null
+              : <Button type="button" variant="outline" size="sm" onClick={() => append(field.type === "object" ? initializeState(field.fields, {}) : getDefaultValue(field))} className="gap-x-2">
+                  <Plus className="h-4 w-4" />
+                  Add an entry
+                </Button>
+            }
+          </div>
+          <FormMessage/>
+        </FormItem>
       )}
-      <DndContext sensors={sensors} modifiers={modifiers} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={arrayFields.map(item => item.id)} strategy={verticalListSortingStrategy}>
-          {arrayFields.map((arrayField, index) => (
-            <SortableItem key={arrayField.id} id={arrayField.id} type={field.type}>
-              <div className="grid gap-6 flex-1">
-                {field.type === "object" && field.fields
-                  ? renderFields(field.fields, `${fieldName}.${index}`)
-                  : renderSingleField(field, `${fieldName}.${index}`, control, false)}
-              </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button type="button" variant="ghost" size="icon-sm" className="h-8" onClick={() => remove(index)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Remove entry
-                </TooltipContent>
-              </Tooltip>
-            </SortableItem>
-          ))}
-        </SortableContext>
-      </DndContext>
-      <Button type="button" variant="outline" size="sm" onClick={() => append(field.type === "object" ? initializeState(field.fields, {}) : getDefaultValue(field))} className="gap-x-2">
-        <Plus className="h-4 w-4" />
-        Add an entry
-      </Button>
-    </fieldset>
+    />
   );
-}
+};
 
-function renderSingleField(field: Field, fieldName: string, control: Control, showLabel = true) {
+const renderSingleField = (
+  field: Field,
+  fieldName: string,
+  control: Control,
+  showLabel = true
+) => {
   const FieldComponent = editComponents?.[field.type] || editComponents["text"];
 
   return (
@@ -182,21 +212,21 @@ function renderSingleField(field: Field, fieldName: string, control: Control, sh
           {showLabel && field.label !== false &&
             <FormLabel className="h-5">
               {field.label || field.name}
-              {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
             </FormLabel>
           }
+          {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
           <FormControl>
             <FieldComponent {...fieldProps} field={field} />
           </FormControl>
           {field.description && <FormDescription>{field.description}</FormDescription>}
-          <FormMessage />
+          <FormMessage/>
         </FormItem>
       )}
     />
   );
-}
+};
 
-export function EntryForm({
+const EntryForm = ({
   title,
   navigateBack,
   fields,
@@ -214,7 +244,7 @@ export function EntryForm({
   history?: Record<string, any>[];
   path?: string;
   options: React.ReactNode;
-}) {
+}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const zodSchema = useMemo(() => {
@@ -242,7 +272,7 @@ export function EntryForm({
         return (
           <fieldset key={fieldName} className="grid gap-6 rounded-lg border p-4">
             {field.label !== false &&
-              <legend className="-ml-1 px-1 text-sm font-medium">
+              <legend className="text-sm font-medium leading-none">
                 {field.label || field.name}
                 {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
               </legend>
@@ -314,3 +344,5 @@ export function EntryForm({
     </Form>
   );
 };
+
+export { EntryForm }

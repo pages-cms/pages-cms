@@ -6,16 +6,20 @@
   @apply outline-none ring-2 ring-ring ring-offset-2;
 }
 
+.ProseMirror > * {
+  @apply first:!mt-0 last:!mb-0;
+}
+
 .ProseMirror h1 {
-  @apply mt-10 scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl;
+  @apply my-6 scroll-m-20 text-xl md:text-2xl font-semibold tracking-tight;
 }
 
 .ProseMirror h2 {
-  @apply mt-10 scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0;
+  @apply my-6 scroll-m-20 text-lg md:text-xl font-semibold tracking-tight;
 }
 
-.ProseMirror h2 {
-  @apply mt-8 scroll-m-20 text-2xl font-semibold tracking-tight;
+.ProseMirror h3 {
+  @apply my-6 scroll-m-20 text-base font-semibold tracking-tight;
 }
 
 .ProseMirror p {
@@ -51,19 +55,23 @@
 }
 
 .ProseMirror table {
-  @apply w-full;
+  @apply w-full my-6;
 }
 
 .ProseMirror table tr {
-  @apply m-0 border-t p-0 even:bg-muted;
+  @apply m-0 border-t p-0;
 }
 
 .ProseMirror table th {
-  @apply border px-4 py-2 text-left font-bold [&[align=center]]:text-center [&[align=right]]:text-right;
+  @apply bg-muted border px-4 py-2 text-left font-bold [&[align=center]]:text-center [&[align=right]]:text-right;
 }
 
 .ProseMirror table td {
   @apply border px-4 py-2 text-left [&[align=center]]:text-center [&[align=right]]:text-right;
+}
+
+.ProseMirror table .selectedCell {
+  @apply bg-muted-foreground/15;
 }
 
 .tiptap p.is-empty::before {

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { ViewComponent } from "./view-component";
 import { EditComponent } from "./edit-component";
 import { Field } from "@/types/field";
@@ -21,30 +22,22 @@ const write = (value: any, field: Field, config: Record<string, any>) => {
   return swapPrefix(value, prefixInput, prefixOutput);
 };
 
-const supportsList = true;
-
-// const schema = (
-//   required?: boolean,
-//   pattern?: string | { regex: string; message: string },
-//   options?: {
-//     minlength?: number;
-//     maxlength?: number;
-//   }
-// ) => {
-//   let schema = z.string();
+// TODO: add image validation
+// const schema = (field: Field) => {
+//   let zodSchema = z.coerce.string();
   
-//   if (required) schema = schema.min(1, "This field is required");
-//   if (pattern) {
-//     if (typeof pattern === "string") {
-//       schema = schema.regex(new RegExp(pattern), "Invalid format");
+//   if (field.required) zodSchema = zodSchema.min(1, "This field is required");
+//   if (field.pattern) {
+//     if (typeof field.pattern === "string") {
+//       zodSchema = zodSchema.regex(new RegExp(field.pattern), "Invalid format");
 //     } else {
-//       schema = schema.regex(new RegExp(pattern.regex), pattern.message || "Invalid format");
+//       zodSchema = zodSchema.regex(new RegExp(field.pattern.regex), field.pattern.message || "Invalid pattern format");
 //     }
 //   }
-//   if (options?.minlength) schema = schema.min(options.minlength, `Minimum length is ${options.minlength} characters`);
-//   if (options?.maxlength) schema = schema.max(options.maxlength, `Maximum length is ${options.maxlength} characters`);
   
-//   return schema;
+//   return zodSchema;
 // };
+
+const supportsList = true;
 
 export { ViewComponent, EditComponent, read, write, supportsList };

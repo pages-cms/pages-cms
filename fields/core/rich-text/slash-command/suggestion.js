@@ -10,6 +10,7 @@ import {
   List,
   ListOrdered,
   Quote,
+  Table,
   Text
 } from "lucide-react";
 
@@ -53,9 +54,15 @@ export default function suggestion(openMediaDialog) {
           icon: <Image className="h-4 w-4"/>,
           title: "Image",
           command: ({ editor, range }) => {
+            // TODO: fix mouse click event (close dialog immediately)
             editor.chain().focus().deleteRange(range).run();
             openMediaDialog();
           },
+        },
+        {
+          icon: <Table className="h-4 w-4"/>,
+          title: "Table",
+          command: ({ editor, range }) => editor.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
         },
         {
           icon: <Quote className="h-4 w-4"/>,

@@ -179,13 +179,13 @@ export function FileOptions({
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmDelete}>Confirm</AlertDialogAction>
+              <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Rename file</DialogTitle>
-              <DialogDescription>Something</DialogDescription>
+              <DialogDescription></DialogDescription>
             </DialogHeader>
             <Input
               defaultValue={relativePath}

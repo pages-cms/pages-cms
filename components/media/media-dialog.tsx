@@ -48,9 +48,8 @@ const MediaDialog = forwardRef(({
     close: () => setOpen(false),
   }));
 
-  // TODO: figure out how to avoid having to use modal={false}
   return (
-    <Dialog open={open} onOpenChange={setOpen} modal={false}>
+    <Dialog open={open} onOpenChange={setOpen}>
       {children && 
         <DialogTrigger asChild>
           {children}

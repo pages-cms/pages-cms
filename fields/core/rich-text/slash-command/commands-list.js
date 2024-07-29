@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
+import { Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CommandsList = forwardRef(({ items, command }, ref) => {
@@ -53,7 +54,10 @@ const CommandsList = forwardRef(({ items, command }, ref) => {
           </Button>
         ))
       ) : (
-        <div className="item">No result</div>
+        <div className="flex items-center text-sm text-muted-foreground gap-x-2 h-8 px-2">
+          <Ban className="h-4 w-4"/>
+          No result
+        </div>
       )}
     </div>
   );

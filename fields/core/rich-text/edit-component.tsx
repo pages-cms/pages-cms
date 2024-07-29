@@ -6,6 +6,10 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import Table from "@tiptap/extension-table";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import TableRow from "@tiptap/extension-table-row";
 import Underline from "@tiptap/extension-underline";
 import { useConfig } from "@/contexts/config-context";
 import { useRepo } from "@/contexts/repo-context";
@@ -15,6 +19,13 @@ import "./edit-component.css";
 import Commands from './slash-command/commands';
 import suggestion from './slash-command/suggestion';
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -31,6 +42,7 @@ import {
   Link2,
   RemoveFormatting,
   Strikethrough,
+  Table as TableIcon,
   Trash2,
   Underline as UnderlineIcon
 } from "lucide-react";
@@ -42,10 +54,10 @@ const EditComponent = forwardRef((props: any, ref) => {
   const { value, onChange } = props;
   const mediaDialogRef = useRef<MediaDialogHandle>(null); 
   const editorRef = useRef<any>(null);
+  const bubbleMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [isContentReady, setContentReady] = useState(false);
   
-  const [showLinkUrl, setShowLinkUrl] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
 
   const editor = useEditor({
@@ -77,6 +89,10 @@ const EditComponent = forwardRef((props: any, ref) => {
       Commands.configure({
         suggestion: suggestion(() => { if (mediaDialogRef.current) mediaDialogRef.current.open() })
       }),
+      Table,
+      TableRow,
+      TableHeader,
+      TableCell,
       Underline
     ],
     content: "<p></p>",
@@ -167,8 +183,8 @@ const EditComponent = forwardRef((props: any, ref) => {
     <>
       <Skeleton className={cn("rounded-md h-[8.5rem]", isContentReady ? "hidden" : "")} />
       <div className={!isContentReady ? "hidden" : ""}>
-        {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 100, animation: "scale" }}>
-          <div className="p-1 rounded-md bg-popover border flex gap-x-1 items-center focus-visible:outline-none shadow-md transition-all">
+        {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 100, animation: "scale", maxWidth: "400px" }}>
+          <div className="p-1 rounded-md bg-popover border flex gap-x-[1px] items-center focus-visible:outline-none shadow-md transition-all duration-75" ref={bubbleMenuRef}>
             <div className="relative">
               <select className="appearance-none bg-transparent h-7 pl-2 pr-6 rounded-md hover:bg-muted text-sm outline-none focus:ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2" onChange={handleSelectBlockType} value={getBlockType()}>
                 <option value="p">Text</option>
@@ -188,7 +204,7 @@ const EditComponent = forwardRef((props: any, ref) => {
                   type="button"
                   variant="ghost"
                   size="icon-xxs"
-                  className={editor.isActive("link") ? "bg-muted" : ""}
+                  className={cn("shrink-0", editor.isActive("link") ? "bg-muted" : "")}
                   onClick={() => setLinkUrl(editor.isActive("link") ? editor.getAttributes('link').href : "")}
                 >
                   <Link2 className="h-4 w-4" />
@@ -206,6 +222,7 @@ const EditComponent = forwardRef((props: any, ref) => {
                     type="button"
                     variant="ghost"
                     size="xxs"
+                    className="shrink-0"
                     onClick={() => linkUrl
                       ? editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run()
                       : editor.chain().focus().extendMarkRange('link').unsetLink()
@@ -216,6 +233,7 @@ const EditComponent = forwardRef((props: any, ref) => {
                     type="button"
                     variant="ghost"
                     size="xxs"
+                    className="shrink-0"
                     onClick={() => editor.chain().focus().extendMarkRange('link').unsetLink()
                       .run()}
                   >
@@ -229,7 +247,7 @@ const EditComponent = forwardRef((props: any, ref) => {
               variant="ghost"
               size="icon-xxs"
               onClick={() => editor.chain().focus().toggleBold().run()}
-              className={editor.isActive("bold") ? "bg-muted" : ""}
+              className={cn("shrink-0", editor.isActive("bold") ? "bg-muted" : "")}
             >
               <Bold className="h-4 w-4" />
             </Button>
@@ -238,7 +256,7 @@ const EditComponent = forwardRef((props: any, ref) => {
               variant="ghost"
               size="icon-xxs"
               onClick={() => editor.chain().focus().toggleItalic().run()}
-              className={editor.isActive("italic") ? "bg-muted" : ""}
+              className={cn("shrink-0", editor.isActive("italic") ? "bg-muted" : "")}
             >
               <Italic className="h-4 w-4" />
             </Button>
@@ -247,7 +265,7 @@ const EditComponent = forwardRef((props: any, ref) => {
               variant="ghost"
               size="icon-xxs"
               onClick={() => editor.chain().focus().toggleStrike().run()}
-              className={editor.isActive("strike") ? "bg-muted" : ""}
+              className={cn("shrink-0", editor.isActive("strike") ? "bg-muted" : "")}
             >
               <Strikethrough className="h-4 w-4" />
             </Button>
@@ -256,7 +274,7 @@ const EditComponent = forwardRef((props: any, ref) => {
               variant="ghost"
               size="icon-xxs"
               onClick={() => editor.chain().focus().toggleUnderline().run()}
-              className={editor.isActive("underline") ? "bg-muted" : ""}
+              className={cn("shrink-0", editor.isActive("underline") ? "bg-muted" : "")}
             >
               <UnderlineIcon className="h-4 w-4" />
             </Button>
@@ -265,7 +283,7 @@ const EditComponent = forwardRef((props: any, ref) => {
               variant="ghost"
               size="icon-xxs"
               onClick={() => editor.chain().focus().toggleCode().run()}
-              className={editor.isActive("code") ? "bg-muted" : ""}
+              className={cn("shrink-0", editor.isActive("code") ? "bg-muted" : "")}
             >
               <Code className="h-4 w-4" />
             </Button>
@@ -274,10 +292,39 @@ const EditComponent = forwardRef((props: any, ref) => {
               variant="ghost"
               size="icon-xxs"
               onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
-              className={editor.isActive("code") ? "bg-muted" : ""}
+              className={cn("shrink-0", editor.isActive("code") ? "bg-muted" : "")}
             >
               <RemoveFormatting className="h-4 w-4" />
             </Button>
+            {editor.isActive("table") && 
+              <>
+                <div className="border-l h-4 mx-[2px]"></div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xxs"
+                      className="gap-x-1"
+                    >
+                      <TableIcon className="h-4 w-4" />
+                      <ChevronsUpDown className="w-3 h-3"/>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" portalProps={{container: bubbleMenuRef.current}}>
+                    <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()}>Add a column</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()}>Add a row</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()}>
+                      <span className="text-red-500">Delete column</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()}>
+                      <span className="text-red-500">Delete row</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            }
           </div>
         </BubbleMenu>}
         <EditorContent editor={editor} />

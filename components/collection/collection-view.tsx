@@ -23,7 +23,14 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Ellipsis, Folder, FolderPlus, Plus, Search } from "lucide-react";
+import {
+  CornerLeftUp,
+  Ellipsis,
+  Folder,
+  FolderPlus,
+  Plus,
+  Search
+} from "lucide-react";
 
 export function CollectionView({
   name,
@@ -222,6 +229,11 @@ export function CollectionView({
     router.push(`${pathname}?${params.toString()}`);
   }
 
+  const handleNavigateParent = () => {
+    if (!path || path === schema.path) return;
+    handleNavigate(getParentPath(path));
+  }
+
   const loadingSkeleton = useMemo(() => (
     <table className="w-full">
       <thead>
@@ -366,10 +378,13 @@ export function CollectionView({
     <>
       <div className="flex-1 flex flex-col space-y-6">
         <header className="flex items-center gap-x-2">
-          <div className="flex-1">
-            <PathBreadcrumb path={path || schema.path} rootPath={schema.path} handleNavigate={handleNavigate}/>
+          <div className="sm:flex-1">
+            <PathBreadcrumb path={path || schema.path} rootPath={schema.path} handleNavigate={handleNavigate} className="hidden sm:block"/>
+            <Button onClick={handleNavigateParent} size="icon-sm" variant="outline" className="shrink-0 sm:hidden" disabled={!path || path === schema.path}>
+              <CornerLeftUp className="w-4 h-4"/>
+            </Button>
           </div>
-          <div className="relative">
+          <div className="relative flex-1">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 opacity-50"/>
             <Input className="h-9 pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>

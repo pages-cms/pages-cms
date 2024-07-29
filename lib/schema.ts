@@ -90,6 +90,27 @@ const generateZodSchema = (
           ? z.object(buildSchema(field.fields || []))
           : fieldSchemaFn(field, transform);
 
+      if (field.list && typeof field.list === "object") {
+        // TODO: do we check the type of min and max or do we leave that to the normalize function?
+        if (field.list.min) schema = schema.min(field.list.min);
+        if (field.list.max) schema = schema.max(field.list.max);
+      }
+
+      // if (field.list && typeof field.list === "object") {
+      //   if (field.list.min) {
+      //     schema = schema.refine(
+      //       (arr) => arr.length >= field.list.min,
+      //       { message: `Must have at least ${field.list.min} items` }
+      //     );
+      //   }
+      //   if (field.list.max) {
+      //     schema = schema.refine(
+      //       (arr) => arr.length <= field.list.max,
+      //       { message: `Must have at most ${field.list.max} items` }
+      //     );
+      //   }
+      // }
+
       if (!field.required) {
         schema = schema.optional();
       }

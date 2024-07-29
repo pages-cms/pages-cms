@@ -28,7 +28,10 @@ const write = (value: any, field: Field, config: Record<string, any>) => {
   content = htmlSwapPrefix(content, prefixInput, prefixOutput);
 
   if (field.options?.format !== "html") {
-    const turndownService = new TurndownService({ headingStyle: "atx", codeBlockStyle: "fenced" });
+    const turndownService = new TurndownService({
+      headingStyle: "atx",
+      codeBlockStyle: "fenced"
+    });
     // turndownService.addRule('styled-or-classed', {
     //   filter: (node, options)  => ((node.nodeName === 'IMG' && (node.getAttribute('width') || node.getAttribute('height'))) || node.getAttribute('style') || node.getAttribute('class')),
     //   replacement: (content, node, options) => node.outerHTML
@@ -39,21 +42,4 @@ const write = (value: any, field: Field, config: Record<string, any>) => {
   return content;
 };
 
-const schema = (field: Field) => {
-  let zodSchema = z.coerce.string();
-  
-  if (field.required) zodSchema = zodSchema.min(1, "This field is required");
-  if (field.pattern) {
-    if (typeof field.pattern === "string") {
-      zodSchema = zodSchema.regex(new RegExp(field.pattern), "Invalid format");
-    } else {
-      zodSchema = zodSchema.regex(new RegExp(field.pattern.regex), field.pattern.message || "Invalid pattern format");
-    }
-  }
-  if (field.options?.minlength) zodSchema = zodSchema.min(field.options.minlength as number, `Minimum length is ${field.options.minlength} characters`);
-  if (field.options?.maxlength) zodSchema = zodSchema.max(field.options.maxlength as number, `Maximum length is ${field.options.maxlength} characters`);
-  
-  return zodSchema;
-};
-
-export { EditComponent, ViewComponent, schema, read, write};
+export { EditComponent, ViewComponent, read, write};
