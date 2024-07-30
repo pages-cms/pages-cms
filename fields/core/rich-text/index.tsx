@@ -32,10 +32,10 @@ const write = (value: any, field: Field, config: Record<string, any>) => {
       headingStyle: "atx",
       codeBlockStyle: "fenced"
     });
-    // turndownService.addRule('styled-or-classed', {
-    //   filter: (node, options)  => ((node.nodeName === 'IMG' && (node.getAttribute('width') || node.getAttribute('height'))) || node.getAttribute('style') || node.getAttribute('class')),
-    //   replacement: (content, node, options) => node.outerHTML
-    // });
+    turndownService.addRule("retain-html", {
+      filter: (node: any, options: any)  => ((node.nodeName === 'IMG' && (node.getAttribute('width') || node.getAttribute('height'))) || node.getAttribute('style') || node.getAttribute('class')),
+      replacement: (content: string, node: any, options: any) => node.outerHTML
+    });
     content = turndownService.turndown(content);
   }
 

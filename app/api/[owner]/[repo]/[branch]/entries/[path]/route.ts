@@ -98,7 +98,17 @@ const parseContent = (
       } else {
         entryFields = schema.fields;
       }
-      contentObject = deepMap(contentObject, entryFields, (value, field) => readFns[field.type] ? readFns[field.type](value, field, config) : value);
+
+      contentObject = deepMap(
+        contentObject,
+        entryFields,
+        (value, field) => {
+          if (field.hidden) return;
+          return readFns[field.type]
+            ? readFns[field.type](value, field,  config)
+            : value;
+        }
+      );
       if (schema.list) contentObject = contentObject.listWrapper;
     } catch (error: any) {
       throw new Error(`Error parsing frontmatter: ${error.message}`);

@@ -10,6 +10,7 @@ import Table from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
+import TextAlign from "@tiptap/extension-text-align";
 import Underline from "@tiptap/extension-underline";
 import { useConfig } from "@/contexts/config-context";
 import { useRepo } from "@/contexts/repo-context";
@@ -35,6 +36,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   Bold,
   ChevronsUpDown,
   Code,
@@ -93,6 +98,7 @@ const EditComponent = forwardRef((props: any, ref) => {
       TableRow,
       TableHeader,
       TableCell,
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline
     ],
     content: "<p></p>",
@@ -179,11 +185,18 @@ const EditComponent = forwardRef((props: any, ref) => {
     }
   }, [config, editor, isPrivate]);
 
+  const getAlignIcon = (editor: any) => {
+    if (editor.isActive({ textAlign: 'center' })) return <AlignCenter className="h-4 w-4" />;
+    if (editor.isActive({ textAlign: 'right' })) return <AlignRight className="h-4 w-4" />;
+    if (editor.isActive({ textAlign: 'justify' })) return <AlignJustify className="h-4 w-4" />;
+    return <AlignLeft className="h-4 w-4" />;
+  };
+  
   return (
     <>
       <Skeleton className={cn("rounded-md h-[8.5rem]", isContentReady ? "hidden" : "")} />
       <div className={!isContentReady ? "hidden" : ""}>
-        {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 100, animation: "scale", maxWidth: "400px" }}>
+        {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 100, animation: "scale", maxWidth: "450px" }}>
           <div className="p-1 rounded-md bg-popover border flex gap-x-[1px] items-center focus-visible:outline-none shadow-md transition-all duration-75" ref={bubbleMenuRef}>
             <div className="relative">
               <select className="appearance-none bg-transparent h-7 pl-2 pr-6 rounded-md hover:bg-muted text-sm outline-none focus:ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2" onChange={handleSelectBlockType} value={getBlockType()}>
@@ -242,6 +255,39 @@ const EditComponent = forwardRef((props: any, ref) => {
                 </div>
               </PopoverContent>
             </Popover>
+            {(editor.isActive("paragraph") || editor.isActive("heading")) && 
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xxs"
+                    className="gap-x-1"
+                  >
+                    {getAlignIcon(editor)}
+                    <ChevronsUpDown className="w-3 h-3"/>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent portalProps={{container: bubbleMenuRef.current}}>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("left").run()} className="gap-x-1.5">
+                    <AlignLeft className="h-4 w-4" />
+                    Align left
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("right").run()} className="gap-x-1.5">
+                    <AlignRight className="h-4 w-4" />
+                    Align right
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("center").run()} className="gap-x-1.5">
+                    <AlignCenter className="h-4 w-4" />
+                    Center
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("justify").run()} className="gap-x-1.5">
+                    <AlignJustify className="h-4 w-4" />
+                    Justify
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
             <Button
               type="button"
               variant="ghost"
@@ -311,7 +357,7 @@ const EditComponent = forwardRef((props: any, ref) => {
                       <ChevronsUpDown className="w-3 h-3"/>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" portalProps={{container: bubbleMenuRef.current}}>
+                  <DropdownMenuContent portalProps={{container: bubbleMenuRef.current}}>
                     <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()}>Add a column</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()}>Add a row</DropdownMenuItem>
                     <DropdownMenuSeparator />

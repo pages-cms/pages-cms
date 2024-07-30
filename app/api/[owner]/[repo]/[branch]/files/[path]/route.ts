@@ -3,7 +3,7 @@ import { Octokit } from "octokit";
 import { writeFns } from "@/fields/registry";
 import { configVersion, parseConfig, normalizeConfig } from "@/lib/config";
 import { stringify } from "@/lib/serialization";
-import { deepMap, generateZodSchema, getSchemaByName, sanitizeObject } from "@/lib/schema";
+import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeObject } from "@/lib/schema";
 import { getConfig, updateConfig } from "@/lib/utils/config";
 import { getFileExtension, getFileName, normalizePath, serializedTypes } from "@/lib/utils/file";
 import { getUser } from "@/lib/utils/user";
@@ -38,8 +38,13 @@ export async function POST(
           if (getFileExtension(normalizedPath) !== schema.extension) throw new Error(`Invalid extension "${getFileExtension(normalizedPath)}" for ${data.type} "${data.name}".`);
 
           if (serializedTypes.includes(schema.format) && schema.fields) {
+            let contentWithHiddenFields = data.content;
+            // Hidden fields are stripped in the client, we add them back
+            contentWithHiddenFields = deepMap(contentWithHiddenFields, schema.fields, (value, field) => field.hidden ? getDefaultValue(field) : value);
+            // TODO: fetch the entry and merge values
+            
             const zodSchema = generateZodSchema(schema.fields);
-            const zodValidation = zodSchema.safeParse(data.content);
+            const zodValidation = zodSchema.safeParse(contentWithHiddenFields);
             
             if (zodValidation.success === false ) {
               const errorMessages = zodValidation.error.errors.map((error: any) => {
@@ -50,7 +55,6 @@ export async function POST(
               throw new Error(`Content validation failed: ${errorMessages.join(", ")}`);
             }
 
-            // TODO: should I feed it zodValidation.data instead of data.content?
             const contentObject = deepMap(zodValidation.data, schema.fields, (value, field) => writeFns[field.type] ? writeFns[field.type](value, field, config || {}) : value);
             
             const sanitizedContentObject = sanitizeObject(contentObject);

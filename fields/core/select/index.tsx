@@ -13,7 +13,7 @@ const schema = (field: Field) => {
     });
     zodSchema = z.enum(normalizedValues as [string, ...string[]]);
   } else {
-    zodSchema = z.coerce.string();
+    zodSchema = z.string();
   }
 
   if (!field.required) zodSchema = zodSchema.optional();

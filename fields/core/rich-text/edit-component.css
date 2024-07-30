@@ -80,8 +80,7 @@
 
 .tiptap p > img + .ProseMirror-separator,
 .tiptap img.ProseMirror-separator,
-.tiptap p > img + .ProseMirror-separator + .ProseMirror-trailingBreak,
-.tiptap pre code .ProseMirror-trailingBreak {
+.tiptap p > img + .ProseMirror-separator + .ProseMirror-trailingBreak {
   @apply !hidden;
 }
 
@@ -94,6 +93,10 @@
 .tiptap embed,
 .tiptap object {
   @apply inline-block;
+}
+
+.tiptap img.ProseMirror-selectednode {
+  @apply ring-2 ring-ring ring-offset-2;
 }
 
 .tippy-box {

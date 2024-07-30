@@ -248,7 +248,7 @@ const EntryForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const zodSchema = useMemo(() => {
-    return generateZodSchema(fields);
+    return generateZodSchema(fields, true);
   }, [fields]);
 
   const defaultValues = useMemo(() => {
@@ -264,6 +264,8 @@ const EntryForm = ({
   // TODO: investigate why this run on every input focus
   const renderFields = (fields: Field[], parentName?: string) => {
     return fields.map((field) => {
+      if (field.hidden) return null;
+      
       const fieldName = parentName ? `${parentName}.${field.name}` : field.name;
 
       if (field.type === "object" && field.list && !supportsList[field.type]) {

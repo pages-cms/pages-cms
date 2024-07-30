@@ -46,7 +46,7 @@ const CommandsList = forwardRef(({ items, command }, ref) => {
             key={index}
             size="xs"
             variant="ghost"
-            className={cn("justify-start gap-x-2", index === selectedIndex ? "bg-muted" : "")}
+            className={cn("justify-start gap-x-1.5", index === selectedIndex ? "bg-muted" : "")}
             onClick={() => selectItem(index)}
           >
             <span>{item.icon}</span>
@@ -54,7 +54,7 @@ const CommandsList = forwardRef(({ items, command }, ref) => {
           </Button>
         ))
       ) : (
-        <div className="flex items-center text-sm text-muted-foreground gap-x-2 h-8 px-2">
+        <div className="flex items-center text-sm text-muted-foreground gap-x-1.5 h-8 px-2">
           <Ban className="h-4 w-4"/>
           No result
         </div>

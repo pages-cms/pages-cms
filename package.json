@@ -44,6 +44,7 @@
     "@tiptap/extension-table-cell": "^2.5.7",
     "@tiptap/extension-table-header": "^2.5.7",
     "@tiptap/extension-table-row": "^2.5.7",
+    "@tiptap/extension-text-align": "^2.5.7",
     "@tiptap/extension-underline": "^2.4.0",
     "@tiptap/pm": "^2.4.0",
     "@tiptap/react": "^2.4.0",

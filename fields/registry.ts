@@ -1,3 +1,4 @@
+// TODO: split into separate files to improve bundling/tree-shaking?
 import { Field } from "@/types/field";
 
 let schemas: Record<string, any> = {};

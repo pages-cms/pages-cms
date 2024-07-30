@@ -9,9 +9,9 @@ import {
   Image,
   List,
   ListOrdered,
+  Pilcrow,
   Quote,
-  Table,
-  Text
+  Table
 } from "lucide-react";
 
 
@@ -21,7 +21,7 @@ export default function suggestion(openMediaDialog) {
     items: ({ query }) => {
       return [
         {
-          icon: <Text className="h-4 w-4"/>,
+          icon: <Pilcrow className="h-4 w-4"/>,
           title: "Text",
           command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setParagraph().run(),
         },
@@ -74,7 +74,6 @@ export default function suggestion(openMediaDialog) {
           title: "Code",
           command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
         },
-        
       ].filter(item => item.title.toLowerCase().startsWith(query.toLowerCase())).slice(0, 10)
     },
 

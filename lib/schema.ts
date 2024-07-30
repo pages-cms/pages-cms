@@ -76,40 +76,27 @@ const getDefaultValue = (field: Record<string, any>) => {
 // Generate a Zod schema for validation
 const generateZodSchema = (
   fields: Field[],
-  transform?: "write" | "read"
+  ignoreHidden: boolean = false
 ): z.ZodTypeAny => {
   const buildSchema = (fields: Field[]): Record<string, z.ZodTypeAny> => {
     return fields.reduce((acc: Record<string, z.ZodTypeAny>, field) => {
+      if (ignoreHidden && field.hidden) return acc;
+
       let fieldSchemaFn = schemas?.[field.type] || schemas["text"];
       
       let schema = field.list
         ? z.array(field.type === "object"
           ? z.object(buildSchema(field.fields || []))
-          : fieldSchemaFn(field, transform))
+          : fieldSchemaFn(field))
         : field.type === "object"
           ? z.object(buildSchema(field.fields || []))
-          : fieldSchemaFn(field, transform);
+          : fieldSchemaFn(field);
 
       if (field.list && typeof field.list === "object") {
-        // TODO: do we check the type of min and max or do we leave that to the normalize function?
+        // TODO: do we check the type of min and max or do we leave that to the normalize function? Probably normalize as we'll need to also support field options schema.
         if (field.list.min) schema = schema.min(field.list.min);
         if (field.list.max) schema = schema.max(field.list.max);
       }
-
-      // if (field.list && typeof field.list === "object") {
-      //   if (field.list.min) {
-      //     schema = schema.refine(
-      //       (arr) => arr.length >= field.list.min,
-      //       { message: `Must have at least ${field.list.min} items` }
-      //     );
-      //   }
-      //   if (field.list.max) {
-      //     schema = schema.refine(
-      //       (arr) => arr.length <= field.list.max,
-      //       { message: `Must have at most ${field.list.max} items` }
-      //     );
-      //   }
-      // }
 
       if (!field.required) {
         schema = schema.optional();
