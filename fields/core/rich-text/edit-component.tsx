@@ -43,8 +43,16 @@ import {
   Bold,
   ChevronsUpDown,
   Code,
+  Heading1,
+  Heading2,
+  Heading3,
+  Image as ImageIcon,
   Italic,
   Link2,
+  List,
+  ListOrdered,
+  Pilcrow,
+  Quote,
   RemoveFormatting,
   Strikethrough,
   Table as TableIcon,
@@ -185,10 +193,21 @@ const EditComponent = forwardRef((props: any, ref) => {
     }
   }, [config, editor, isPrivate]);
 
+  const getBlockIcon = (editor: any) => {
+    if (editor.isActive("heading", { level: 1 })) return <Heading1 className="h-4 w-4" />;
+    if (editor.isActive("heading", { level: 2 })) return <Heading2 className="h-4 w-4" />;
+    if (editor.isActive("heading", { level: 3 })) return <Heading3 className="h-4 w-4" />;
+    if (editor.isActive("bulletList")) return <List className="h-4 w-4" />;
+    if (editor.isActive("orderedList")) return <ListOrdered className="h-4 w-4" />;
+    if (editor.isActive("codeBlock")) return <Code className="h-4 w-4" />;
+    if (editor.isActive("blockquote")) return <Quote className="h-4 w-4" />;
+    return <Pilcrow className="h-4 w-4" />;
+  };
+
   const getAlignIcon = (editor: any) => {
-    if (editor.isActive({ textAlign: 'center' })) return <AlignCenter className="h-4 w-4" />;
-    if (editor.isActive({ textAlign: 'right' })) return <AlignRight className="h-4 w-4" />;
-    if (editor.isActive({ textAlign: 'justify' })) return <AlignJustify className="h-4 w-4" />;
+    if (editor.isActive({ textAlign: "center" })) return <AlignCenter className="h-4 w-4" />;
+    if (editor.isActive({ textAlign: "right" })) return <AlignRight className="h-4 w-4" />;
+    if (editor.isActive({ textAlign: "justify" })) return <AlignJustify className="h-4 w-4" />;
     return <AlignLeft className="h-4 w-4" />;
   };
   
@@ -196,21 +215,55 @@ const EditComponent = forwardRef((props: any, ref) => {
     <>
       <Skeleton className={cn("rounded-md h-[8.5rem]", isContentReady ? "hidden" : "")} />
       <div className={!isContentReady ? "hidden" : ""}>
-        {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 100, animation: "scale", maxWidth: "450px" }}>
-          <div className="p-1 rounded-md bg-popover border flex gap-x-[1px] items-center focus-visible:outline-none shadow-md transition-all duration-75" ref={bubbleMenuRef}>
-            <div className="relative">
-              <select className="appearance-none bg-transparent h-7 pl-2 pr-6 rounded-md hover:bg-muted text-sm outline-none focus:ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2" onChange={handleSelectBlockType} value={getBlockType()}>
-                <option value="p">Text</option>
-                <option value="h1">Heading 1</option>
-                <option value="h2">Heading 2</option>
-                <option value="h3">Heading 3</option>
-                <option value="ul">Bulleted list</option>
-                <option value="ol">Numbered list</option>
-                <option value="code">Code</option>
-                <option value="blockquote">Quote</option>
-              </select>
-              <ChevronsUpDown className="absolute w-3 h-3 right-1.5	top-[50%] translate-y-[-50%]" />
-            </div>
+        {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 25, animation: "scale", maxWidth: "370px" }}>
+          <div className="p-1 rounded-md bg-popover border flex gap-x-[1px] items-center focus-visible:outline-none shadow-md" ref={bubbleMenuRef}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xxs"
+                  className="gap-x-1"
+                >
+                  {getBlockIcon(editor)}
+                  <ChevronsUpDown className="w-3 h-3"/>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent portalProps={{container: bubbleMenuRef.current}}>
+                <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()} className="gap-x-1.5">
+                  <Pilcrow className="h-4 w-4" />
+                  Text
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().setNode("heading", { level: 1 }).run()} className="gap-x-1.5">
+                  <Heading1 className="h-4 w-4" />
+                  Heading 1
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().setNode("heading", { level: 2 }).run()} className="gap-x-1.5">
+                  <Heading2 className="h-4 w-4" />
+                  Heading 2
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().setNode("heading", { level: 3 }).run()} className="gap-x-1.5">
+                  <Heading3 className="h-4 w-4" />
+                  Heading 3
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleBulletList().run()} className="gap-x-1.5">
+                  <List className="h-4 w-4" />
+                  Bulleted list
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleOrderedList().run()} className="gap-x-1.5">
+                  <ListOrdered className="h-4 w-4" />
+                  Numbered list
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().toggleBlockquote().run()} className="gap-x-1.5">
+                  <Quote className="h-4 w-4" />
+                  Quote
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => editor.chain().focus().toggleCodeBlock().run()} className="gap-x-1.5">
+                  <Code className="h-4 w-4" />
+                  Code
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Popover>
               <PopoverTrigger asChild>
                 <Button

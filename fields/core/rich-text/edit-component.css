@@ -96,7 +96,7 @@
 }
 
 .tiptap img.ProseMirror-selectednode {
-  @apply ring-2 ring-ring ring-offset-2;
+  @apply ring-2 ring-ring ring-offset-2 ring-offset-background ;
 }
 
 .tippy-box {
