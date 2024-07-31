@@ -229,7 +229,7 @@ const EditComponent = forwardRef((props: any, ref) => {
                   <ChevronsUpDown className="w-3 h-3"/>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent portalProps={{container: bubbleMenuRef.current}}>
+              <DropdownMenuContent align="start" portalProps={{container: bubbleMenuRef.current}}>
                 <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()} className="gap-x-1.5">
                   <Pilcrow className="h-4 w-4" />
                   Text
@@ -396,33 +396,30 @@ const EditComponent = forwardRef((props: any, ref) => {
               <RemoveFormatting className="h-4 w-4" />
             </Button>
             {editor.isActive("table") && 
-              <>
-                <div className="border-l h-4 mx-[2px]"></div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="xxs"
-                      className="gap-x-1"
-                    >
-                      <TableIcon className="h-4 w-4" />
-                      <ChevronsUpDown className="w-3 h-3"/>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent portalProps={{container: bubbleMenuRef.current}}>
-                    <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()}>Add a column</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()}>Add a row</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()}>
-                      <span className="text-red-500">Delete column</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()}>
-                      <span className="text-red-500">Delete row</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xxs"
+                    className="gap-x-1"
+                  >
+                    <TableIcon className="h-4 w-4" />
+                    <ChevronsUpDown className="w-3 h-3"/>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" portalProps={{container: bubbleMenuRef.current}}>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()}>Add a column</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()}>Add a row</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()}>
+                    <span className="text-red-500">Delete column</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()}>
+                    <span className="text-red-500">Delete row</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             }
           </div>
         </BubbleMenu>}

@@ -41,6 +41,7 @@ export function FileOptions({
   sha,
   type,
   name,
+  portalProps,
   onDelete,
   onRename,
   children
@@ -49,6 +50,7 @@ export function FileOptions({
   sha: string;
   type: "content" | "media" | "settings";
   name?: string;
+  portalProps?: any;
   onDelete?: (path: string) => void;
   onRename?: (path: string, newPath: string) => void;
   children: React.ReactNode;
@@ -150,7 +152,7 @@ export function FileOptions({
           <DropdownMenuTrigger asChild>
             {children}
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" portalProps={portalProps}>
             <DropdownMenuItem asChild>
               <a href={`https://github.com/${config.owner}/${config.repo}/blob/${config.branch}/${path}`} target="_blank">
                 <span className="mr-4">See on GitHub</span>

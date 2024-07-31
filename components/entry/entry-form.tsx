@@ -324,7 +324,7 @@ const EntryForm = ({
           <div className="hidden lg:block w-64">
             <div className="flex flex-col gap-y-4 sticky top-6">
               <div className="flex gap-x-2">
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <Button size="lg" type="submit" className="w-full" disabled={isSubmitting}>
                   Save
                   {isSubmitting && (<Loader className="ml-2 h-4 w-4 animate-spin" />)}
                 </Button>

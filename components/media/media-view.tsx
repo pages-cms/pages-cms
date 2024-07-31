@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useConfig } from "@/contexts/config-context";
 import {
@@ -48,6 +48,8 @@ const MediaView = ({
   const pathname = usePathname();
   const router = useRouter();
   
+  const fileDetailsRef = useRef<HTMLDivElement | null>(null);
+
   const [selected, setSelected] = useState(initialSelected || []);
   const [path, setPath] = useState(() => {
     if (!initialPath) return config.object.media.input;
@@ -237,6 +239,8 @@ const MediaView = ({
     }
   }
 
+  // TODO: fix select when using file options dropdown AND add check icon as selected/focused states are indistinguishable
+
   return (
     <div className="flex-1 flex flex-col space-y-4">
       <header className="flex items-center gap-x-2">
@@ -296,12 +300,12 @@ const MediaView = ({
                                     <File className="stroke-[0.5] h-24 w-24"/>
                                   </div>
                               }
-                              <div className="flex gap-x-2 items-center p-2">
+                              <div className="flex gap-x-2 items-center p-2" ref={fileDetailsRef}>
                                 <div className="overflow-hidden mr-auto h-9">
                                   <div className="text-sm font-medium truncate">{item.name}</div>
                                   <div className="text-xs text-muted-foreground truncate">{getFileSize(item.size)}</div>
                                 </div>
-                                <FileOptions path={item.path} sha={item.sha} type="media" onDelete={handleDelete} onRename={handleRename}>
+                                <FileOptions path={item.path} sha={item.sha} type="media" onDelete={handleDelete} onRename={handleRename} portalProps={{container: fileDetailsRef.current}}>
                                   <Button variant="ghost" size="icon" className="shrink-0">
                                     <EllipsisVertical className="h-4 w-4" />
                                   </Button>
