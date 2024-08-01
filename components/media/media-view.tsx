@@ -300,16 +300,18 @@ const MediaView = ({
                                     <File className="stroke-[0.5] h-24 w-24"/>
                                   </div>
                               }
-                              <div className="flex gap-x-2 items-center p-2" ref={fileDetailsRef}>
+                              <div className="flex gap-x-2 items-center p-2">
                                 <div className="overflow-hidden mr-auto h-9">
                                   <div className="text-sm font-medium truncate">{item.name}</div>
                                   <div className="text-xs text-muted-foreground truncate">{getFileSize(item.size)}</div>
                                 </div>
-                                <FileOptions path={item.path} sha={item.sha} type="media" onDelete={handleDelete} onRename={handleRename} portalProps={{container: fileDetailsRef.current}}>
-                                  <Button variant="ghost" size="icon" className="shrink-0">
-                                    <EllipsisVertical className="h-4 w-4" />
-                                  </Button>
-                                </FileOptions>
+                                <div ref={fileDetailsRef}>
+                                  <FileOptions path={item.path} sha={item.sha} type="media" onDelete={handleDelete} onRename={handleRename} portalProps={{container: fileDetailsRef.current}}>
+                                    <Button variant="ghost" size="icon" className="shrink-0">
+                                      <EllipsisVertical className="h-4 w-4" />
+                                    </Button>
+                                  </FileOptions>
+                                </div>
                               </div>
                             </div>
                           </label>
