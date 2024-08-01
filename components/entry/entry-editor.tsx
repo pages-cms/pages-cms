@@ -248,7 +248,7 @@ export function EntryEditor({
         </div>
       </div>
       <div className="hidden lg:block w-64">
-        <div className="flex flex-col gap-y-4 sticky top-6">
+        <div className="flex flex-col gap-y-4 sticky top-0">
           <div className="flex gap-x-2">
             <Button type="submit" className="w-full" disabled>Save</Button>
             {path &&
