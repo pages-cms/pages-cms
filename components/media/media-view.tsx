@@ -242,7 +242,7 @@ const MediaView = ({
   // TODO: fix select when using file options dropdown AND add check icon as selected/focused states are indistinguishable
 
   return (
-    <div className="flex-1 flex flex-col space-y-4">
+    <div className="flex-1 flex flex-col space-y-4" ref={fileDetailsRef}>
       <header className="flex items-center gap-x-2">
         <div className="sm:flex-1">
           <PathBreadcrumb path={path} rootPath={config.object.media.input} handleNavigate={handleNavigate} className="hidden sm:block"/>
@@ -305,13 +305,11 @@ const MediaView = ({
                                   <div className="text-sm font-medium truncate">{item.name}</div>
                                   <div className="text-xs text-muted-foreground truncate">{getFileSize(item.size)}</div>
                                 </div>
-                                <div ref={fileDetailsRef}>
-                                  <FileOptions path={item.path} sha={item.sha} type="media" onDelete={handleDelete} onRename={handleRename} portalProps={{container: fileDetailsRef.current}}>
-                                    <Button variant="ghost" size="icon" className="shrink-0">
-                                      <EllipsisVertical className="h-4 w-4" />
-                                    </Button>
-                                  </FileOptions>
-                                </div>
+                                <FileOptions path={item.path} sha={item.sha} type="media" onDelete={handleDelete} onRename={handleRename} portalProps={{container: fileDetailsRef.current}}>
+                                  <Button variant="ghost" size="icon" className="shrink-0">
+                                    <EllipsisVertical className="h-4 w-4" />
+                                  </Button>
+                                </FileOptions>
                               </div>
                             </div>
                           </label>
