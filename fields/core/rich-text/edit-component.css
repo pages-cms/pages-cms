@@ -27,7 +27,7 @@
 }
 
 .ProseMirror code {
-  @apply bg-muted py-1 px-1.5 rounded-md;
+  @apply bg-muted py-1 px-1.5 rounded-md text-[90%];
 }
 
 .ProseMirror pre {
@@ -80,7 +80,8 @@
 
 .tiptap p > img + .ProseMirror-separator,
 .tiptap img.ProseMirror-separator,
-.tiptap p > img + .ProseMirror-separator + .ProseMirror-trailingBreak {
+.tiptap p > img + .ProseMirror-separator + .ProseMirror-trailingBreak,
+.tiptap code > .ProseMirror-trailingBreak {
   @apply !hidden;
 }
 
