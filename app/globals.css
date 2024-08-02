@@ -58,26 +58,10 @@
   }
 }
 
-/* Scrollbar */
-
-@layer components {
-  .scrollbar::-webkit-scrollbar {
-    background: transparent;
-    width: 8px;
-  }
-
-  .scrollbar::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 8px;
-    transition: background-color 0.3s; /* Add transition for the background color */
-  }
-
-  .scrollbar::-webkit-scrollbar-track {
-    background-color: transparent;
-  }
+.scrollbar {
+  scrollbar-width: thin;
+  /* scrollbar-color: rgba(var(--bg-background), 0.1) transparent; */
 }
-
-/* Sonner */
 
 .sonner-spinner {
   @apply !left-0 !top-0 !animate-spin;
