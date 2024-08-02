@@ -60,9 +60,7 @@ const EmptyCreate = ({
   } else {
     throw new Error(`Invalid type "${type}".`);
   }
-
   
-
   const handleCreate = async () => {
     try {
       const createPromise = new Promise(async (resolve, reject) => {

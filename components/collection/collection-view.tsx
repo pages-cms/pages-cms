@@ -137,15 +137,20 @@ export function CollectionView({
     const sortId = viewFields == null
       ? "name"
       : (
-          schema.view?.sort
+          schema.view?.default?.sort
           || (viewFields.find((item: any) => item.name === "date") && "date")
           || primaryField
         );
+    // console.log(schema.view)
 
     return {
       sorting: [{
         id: sortId,
-        desc: sortId === "date" ? true : false,
+        desc: sortId === "date"
+          ? true
+          : schema.view?.default?.order === "desc"
+            ? true
+            : false,
       }],
       pagination: {
         pageSize: 25,

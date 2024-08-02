@@ -27,7 +27,7 @@ export function RepoBranches() {
 
   const isValidBranchName = useCallback((name: string) => {
     if (!name || name.length > 255) return false;
-    const validBranchRegex = /^(?!\/|.*(?:\/\.|\/\/|\.\.|@{|\\))[^\040\177 ~^:?*\[]+(?<!\.|\/)$/;;
+    const validBranchRegex = /^(?!\/|.*(?:\/\.|\/\/|\.\.|@{|\\))[^\x20\x7f ~^:?*\[\]]+(?<!\.|\/)$/;
     return validBranchRegex.test(name);
   }, []);
 

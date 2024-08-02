@@ -33,3 +33,36 @@ export async function GET(request: NextRequest) {
     });
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const data: any = await request.json();
+    const { template_owner, template_repo, owner, name } = data;
+
+    if (!template_owner || !template_repo || !owner || !name) throw new Error("Missing required fields");
+    
+    const { token } = await getUser();
+    const octokit = new Octokit({ auth: token });
+
+    const response = await octokit.rest.repos.createUsingTemplate({
+      template_owner,
+      template_repo,
+      owner,
+      name,
+    });
+
+    return Response.json({
+      status: "success",
+      data: {
+        repo: response.data.full_name,
+        template_repo: response.data.template_repository?.full_name,
+      },
+    });
+  } catch (error: any) {
+    console.error(error);
+    return Response.json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};

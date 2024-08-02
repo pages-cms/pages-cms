@@ -49,8 +49,8 @@ const MediaUpload = ({
             const uploadPromise = new Promise(async (resolve, reject) => {
               try {
                 const response = await fetch(`/api/${config.owner}/${config.repo}/${config.branch}/files/${encodeURIComponent(fullPath)}`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
                     type: "media",
                     content,

@@ -147,8 +147,8 @@ export function EntryEditor({
         const savePath = path || `${schema.path}/${generateFilename(schema.filename, schema, contentObject)}`;
 
         const response = await fetch(`/api/${config.owner}/${config.repo}/${config.branch}/files/${encodeURIComponent(savePath)}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             type: path === ".pages.yml" ? "settings" : "content",
             name,
