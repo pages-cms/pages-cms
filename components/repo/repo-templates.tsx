@@ -118,11 +118,11 @@ export function RepoTemplates({ accounts } : { accounts: any }) {
               setName(template.suggested);
             }}
           >
-            <div dangerouslySetInnerHTML={{ __html: template.icon }} className="w-10 h-10" />
-            <div className="text-left flex flex-col gap-y-1">
-              <div className="truncate font-medium leading-none">{template.name}</div>
+            <div dangerouslySetInnerHTML={{ __html: template.icon }} className="w-10 h-10 shrink-0" />
+            <div className="text-left flex flex-col gap-y-1 truncate">
+              <div className="leading-none truncate font-medium">{template.name}</div>
               <div className="flex gap-x-1 items-center text-xs text-muted-foreground truncate">
-                {template.repository}
+                <span className="truncate">{template.repository}</span>
                 <a href={`https://github.com/${template.repository}`} target="_blank" className="opacity-50 hover:opacity-100">
                   <ArrowUpRight className="h-3 w-3"/>
                 </a>
