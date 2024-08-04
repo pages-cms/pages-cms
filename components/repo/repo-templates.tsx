@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import templates from "@/lib/utils/templates";
-import { Loader } from "@/components/loader";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { ChevronsUpDown, ArrowUpRight } from "lucide-react";
+import { Check, ChevronsUpDown, ArrowUpRight } from "lucide-react";
   
 export function RepoTemplates({ accounts } : { accounts: any }) {
   const router = useRouter();
@@ -120,7 +119,7 @@ export function RepoTemplates({ accounts } : { accounts: any }) {
           >
             <div dangerouslySetInnerHTML={{ __html: template.icon }} className="w-10 h-10 shrink-0" />
             <div className="text-left flex flex-col gap-y-1 truncate">
-              <div className="leading-none truncate font-medium">{template.name}</div>
+              <div className="leading-tight truncate font-medium">{template.name}</div>
               <div className="flex gap-x-1 items-center text-xs text-muted-foreground truncate">
                 <span className="truncate">{template.repository}</span>
                 <a href={`https://github.com/${template.repository}`} target="_blank" className="opacity-50 hover:opacity-100">
@@ -128,6 +127,13 @@ export function RepoTemplates({ accounts } : { accounts: any }) {
                 </a>
               </div>
             </div>
+            {selectedRepo === template.repository &&
+              <div className="ml-auto flex items-start h-full">
+                <div className="text-accent bg-primary p-0.5 rounded-full">
+                  <Check className="stroke-[3] w-3 h-3"/>
+                </div>
+              </div>
+            }
           </button>
         ))
         }

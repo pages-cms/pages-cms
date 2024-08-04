@@ -120,7 +120,7 @@ export function CollectionView({
           >
             Edit
           </Link>
-          <FileOptions path={row.original.path} sha={row.original.sha} type="content" name={name} onDelete={handleDelete} onRename={handleRename}>
+          <FileOptions path={row.original.path} sha={row.original.sha} type="collection" name={name} onDelete={handleDelete} onRename={handleRename}>
             <Button variant="outline" size="icon-sm" className="h-8">
               <Ellipsis className="h-4 w-4" />
             </Button>

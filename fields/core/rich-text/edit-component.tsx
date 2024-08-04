@@ -73,6 +73,10 @@ const EditComponent = forwardRef((props: any, ref) => {
   
   const [linkUrl, setLinkUrl] = useState("");
 
+  const openMediaDialog = config?.object.media?.input
+    ? () => { if (mediaDialogRef.current) mediaDialogRef.current.open() }
+    : undefined;
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -100,7 +104,7 @@ const EditComponent = forwardRef((props: any, ref) => {
         placeholder: "Type '/' for commands…",
       }),
       Commands.configure({
-        suggestion: suggestion(() => { if (mediaDialogRef.current) mediaDialogRef.current.open() })
+        suggestion: suggestion(openMediaDialog)
       }),
       Table,
       TableRow,

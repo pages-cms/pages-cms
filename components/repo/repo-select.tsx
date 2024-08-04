@@ -90,7 +90,7 @@ export function RepoSelect({ accounts } : { accounts: any }) {
               href={`/${result.owner.login}/${result.name}/${encodeURIComponent(result.default_branch)}`}
             >
               <div className="inline-flex items-center gap-x-2">
-                <span className="truncate font-medium leading-none">{result.name}</span>
+                <span className="truncate font-medium leading-tight">{result.name}</span>
                 {result.private && <LockKeyhole className="h-3 w-3 opacity-50"/>}
               </div>
               <div className="text-xs text-muted-foreground truncate">

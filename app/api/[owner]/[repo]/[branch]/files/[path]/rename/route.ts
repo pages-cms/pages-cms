@@ -30,6 +30,8 @@ export async function POST(
 
         const schema = getSchemaByName(config.object, data.name);
         if (!schema) throw new Error(`Schema not found for ${data.name}.`);
+
+        if (schema.type === "file") throw new Error(`Renaming content of type "file" isn't allowed.`);
         
         if (!normalizedPath.startsWith(schema.path)) throw new Error(`Invalid path "${params.path}" for ${data.type} "${data.name}".`);
         if (!normalizedNewPath.startsWith(schema.path)) throw new Error(`Invalid path "${data.newPath}" for ${data.type} "${data.name}".`);

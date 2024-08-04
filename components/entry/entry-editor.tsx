@@ -345,7 +345,7 @@ export function EntryEditor({
           <FileOptions
             path={path}
             sha={sha}
-            type={path === ".pages.yml" ? "settings" : "content"}
+            type={path === ".pages.yml" ? "settings" : schema.type}
             name={name}
             onDelete={handleDelete}
             onRename={handleRename}

@@ -19,7 +19,7 @@ import {
 export default function suggestion(openMediaDialog) {
   return {
     items: ({ query }) => {
-      return [
+      let suggestionsArray = [
         {
           icon: <Pilcrow className="h-4 w-4"/>,
           title: "Text",
@@ -51,15 +51,6 @@ export default function suggestion(openMediaDialog) {
           command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
         },
         {
-          icon: <Image className="h-4 w-4"/>,
-          title: "Image",
-          command: ({ editor, range }) => {
-            // TODO: fix mouse click event (close dialog immediately)
-            editor.chain().focus().deleteRange(range).run();
-            openMediaDialog();
-          },
-        },
-        {
           icon: <Table className="h-4 w-4"/>,
           title: "Table",
           command: ({ editor, range }) => editor.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
@@ -74,7 +65,19 @@ export default function suggestion(openMediaDialog) {
           title: "Code",
           command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
         },
-      ].filter(item => item.title.toLowerCase().startsWith(query.toLowerCase())).slice(0, 10)
+      ];
+      
+      if (openMediaDialog) suggestionsArray.splice(6, 0, {
+        icon: <Image className="h-4 w-4"/>,
+        title: "Image",
+        command: ({ editor, range }) => {
+          // TODO: fix mouse click event (close dialog immediately)
+          editor.chain().focus().deleteRange(range).run();
+          openMediaDialog();
+        },
+      });
+
+      return suggestionsArray.filter(item => item.title.toLowerCase().startsWith(query.toLowerCase())).slice(0, 10);
     },
 
     render: () => {

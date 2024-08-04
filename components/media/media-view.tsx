@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   CornerLeftUp,
   Ban,
+  Check,
   EllipsisVertical,  
   File,
   Folder,
@@ -42,7 +43,7 @@ const MediaView = ({
   onSelect?: (newSelected: string[]) => void
 }) => {
   const { config } = useConfig();
-  if (!config) throw new Error(`Configuration not found.`); 
+  if (!config) throw new Error(`Configuration not found.`);
 
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -50,8 +51,10 @@ const MediaView = ({
   
   const filesGridRef = useRef<HTMLDivElement | null>(null);
 
+  const [error, setError] = useState<string | null | undefined>(null);
   const [selected, setSelected] = useState(initialSelected || []);
   const [path, setPath] = useState(() => {
+    if (!config.object.media) return "";
     if (!initialPath) return config.object.media.input;
     const normalizedInitialPath = normalizePath(initialPath);
     if (normalizedInitialPath.startsWith(config.object.media.input)) return normalizedInitialPath;
@@ -60,8 +63,7 @@ const MediaView = ({
   });
   const [data, setData] = useState<Record<string, any>[] | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null | undefined>(null);
-
+  
   useEffect(() => {
     async function fetchMedia() {
       if (config) {
@@ -214,6 +216,18 @@ const MediaView = ({
     </ul>
   ), []);
 
+  if (!config.object.media?.input) {
+    return (
+      <Message
+        title="No media defined"
+        description="You have no media defined in your settings."
+        className="absolute inset-0"
+        cta="Go to settings"
+        href={`/${config.owner}/${config.repo}/${config.branch}/settings`}
+      />
+    );
+  }
+
   if (error) {
     // TODO: should we use a custom error class with code?
     if (path === config.object.media.input && error === "Not found") {
@@ -238,8 +252,6 @@ const MediaView = ({
       );
     }
   }
-
-  // TODO: fix select when using file options dropdown AND add check icon as selected/focused states are indistinguishable
 
   return (
     <div className="flex-1 flex flex-col space-y-4">
@@ -293,7 +305,7 @@ const MediaView = ({
                                 onChange={() => handleSelect(item.path)}
                               />
                             }
-                            <div className={onSelect && "hover:bg-muted peer-focus:ring-offset-background peer-focus:ring-2 peer-focus:ring-ring peer-focus:ring-offset-2 rounded-md peer-checked:ring-offset-background peer-checked:ring-offset-2 peer-checked:ring-2 peer-checked:ring-ring"}>
+                            <div className={onSelect && "hover:bg-muted peer-focus:ring-offset-background peer-focus:ring-2 peer-focus:ring-ring peer-focus:ring-offset-2 rounded-md peer-checked:ring-offset-background peer-checked:ring-offset-2 peer-checked:ring-2 peer-checked:ring-ring relative"}>
                               {extensionCategories.image.includes(item.extension)
                                 ? <Thumbnail path={item.path} className="rounded-t-md aspect-video"/>
                                 : <div className="flex items-center justify-center rounded-md aspect-video">
@@ -311,6 +323,11 @@ const MediaView = ({
                                   </Button>
                                 </FileOptions>
                               </div>
+                              {onSelect && selected.includes(item.path) &&
+                                <div className="text-accent bg-primary p-0.5 rounded-full absolute top-2 left-2">
+                                  <Check className="stroke-[3] w-3 h-3"/>
+                                </div>
+                              }
                             </div>
                           </label>
                       }

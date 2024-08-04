@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Ban } from "lucide-react";
 import { cn } from "@/lib/utils";

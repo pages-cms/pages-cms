@@ -48,7 +48,7 @@ export function FileOptions({
 }: {
   path: string;
   sha: string;
-  type: "content" | "media" | "settings";
+  type: "collection" | "file" | "media" | "settings";
   name?: string;
   portalProps?: any;
   onDelete?: (path: string) => void;
@@ -115,7 +115,7 @@ export function FileOptions({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              type,
+              type: (type === "collection" || type === "file") ? "content" : type,
               name,
               newPath: fullNewPath,
             }),
@@ -162,9 +162,11 @@ export function FileOptions({
             {type !== "settings"
               ? <>
                   <DropdownMenuSeparator />
-                  <DialogTrigger asChild>
-                    <DropdownMenuItem>Rename</DropdownMenuItem>
-                  </DialogTrigger>
+                  {type !== "file" &&
+                    <DialogTrigger asChild>
+                      <DropdownMenuItem>Rename</DropdownMenuItem>
+                    </DialogTrigger>
+                  }
                   <AlertDialogTrigger asChild>
                     <DropdownMenuItem>
                       <span className="text-red-500">Delete</span>

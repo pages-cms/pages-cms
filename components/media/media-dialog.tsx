@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
+import { useConfig } from "@/contexts/config-context";
 import { MediaView } from "@/components/media/media-view";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +33,9 @@ const MediaDialog = forwardRef(({
   initialPath?: string,
   children?: React.ReactNode
 }, ref) => {
+  const { config } = useConfig();
+  if (!config) throw new Error(`Configuration not found.`);
+
   const selectedImagesRef = useRef(selected || []);
   const [open, setOpen] = useState(false);
 
@@ -60,12 +64,15 @@ const MediaDialog = forwardRef(({
           <DialogTitle>Select images</DialogTitle>
           <DialogDescription></DialogDescription>
         </DialogHeader>
+        
         <MediaView initialSelected={selected || []} onSelect={handleSelect} maxSelected={maxSelected} initialPath={initialPath || ""}/>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="submit" onClick={handleSubmit}>Save changes</Button>
-          </DialogClose>
-        </DialogFooter>
+        {config.object.media?.input &&
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="submit" onClick={handleSubmit}>Save changes</Button>
+            </DialogClose>
+          </DialogFooter>
+        }
       </DialogContent>
     </Dialog>
   );
