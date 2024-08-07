@@ -67,6 +67,9 @@ To get a local version up and running:
 
 Cloudflare has very generous free tiers and can also host your actual website. It's a great alternative to GitHub Pages, Netlify or Vercel.
 
+## Community
+- [Nuxt Pages CMS](https://github.com/StevenJPx2/nuxt-pagescms) - A [Nuxt](https://nuxt.com) integration for Pages CMS. It allows for a type-safe, zero config setup for composables that call your content.
+
 ## License
 
 Everything in this repo is released under the [MIT License](LICENSE).
