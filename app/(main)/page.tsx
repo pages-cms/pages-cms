@@ -28,7 +28,7 @@ export default async function Page() {
 
 	let accounts = [
 		{
-			login: user.githubUsername || '',
+			login: user.githubUsername || "",
 			type: "user"
 		},
 		...response.data.map((org: any) => ({

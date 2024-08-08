@@ -30,6 +30,7 @@ const deepMap = (
                 : apply(item, field)
             )
           : [];
+        console.log(result[field.name])
       } else if (field.type === "object") {
         result[field.name] = value !== undefined
           ? traverse(value, field.fields || [])
@@ -49,15 +50,18 @@ const deepMap = (
 const initializeState = (
   fields: Field[] | undefined,
   contentObject: Record<string, any> = {},
-  addDefaultEntryToLists: boolean = true
+  addDefaultEntryToLists: boolean = true,
+  nestArrays: boolean = false
 ): Record<string, any> => {
   if (!fields) return {};
 
   return deepMap(contentObject, fields, (value, field) => {
+    let appliedValue = value;
     if (value === undefined) {
-      return field.list && addDefaultEntryToLists ? [getDefaultValue(field)] : getDefaultValue(field);
+      appliedValue = field.list && addDefaultEntryToLists ? [getDefaultValue(field)] : getDefaultValue(field);
     }
-    return value;
+    if (field.list) appliedValue = { value: appliedValue}
+    return appliedValue;
   });
 };
 
@@ -72,10 +76,49 @@ const getDefaultValue = (field: Record<string, any>) => {
   }
 };
 
+// Used to work around RHF's inability to handle flat field arrays
+// See https://react-hook-form.com/docs/usefieldarray#rules
+const nestFieldArrays = (values: any, fields: Field[]): any => {
+  const result: any = {};
+
+  fields.forEach(field => {
+    if (field.list) {
+      result[field.name] = values[field.name]?.map((item: any) => field.type === 'object' ? { value: nestFieldArrays(item, field.fields || []) } : { value: item }) || [];
+    } else if (field.type === "object" && field.fields) {
+      result[field.name] = nestFieldArrays(values[field.name] || {}, field.fields);
+    } else {
+      result[field.name] = values[field.name];
+    }
+  });
+
+  return result;
+};
+
+// Used to work around RHF's inability to handle flat field arrays
+// See https://react-hook-form.com/docs/usefieldarray#rules
+const unnestFieldArrays = (values: any, fields: Field[]): any => {
+  const result: any = {};
+
+  fields.forEach(field => {
+    if (field.list) {
+      result[field.name] = values[field.name]?.map((item: { value: any }) => field.type === 'object' ? unnestFieldArrays(item.value, field.fields || []) : item.value) || [];
+    } else if (field.type === "object" && field.fields) {
+      result[field.name] = unnestFieldArrays(values[field.name] || {}, field.fields);
+    } else {
+      result[field.name] = values[field.name];
+    }
+  });
+
+  return result;
+};
+
 // Generate a Zod schema for validation
+// nestArrays allows us to nest arrays to work around RHF's inability to handle flat field arrays
+// See https://react-hook-form.com/docs/usefieldarray#rules
 const generateZodSchema = (
   fields: Field[],
-  ignoreHidden: boolean = false
+  ignoreHidden: boolean = false,
+  nestArrays: boolean = false
 ): z.ZodTypeAny => {
   const buildSchema = (fields: Field[]): Record<string, z.ZodTypeAny> => {
     return fields.reduce((acc: Record<string, z.ZodTypeAny>, field) => {
@@ -85,8 +128,13 @@ const generateZodSchema = (
       
       let schema = field.list
         ? z.array(field.type === "object"
-          ? z.object(buildSchema(field.fields || []))
-          : fieldSchemaFn(field))
+          ? nestArrays
+            ? { value: z.object(buildSchema(field.fields || [])) }
+            : z.object(buildSchema(field.fields || []))
+          : nestArrays
+            ? { value: fieldSchemaFn(field) }
+            : fieldSchemaFn(field)
+          )
         : field.type === "object"
           ? z.object(buildSchema(field.fields || []))
           : fieldSchemaFn(field);
@@ -256,6 +304,8 @@ export {
   getPrimaryField,
   generateFilename,
   getDateFromFilename,
+  nestFieldArrays,
+  unnestFieldArrays,
   generateZodSchema,
   renderDescription
 };

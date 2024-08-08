@@ -9,8 +9,8 @@ import {
 // Users table
 const users = pgTable("user", {
   id: text("id").primaryKey(),
-  email: text("email"),
-  name: text("name"),
+  githubEmail: text("github_email"),
+  githubName: text("github_name"),
   githubId: integer("github_id").unique(),
   githubUsername: text("github_username"),
 });

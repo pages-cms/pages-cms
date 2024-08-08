@@ -19,8 +19,8 @@ export const lucia = new Lucia(adapter, {
 		return {
 			githubId: attributes.githubId,
 			githubUsername: attributes.githubUsername,
-			email: attributes.email,
-			name: attributes.name
+			githubEmail: attributes.githubEmail,
+			githubName: attributes.githubName
 		};
 	}
 });
@@ -36,8 +36,8 @@ export interface DatabaseUserAttributes {
 	id: string;
 	githubId: number;
 	githubUsername: string;
-	email: string;
-	name: string;
+	githubEmail: string;
+	githubName: string;
 }
 
 export const github = new GitHub(process.env.GITHUB_CLIENT_ID!, process.env.GITHUB_CLIENT_SECRET!);

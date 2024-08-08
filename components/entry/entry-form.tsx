@@ -14,6 +14,8 @@ import { editComponents, supportsList } from "@/fields/registry";
 import {
   initializeState,
   getDefaultValue,
+  nestFieldArrays,
+  unnestFieldArrays,
   generateZodSchema,
   sanitizeObject
 } from "@/lib/schema";
@@ -187,7 +189,7 @@ const ListField = ({
                   size="sm"
                   onClick={() => {
                     append(field.type === "object"
-                      ? initializeState(field.fields, {})
+                      ? initializeState(field.fields, {}, true, true)
                       : getDefaultValue(field)
                     );
                   }}
@@ -259,12 +261,11 @@ const EntryForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const zodSchema = useMemo(() => {
-    return generateZodSchema(fields, true);
+    return generateZodSchema(fields, true, true);
   }, [fields]);
 
   const defaultValues = useMemo(() => {
-    // TODO: review if we can squash this with deepMap
-    return initializeState(fields, sanitizeObject(contentObject));
+    return initializeState(fields, sanitizeObject(contentObject), true, true);
   }, [fields, contentObject]);
 
   const form = useForm({
@@ -311,6 +312,8 @@ const EntryForm = ({
   };
 
   return (
+    <>
+    <pre>{JSON.stringify(form.watch(), null, 2)}</pre>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)}>
         <div className="max-w-screen-xl mx-auto flex w-full gap-x-8">
@@ -355,6 +358,7 @@ const EntryForm = ({
         </div>
       </form>
     </Form>
+    </>
   );
 };
 

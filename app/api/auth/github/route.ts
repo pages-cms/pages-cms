@@ -50,8 +50,8 @@ export async function GET(request: Request): Promise<Response> {
 			id: userId,
 			githubId: Number(githubUser.id),
 			githubUsername: githubUser.login,
-			email: githubUser.email,
-			name: githubUser.name
+			githubEmail: githubUser.email,
+			githubName: githubUser.name
 		});
     await db.insert(tokens).values({ ciphertext, iv, userId });
 

@@ -38,15 +38,15 @@ export function User({
         <Button variant="ghost" size="icon-sm" className={cn(className, "rounded-full")}>
           <Avatar className="h-8 w-8">
             <AvatarImage src={`https://avatars.githubusercontent.com/u/${user.githubId}`} alt={user.githubUsername} />
-            <AvatarFallback>{getInitialsFromName(user.name)}</AvatarFallback>
+            <AvatarFallback>{getInitialsFromName(user.githubName)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent forceMount align="start" className="max-w-[12.5rem]">
         <DropdownMenuLabel>
-          <p className="text-sm font-medium truncate">{user.name ? user.name : user.githubUsername}</p>
+          <p className="text-sm font-medium truncate">{user.githubName ? user.githubName : user.githubUsername}</p>
           <p className="text-xs font-normal text-muted-foreground truncate">
-            {user.email}
+            {user.githubEmail}
           </p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
