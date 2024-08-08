@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/loader";
 import { ChevronsUpDown, LockKeyhole } from "lucide-react";
+import { cn } from "@/lib/utils";
   
 export function RepoSelect({ accounts } : { accounts: any }) {
   const [selectedAccount, setSelectedAccount] = useState(accounts[0]);
@@ -81,7 +82,7 @@ export function RepoSelect({ accounts } : { accounts: any }) {
           }
         </div>
       </div>
-      <main className="flex flex-col overflow-auto h-[20rem] gap-y-1 relative scrollbar">
+      <main className={cn("flex flex-col overflow-auto h-[20rem] gap-y-1 relative scrollbar", searching ? "animate-pulse" : "")}>
         {searchResults.length > 0
           ? searchResults.map((result: any) => (
             <Link

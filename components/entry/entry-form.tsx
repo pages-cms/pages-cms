@@ -105,6 +105,7 @@ const ListField = ({
     control,
     name: fieldName,
   });
+  // TODO: why is this not used?
   const { errors } = useFormState({ control });
 
   const { setValue, watch } = useFormContext();
@@ -178,10 +179,20 @@ const ListField = ({
                 ))}
               </SortableContext>
             </DndContext>
-            
             {typeof field.list === "object" && field.list?.max && arrayFields.length >= field.list.max
               ? null
-              : <Button type="button" variant="outline" size="sm" onClick={() => append(field.type === "object" ? initializeState(field.fields, {}) : getDefaultValue(field))} className="gap-x-2">
+              : <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    append(field.type === "object"
+                      ? initializeState(field.fields, {})
+                      : getDefaultValue(field)
+                    );
+                  }}
+                  className="gap-x-2"
+                >
                   <Plus className="h-4 w-4" />
                   Add an entry
                 </Button>

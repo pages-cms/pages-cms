@@ -61,7 +61,6 @@ const initializeState = (
   });
 };
 
-
 // Get the defeault value for a field
 const getDefaultValue = (field: Record<string, any>) => {
   if (field.default !== undefined) {
