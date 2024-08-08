@@ -312,8 +312,6 @@ const EntryForm = ({
   };
 
   return (
-    <>
-    <pre>{JSON.stringify(form.watch(), null, 2)}</pre>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)}>
         <div className="max-w-screen-xl mx-auto flex w-full gap-x-8">
@@ -358,7 +356,6 @@ const EntryForm = ({
         </div>
       </form>
     </Form>
-    </>
   );
 };
 
