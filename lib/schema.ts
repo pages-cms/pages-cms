@@ -30,7 +30,6 @@ const deepMap = (
                 : apply(item, field)
             )
           : [];
-        console.log(result[field.name])
       } else if (field.type === "object") {
         result[field.name] = value !== undefined
           ? traverse(value, field.fields || [])

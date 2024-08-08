@@ -141,7 +141,6 @@ export function CollectionView({
           || (viewFields.find((item: any) => item.name === "date") && "date")
           || primaryField
         );
-    // console.log(schema.view)
 
     return {
       sorting: [{
