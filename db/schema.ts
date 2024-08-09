@@ -1,45 +1,45 @@
 import {
-  pgTable,
-  serial,
+  sqliteTable,
   text,
   integer,
-  timestamp,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
 
-// Users table
-const users = pgTable("user", {
+const users = sqliteTable("user", {
   id: text("id").primaryKey(),
   githubEmail: text("github_email"),
   githubName: text("github_name"),
   githubId: integer("github_id").unique(),
   githubUsername: text("github_username"),
+  email: text("email").unique()
 });
 
-// Sessions table
-const sessions = pgTable("session", {
+const sessions = sqliteTable("session", {
   id: text("id").primaryKey(),
-  expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
-  userId: text("user_id").notNull().references(() => users.id),
+  expiresAt: integer("expires_at").notNull(),
+  userId: text("user_id").notNull().references(() => users.id)
 });
 
-// Tokens table
-const tokens = pgTable("token", {
-  id: serial("id").primaryKey(),
+const tokens = sqliteTable("token", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   ciphertext: text("ciphertext").notNull(),
   iv: text("iv").notNull(),
-  userId: text("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id)
 });
 
-// Configurations table
-const configs = pgTable("config", {
-  id: serial("id").primaryKey(),
+const loginTokens = sqliteTable("login_token", {
+  tokenHash: text("token_hash").notNull().unique(),
+  email: text("iv").notNull(),
+  expiresAt: integer("expires_at").notNull()
+});
+
+const configs = sqliteTable("config", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   owner: text("owner").notNull(),
   repo: text("repo").notNull(),
   branch: text("branch").notNull(),
   sha: text("sha").notNull(),
   version: text("version").notNull(),
-  file: text("file").notNull(),
   object: text("object").notNull()
 });
 
-export { users, sessions, tokens, configs };
+export { users, sessions, tokens, loginTokens, configs };

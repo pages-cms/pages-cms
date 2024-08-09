@@ -35,7 +35,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# cloudflare
-.dev.vars
-wrangler.toml
-.wrangler
+# local sqlite db
+local.db

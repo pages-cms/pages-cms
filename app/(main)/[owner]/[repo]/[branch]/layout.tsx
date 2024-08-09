@@ -22,7 +22,6 @@ export default async function Layout({
     branch: decodedBranch,
     sha: "",
     version: "",
-    file: "",
     object: {}
   }
   
@@ -59,7 +58,6 @@ export default async function Layout({
       
       config.sha = response.data.sha;
       config.version = configVersion ?? "0.0";
-      config.file = configFile;
       config.object = configObject;
 
       if (!savedConfig) {

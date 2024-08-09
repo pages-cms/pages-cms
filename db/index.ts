@@ -1,6 +1,11 @@
 import "@/db/envConfig";
-import { drizzle } from "drizzle-orm/vercel-postgres";
-import { sql } from "@vercel/postgres";
+import { drizzle } from "drizzle-orm/libsql";
 import * as schema from './schema';
+import { createClient } from "@libsql/client";
 
-export const db = drizzle(sql, { schema });
+const client = createClient({
+  url: process.env.SQLITE_URL!,
+  authToken: process.env.SQLITE_AUTH_TOKEN
+});
+
+export const db = drizzle(client, { schema });

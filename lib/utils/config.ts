@@ -24,14 +24,12 @@ const getConfig = async (
   
   if (!config) return null;
 
-  // TODO: review types for schema and see if we need to make fields optional (also fix validation once there)
   return {
     owner: config.owner,
     repo: config.repo,
     branch: config.branch,
     sha: config.sha,
     version: config.version,
-    file: config.file,
     object: JSON.parse(config.object)
   }
 }
@@ -45,7 +43,6 @@ const saveConfig = async (
     branch: config.branch,
     sha: config.sha,
     version: config.version,
-    file: config.file,
     object: JSON.stringify(config.object)
   });
   
@@ -60,7 +57,6 @@ const updateConfig = async (
   await db.update(configs).set({
     sha: config.sha,
     version: config.version,
-    file: config.file,
     object: JSON.stringify(config.object)
   }).where(
     and(

@@ -4,6 +4,5 @@ export type Config = {
   branch: string;
   sha: string;
   version: string;
-  file: string;
   object: Record<string, any>;
 };
