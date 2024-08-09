@@ -8,12 +8,6 @@ CREATE TABLE `config` (
 	`object` text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `login_token` (
-	`token_hash` text NOT NULL,
-	`iv` text NOT NULL,
-	`expires_at` integer NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `session` (
 	`id` text PRIMARY KEY NOT NULL,
 	`expires_at` integer NOT NULL,
@@ -38,6 +32,5 @@ CREATE TABLE `user` (
 	`email` text
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `login_token_token_hash_unique` ON `login_token` (`token_hash`);--> statement-breakpoint
 CREATE UNIQUE INDEX `user_github_id_unique` ON `user` (`github_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);

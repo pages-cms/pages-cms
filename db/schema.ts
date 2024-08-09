@@ -26,12 +26,6 @@ const tokens = sqliteTable("token", {
   userId: text("user_id").notNull().references(() => users.id)
 });
 
-const loginTokens = sqliteTable("login_token", {
-  tokenHash: text("token_hash").notNull().unique(),
-  email: text("iv").notNull(),
-  expiresAt: integer("expires_at").notNull()
-});
-
 const configs = sqliteTable("config", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   owner: text("owner").notNull(),
@@ -42,4 +36,4 @@ const configs = sqliteTable("config", {
   object: text("object").notNull()
 });
 
-export { users, sessions, tokens, loginTokens, configs };
+export { users, sessions, tokens, configs };
