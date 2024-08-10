@@ -114,7 +114,6 @@ export async function POST(
         branch: params.branch,
         sha: response?.data.content?.sha as string,
         version: configVersion ?? "0.0",
-        file: data.content,
         object: configObject
       };
       
