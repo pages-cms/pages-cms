@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "db:generate": "npx drizzle-kit generate",
     "db:migrate": "npx drizzle-kit migrate"
   },
   "dependencies": {
@@ -87,16 +88,12 @@
     "@types/react-dom": "^18.3.0",
     "@types/turndown": "^5.0.4",
     "drizzle-kit": "^0.22.7",
-    "enquirer": "^2.4.1",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.3",
-    "eslint-plugin-next-on-pages": "^1.11.2",
-    "inquirer": "^9.2.20",
     "npm": "^10.8.1",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.5",
-    "uninstall": "^0.0.0",
-    "wrangler": "^3.53.1"
+    "uninstall": "^0.0.0"
   }
 }
