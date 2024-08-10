@@ -189,7 +189,7 @@ const ListField = ({
                   size="sm"
                   onClick={() => {
                     append(field.type === "object"
-                      ? initializeState(field.fields, {}, true, true)
+                      ? initializeState(field.fields, {}, true)
                       : getDefaultValue(field)
                     );
                   }}
@@ -261,11 +261,11 @@ const EntryForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const zodSchema = useMemo(() => {
-    return generateZodSchema(fields, true, true);
+    return generateZodSchema(fields, true);
   }, [fields]);
 
   const defaultValues = useMemo(() => {
-    return initializeState(fields, sanitizeObject(contentObject), true, true);
+    return initializeState(fields, sanitizeObject(contentObject), true);
   }, [fields, contentObject]);
 
   const form = useForm({

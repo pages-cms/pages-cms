@@ -78,6 +78,7 @@ const EditComponent = forwardRef((props: any, ref) => {
     : undefined;
 
   const editor = useEditor({
+    immediatelyRender: true,
     extensions: [
       StarterKit.configure({
         dropcursor: { width: 2}
