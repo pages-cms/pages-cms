@@ -165,7 +165,7 @@ export function CollectionView({
     });
 
     return tableColumns;
-  }, [schema, config.owner, config.repo, config.branch, name, viewFields, primaryField, handleDelete, handleRename]);
+  }, [config.owner, config.repo, config.branch, name, viewFields, primaryField, handleDelete, handleRename]);
 
   const initialState = useMemo(() => {
     const sortId = viewFields == null
