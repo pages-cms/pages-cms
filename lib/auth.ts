@@ -6,6 +6,7 @@ import { users, sessions } from "@/db/schema";
 import { GitHub } from "arctic";
 import { cookies } from "next/headers";
 
+// TODO: why do I have to cast sessions and users???
 const adapter = new DrizzleSQLiteAdapter(db, sessions as unknown as SQLiteSessionTable, users as unknown as SQLiteUserTable);
 
 export const lucia = new Lucia(adapter, {

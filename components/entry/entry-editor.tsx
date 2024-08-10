@@ -85,7 +85,7 @@ export function EntryEditor({
         : {};
   }, [schema, entry, path]);
 
-  const navigateBack = useMemo(() => schema && schema.type === "collection" ? `/${config?.owner}/${config?.repo}/${config?.branch}/collection/${schema.name}` : "", [schema]);
+  const navigateBack = useMemo(() => schema && schema.type === "collection" ? `/${config?.owner}/${config?.repo}/${config?.branch}/collection/${schema.name}` : "", [schema, config?.owner, config?.repo, config?.branch]);
 
   useEffect(() => {
     const fetchEntry = async () => {
@@ -117,7 +117,7 @@ export function EntryEditor({
     };
 
     fetchEntry();
-  }, [config.branch, config.owner, config.repo, name, path, refetchTrigger]);
+  }, [config.branch, config.owner, config.repo, name, path, refetchTrigger, initialPath, schema]);
   
   useEffect(() => {
     // TODO: add loading for history ?
@@ -139,7 +139,7 @@ export function EntryEditor({
     };
 
     fetchHistory();
-  }, [config.branch, config.owner, config.repo, path, sha, refetchTrigger]);
+  }, [config.branch, config.owner, config.repo, path, sha, refetchTrigger, name]);
 
   const onSubmit = async (contentObject: any) => {
     const savePromise = new Promise(async (resolve, reject) => {
@@ -301,7 +301,7 @@ export function EntryEditor({
         }
       </div>
     </div>
-  ), []);
+  ), [displayTitle, navigateBack, path]);
 
   
   if (error) {

@@ -5,7 +5,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 const users = sqliteTable("user", {
-  id: text("id").primaryKey(),
+  id: text("id").notNull().primaryKey(),
   githubEmail: text("github_email"),
   githubName: text("github_name"),
   githubId: integer("github_id").unique(),
@@ -14,7 +14,7 @@ const users = sqliteTable("user", {
 });
 
 const sessions = sqliteTable("session", {
-  id: text("id").primaryKey(),
+  id: text("id").notNull().primaryKey(),
   expiresAt: integer("expires_at").notNull(),
   userId: text("user_id").notNull().references(() => users.id)
 });

@@ -73,6 +73,40 @@ export function CollectionView({
 
   const primaryField = useMemo(() => getPrimaryField(schema) ?? "name", [schema]);
 
+  const handleDelete = useCallback((path: string) => {
+    setData((prevData) => prevData?.filter((item: any) => item.path !== path));
+  }, []);
+
+  // TODO: use proper type (File ?) Same for handleDelete
+  const handleRename = useCallback((path: string, newPath: string) => {
+    setData((prevData: any) => {
+      if (!prevData) return;
+      if (getParentPath(normalizePath(path)) === getParentPath(normalizePath(newPath))) {
+        const newData = prevData?.map((item: any) => {
+          return item.path === path ? { ...item, path: newPath, name: getFileName(newPath) } : item;
+        });
+        return sortFiles(newData);
+      }
+      return prevData?.filter((item: any) => item.path !== path);
+    });
+  }, []);
+
+  const handleFolderCreate = useCallback((entry: any) => {
+    const parentPath = getParentPath(entry.path);
+    const parent = {
+      type: "dir",
+      name: getFileName(parentPath),
+      path: parentPath,
+      size: 0,
+      url: null,
+    }
+    
+    setData((prevData) => {
+      if (!prevData) return [parent];
+      return sortFiles([...prevData, parent]);
+    });
+  }, []);
+
   const columns = useMemo(() => {
     let tableColumns;
     
@@ -131,7 +165,7 @@ export function CollectionView({
     });
 
     return tableColumns;
-  }, [schema, config.owner, config.repo, config.branch, name, viewFields, primaryField]);
+  }, [schema, config.owner, config.repo, config.branch, name, viewFields, primaryField, handleDelete, handleRename]);
 
   const initialState = useMemo(() => {
     const sortId = viewFields == null
@@ -155,45 +189,11 @@ export function CollectionView({
         pageSize: 25,
       },
     };
-  }, [schema]);
+  }, [schema, primaryField, viewFields]);
 
   const filesData = useMemo(() => data.filter((item: any) => item.type === "file"), [data]);
   
   const foldersData = useMemo(() => data.filter((item: any) => item.type === "dir"), [data]);
-
-  const handleDelete = useCallback((path: string) => {
-    setData((prevData) => prevData?.filter((item: any) => item.path !== path));
-  }, []);
-
-  // TODO: use proper type (File ?) Same for handleDelete
-  const handleRename = useCallback((path: string, newPath: string) => {
-    setData((prevData: any) => {
-      if (!prevData) return;
-      if (getParentPath(normalizePath(path)) === getParentPath(normalizePath(newPath))) {
-        const newData = prevData?.map((item: any) => {
-          return item.path === path ? { ...item, path: newPath, name: getFileName(newPath) } : item;
-        });
-        return sortFiles(newData);
-      }
-      return prevData?.filter((item: any) => item.path !== path);
-    });
-  }, []);
-
-  const handleFolderCreate = useCallback((entry: any) => {
-    const parentPath = getParentPath(entry.path);
-    const parent = {
-      type: "dir",
-      name: getFileName(parentPath),
-      path: parentPath,
-      size: 0,
-      url: null,
-    }
-    
-    setData((prevData) => {
-      if (!prevData) return [parent];
-      return sortFiles([...prevData, parent]);
-    });
-  }, []);
 
   useEffect(() => {
     async function fetchCollection() {
@@ -223,7 +223,7 @@ export function CollectionView({
     }
 
     fetchCollection();
-  }, [config, name, path]);
+  }, [config, name, path, schema.path]);
 
   const handleNavigate = (newPath: string) => {
     // setPath(newPath);
