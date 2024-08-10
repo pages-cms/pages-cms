@@ -1,12 +1,12 @@
 import { cache } from "react";
 import { Session, User, Lucia } from "lucia";
-import { DrizzleSQLiteAdapter } from "@lucia-auth/adapter-drizzle";
+import { DrizzleSQLiteAdapter, SQLiteSessionTable, SQLiteUserTable } from "@lucia-auth/adapter-drizzle";
 import { db } from "@/db";
 import { users, sessions } from "@/db/schema";
 import { GitHub } from "arctic";
 import { cookies } from "next/headers";
 
-const adapter = new DrizzleSQLiteAdapter(db, sessions, users);
+const adapter = new DrizzleSQLiteAdapter(db, sessions as unknown as SQLiteSessionTable, users as unknown as SQLiteUserTable);
 
 export const lucia = new Lucia(adapter, {
 	sessionCookie: {
