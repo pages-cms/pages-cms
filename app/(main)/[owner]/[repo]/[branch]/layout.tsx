@@ -1,7 +1,9 @@
-import { getUser } from "@/lib/utils/user";
-import { getConfig, saveConfig, updateConfig } from "@/lib/utils/config";
+import { redirect } from "next/navigation";
 import { Octokit } from "octokit";
+import { getAuth } from "@/lib/auth";
+import { getToken } from "@/lib/token";
 import { configVersion, parseConfig, normalizeConfig } from "@/lib/config";
+import { getConfig, saveConfig, updateConfig } from "@/lib/utils/config";
 import { ConfigProvider } from "@/contexts/config-context";
 import { RepoLayout } from "@/components/repo/repo-layout";
 import { EmptyCreate } from "@/components/empty-create";
@@ -14,8 +16,14 @@ export default async function Layout({
   children: React.ReactNode;
   params: { owner: string; repo: string; branch: string; };
 }) {
+  const { session, user } = await getAuth();
+  if (!session) return redirect("/sign-in");
+
+  const token = await getToken(user.id);
+  if (!token) throw new Error("Token not found");
+
   const decodedBranch = decodeURIComponent(branch);
-  const { token } = await getUser();
+
   let config = {
     owner: owner.toLowerCase(),
     repo: repo.toLowerCase(),

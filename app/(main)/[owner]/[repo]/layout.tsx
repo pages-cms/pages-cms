@@ -1,5 +1,7 @@
+import { redirect} from "next/navigation";
 import { Octokit } from "octokit";
-import { getUser } from "@/lib/utils/user";
+import { getAuth } from "@/lib/auth";
+import { getToken } from "@/lib/token";
 import { RepoProvider } from "@/contexts/repo-context";
 import { Message } from "@/components/message";
 import { Repo } from "@/types/repo";
@@ -11,8 +13,12 @@ export default async function Layout({
   children: React.ReactNode;
   params: { owner: string; repo: string; };
 }) {
-  const { token } = await getUser();
-  
+  const { session, user } = await getAuth();
+  if (!session) return redirect("/sign-in");
+
+  const token = await getToken(user.id);
+  if (!token) throw new Error("Token not found");
+
   try {
     const octokit = new Octokit({ auth: token });
     const repoResponse = await octokit.rest.repos.get({ owner: owner, repo: repo });

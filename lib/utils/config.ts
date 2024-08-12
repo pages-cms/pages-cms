@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 
 let cachedConfig: Config | undefined;
 
+// TODO: add a fallback behavior to retrieve conf if not in DB
 const getConfig = async (
   owner: string,
   repo: string,

@@ -2,13 +2,20 @@ import { Octokit } from "octokit";
 import { getSchemaByName } from "@/lib/schema";
 import { getConfig } from "@/lib/utils/config";
 import { getFileExtension, normalizePath } from "@/lib/utils/file";
-import { getUser } from "@/lib/utils/user";
+import { getAuth } from "@/lib/auth";
+import { getToken } from "@/lib/token";
 
 export async function POST(
   request: Request,
   { params }: { params: { owner: string, repo: string, branch: string, path: string } }
 ) {
   try {
+    const { user, session } = await getAuth();
+    if (!session) return new Response(null, { status: 401 });
+
+    const token = await getToken(user.id);
+    if (!token) throw new Error("Token not found");
+
     if (params.path === ".pages.yml") throw new Error(`Renaming the settings file isn't allowed.`);
 
     const config = await getConfig(params.owner, params.repo, params.branch);
@@ -56,7 +63,7 @@ export async function POST(
         break;
     }
     
-    const response = await githubRenameFile(params.owner, params.repo, params.branch, normalizedPath, normalizedNewPath);
+    const response = await githubRenameFile(token, params.owner, params.repo, params.branch, normalizedPath, normalizedNewPath);
 
     // TODO: remove success message in backend 
     return Response.json({
@@ -84,13 +91,13 @@ export async function POST(
 // https://medium.com/@obodley/renaming-a-file-using-the-git-api-fed1e6f04188
 // https://www.levibotelho.com/development/commit-a-file-with-the-github-api/
 const githubRenameFile = async (
+  token: string,
   owner: string,
   repo: string,
   branch: string,
   path: string,
   newPath: string,
 ) => {
-  const { token } = await getUser();
   const octokit = new Octokit({ auth: token });
 
   // Step 1: Get the current branch commit SHA

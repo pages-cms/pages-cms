@@ -7,14 +7,19 @@ import { parse } from "@/lib/serialization";
 import { deepMap, getDateFromFilename, getSchemaByName } from "@/lib/schema";
 import { getConfig } from "@/lib/utils/config";
 import { normalizePath } from "@/lib/utils/file";
-import { getUser } from "@/lib/utils/user";
+import { getAuth } from "@/lib/auth";
+import { getToken } from "@/lib/token";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { owner: string, repo: string, branch: string, name: string } }
 ) {
   try {
-    const { token } = await getUser();
+    const { user, session } = await getAuth();
+    if (!session) return new Response(null, { status: 401 });
+
+    const token = await getToken(user.id);
+    if (!token) throw new Error("Token not found");
 
     const config = await getConfig(params.owner, params.repo, params.branch);
     if (!config) throw new Error(`Configuration not found for ${params.owner}/${params.repo}/${params.branch}.`);

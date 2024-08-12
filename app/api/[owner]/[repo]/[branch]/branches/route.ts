@@ -1,15 +1,21 @@
 import { Octokit } from "octokit";
-import { getUser } from "@/lib/utils/user";
+import { getAuth } from "@/lib/auth";
+import { getToken } from "@/lib/token";
 
 export async function POST(
   request: Request,
   { params }: { params: { owner: string, repo: string, branch: string } }
 ) {
   try {
+    const { user, session } = await getAuth();
+    if (!session) return new Response(null, { status: 401 });
+
+    const token = await getToken(user.id);
+    if (!token) throw new Error("Token not found");
+
     const data: any = await request.json();
     if (!data.name) throw new Error(`"name" is required.`);
 
-    const { token } = await getUser();
     const octokit = new Octokit({ auth: token });
 
     // Get the SHA of the branch we"re creating the new branch from

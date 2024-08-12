@@ -1,13 +1,20 @@
 import { Octokit } from "octokit";
 import { getConfig } from "@/lib/utils/config";
-import { getUser } from "@/lib/utils/user";
 import { getFileExtension, normalizePath } from "@/lib/utils/file";
+import { getAuth } from "@/lib/auth";
+import { getToken } from "@/lib/token";
 
 export async function GET(
   request: Request,
   { params }: { params: { owner: string, repo: string, branch: string, path: string } }
 ) {
   try {
+    const { user, session } = await getAuth();
+    if (!session) return new Response(null, { status: 401 });
+
+    const token = await getToken(user.id);
+    if (!token) throw new Error("Token not found");
+
     const config = await getConfig(params.owner, params.repo, params.branch);
     if (!config) throw new Error(`Configuration not found for ${params.owner}/${params.repo}/${params.branch}.`);   
     
@@ -16,9 +23,7 @@ export async function GET(
     const normalizedPath = normalizePath(params.path);
     if (!normalizedPath.startsWith(config.object.media.input)) throw new Error(`Invalid path "${params.path}" for media.`);
 
-    const { token } = await getUser();
-    const octokit = new Octokit({ auth: token });
-    
+    const octokit = new Octokit({ auth: token });    
     const response = await octokit.rest.repos.getContent({
       owner: params.owner,
       repo: params.repo,

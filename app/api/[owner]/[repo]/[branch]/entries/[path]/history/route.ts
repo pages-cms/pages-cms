@@ -3,13 +3,20 @@ import { Octokit } from "octokit";
 import { getSchemaByName } from "@/lib/schema";
 import { getConfig } from "@/lib/utils/config";
 import { getFileExtension, normalizePath } from "@/lib/utils/file";
-import { getUser } from "@/lib/utils/user";
+import { getAuth } from "@/lib/auth";
+import { getToken } from "@/lib/token";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { owner: string, repo: string, branch: string, path: string } }
 ) {
   try {
+    const { user, session } = await getAuth();
+    if (!session) return new Response(null, { status: 401 });
+
+    const token = await getToken(user.id);
+    if (!token) throw new Error("Token not found");
+
     const searchParams = request.nextUrl.searchParams;
     const name = searchParams.get("name") || "";
     
@@ -29,9 +36,7 @@ export async function GET(
       throw new Error("If no content entry name is provided, the path must be \".pages.yml\".");
     }
     
-    const { token } = await getUser();
     const octokit = new Octokit({ auth: token });
-
     const response = await octokit.rest.repos.listCommits({
       owner: params.owner,
       repo: params.repo,

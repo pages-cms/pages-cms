@@ -6,13 +6,20 @@ import { stringify } from "@/lib/serialization";
 import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeObject } from "@/lib/schema";
 import { getConfig, updateConfig } from "@/lib/utils/config";
 import { getFileExtension, getFileName, normalizePath, serializedTypes } from "@/lib/utils/file";
-import { getUser } from "@/lib/utils/user";
+import { getAuth } from "@/lib/auth";
+import { getToken } from "@/lib/token";
 
 export async function POST(
   request: Request,
   { params }: { params: { owner: string, repo: string, branch: string, path: string } }
 ) {
   try {
+    const { user, session } = await getAuth();
+    if (!session) return new Response(null, { status: 401 });
+
+    const token = await getToken(user.id);
+    if (!token) throw new Error("Token not found");
+
     const normalizedPath = normalizePath(params.path);
 
     const config = await getConfig(params.owner, params.repo, params.branch);
@@ -97,10 +104,8 @@ export async function POST(
       default:
         throw new Error(`Invalid type "${data.type}".`);
     }
-
     
-    
-    const response = await githubSaveFile(params.owner, params.repo, params.branch, normalizedPath, contentBase64, data.sha);
+    const response = await githubSaveFile(token, params.owner, params.repo, params.branch, normalizedPath, contentBase64, data.sha);
   
     const savedPath = response?.data.content?.path;
 
@@ -146,6 +151,7 @@ export async function POST(
 };
 
 const githubSaveFile = async (
+  token: string,
   owner: string,
   repo: string,
   branch: string,
@@ -164,7 +170,6 @@ const githubSaveFile = async (
   const maxAttempts = sha ? 1 : 5;
   let uniqueFilenameCounter = 1;
 
-  const { token } = await getUser();
   const octokit = new Octokit({ auth: token });
 
   while (attempts < maxAttempts) {
@@ -202,6 +207,12 @@ export async function DELETE(
   { params }: { params: { owner: string, repo: string, branch: string, path: string } }
 ) {
   try {
+    const { user, session } = await getAuth();
+    if (!session) return new Response(null, { status: 401 });
+
+    const token = await getToken(user.id);
+    if (!token) throw new Error("Token not found");
+
     if (params.path === ".pages.yml") throw new Error(`Deleting the settings file isn't allowed.`);
 
     const searchParams = request.nextUrl.searchParams;
@@ -240,9 +251,7 @@ export async function DELETE(
         break;
     }
     
-    const { token } = await getUser();
     const octokit = new Octokit({ auth: token });
-
     const response = await octokit.rest.repos.deleteFile({
       owner: params.owner,
       repo: params.repo,

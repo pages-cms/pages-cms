@@ -1,5 +1,7 @@
-import { getUser } from "@/lib/utils/user";
+import { redirect } from "next/navigation";
 import { Octokit } from "octokit";
+import { getAuth } from "@/lib/auth";
+import { getToken } from "@/lib/token";
 import { User } from "@/components/user";
 import { ModeToggle } from "@/components/mode-toggle";
 import { RepoSelect } from "@/components/repo/repo-select";
@@ -19,9 +21,11 @@ import {
 } from "@/components/ui/tabs";
 
 export default async function Page() {
-	// TODO: is it the best place to handle that?
-	const { user, token } = await getUser();
-	if (!user) return null;
+	const { session, user } = await getAuth();
+  if (!session) return redirect("/sign-in");
+
+  const token = await getToken(user.id);
+  if (!token) throw new Error("Token not found");
 
 	const octokit = new Octokit({ auth: token });
 	const response = await octokit.rest.orgs.listForAuthenticatedUser();
