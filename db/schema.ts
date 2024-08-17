@@ -4,7 +4,7 @@ import {
   integer,
 } from "drizzle-orm/sqlite-core";
 
-const users = sqliteTable("user", {
+const userTable = sqliteTable("user", {
   id: text("id").notNull().primaryKey(),
   githubEmail: text("github_email"),
   githubName: text("github_name"),
@@ -13,20 +13,20 @@ const users = sqliteTable("user", {
   email: text("email").unique()
 });
 
-const sessions = sqliteTable("session", {
+const sessionTable = sqliteTable("session", {
   id: text("id").notNull().primaryKey(),
   expiresAt: integer("expires_at").notNull(),
-  userId: text("user_id").notNull().references(() => users.id)
+  userId: text("user_id").notNull().references(() => userTable.id)
 });
 
-const tokens = sqliteTable("token", {
+const githubUserTokenTable = sqliteTable("github_user_token", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   ciphertext: text("ciphertext").notNull(),
   iv: text("iv").notNull(),
-  userId: text("user_id").notNull().references(() => users.id)
+  userId: text("user_id").notNull().references(() => userTable.id)
 });
 
-const configs = sqliteTable("config", {
+const configTable = sqliteTable("config", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   owner: text("owner").notNull(),
   repo: text("repo").notNull(),
@@ -36,4 +36,9 @@ const configs = sqliteTable("config", {
   object: text("object").notNull()
 });
 
-export { users, sessions, tokens, configs };
+export {
+  userTable,
+  sessionTable,
+  githubUserTokenTable,
+  configTable
+};

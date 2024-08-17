@@ -4,7 +4,7 @@ import { OAuth2RequestError } from "arctic";
 import { generateIdFromEntropySize } from "lucia";
 import { encrypt } from "@/lib/crypto";
 import { db } from "@/db";
-import { users, tokens } from "@/db/schema";
+import { userTable, githubUserTokenTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(request: Request): Promise<Response> {
@@ -29,10 +29,10 @@ export async function GET(request: Request): Promise<Response> {
     
     const { ciphertext, iv } = await encrypt(token.accessToken);
 
-		const existingUser = await db.query.users.findFirst({ where: eq(users.githubId, Number(githubUser.id)) });
+		const existingUser = await db.query.userTable.findFirst({ where: eq(userTable.githubId, Number(githubUser.id)) });
 
 		if (existingUser) {
-			await db.update(tokens).set({ ciphertext, iv }).where(eq(tokens.userId, existingUser.id));
+			await db.update(githubUserTokenTable).set({ ciphertext, iv }).where(eq(githubUserTokenTable.userId, existingUser.id));
 			const session = await lucia.createSession(existingUser.id as string, {});
 			const sessionCookie = lucia.createSessionCookie(session.id);
 			cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
@@ -46,14 +46,14 @@ export async function GET(request: Request): Promise<Response> {
 
 		const userId = generateIdFromEntropySize(10); // 16 characters long
 
-		await db.insert(users).values({
+		await db.insert(userTable).values({
 			id: userId,
 			githubId: Number(githubUser.id),
 			githubUsername: githubUser.login,
 			githubEmail: githubUser.email,
 			githubName: githubUser.name
 		});
-    await db.insert(tokens).values({ ciphertext, iv, userId });
+    await db.insert(githubUserTokenTable).values({ ciphertext, iv, userId });
 
 		const session = await lucia.createSession(userId, {});
 		const sessionCookie = lucia.createSessionCookie(session.id);

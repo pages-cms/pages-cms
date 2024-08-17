@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { decrypt } from "@/lib/crypto";
 import { db } from "@/db";
-import { tokens } from "@/db/schema";
+import { githubUserTokenTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 const getToken = cache(async (userId: string) => {
@@ -9,7 +9,7 @@ const getToken = cache(async (userId: string) => {
 
   let token;
   
-  const tokenData = await db.query.tokens.findFirst({ where: eq(tokens.userId, userId) });
+  const tokenData = await db.query.githubUserTokenTable.findFirst({ where: eq(githubUserTokenTable.userId, userId) });
   if (!tokenData) throw new Error(`Token not found for user ${userId}.`);
   
   token = await decrypt(tokenData.ciphertext, tokenData.iv);

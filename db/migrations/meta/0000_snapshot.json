@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "8d52d238-34c4-4279-b235-c858c8416f6f",
+  "id": "4928a492-e331-4bd1-a60d-5b7d21a68a9e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "config": {
@@ -106,8 +106,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "token": {
-      "name": "token",
+    "github_user_token": {
+      "name": "github_user_token",
       "columns": {
         "id": {
           "name": "id",
@@ -140,9 +140,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "token_user_id_user_id_fk": {
-          "name": "token_user_id_user_id_fk",
-          "tableFrom": "token",
+        "github_user_token_user_id_user_id_fk": {
+          "name": "github_user_token_user_id_user_id_fk",
+          "tableFrom": "github_user_token",
           "tableTo": "user",
           "columnsFrom": [
             "user_id"
