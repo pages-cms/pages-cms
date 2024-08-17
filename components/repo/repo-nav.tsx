@@ -10,13 +10,13 @@ import { FileStack, FileText, Image as ImageIcon, Settings } from "lucide-react"
 const RepoNavItem = ({
   children,
   href,
-  type,
+  icon,
   active,
   onClick
 }: {
   children: React.ReactNode;
   href: string;
-  type: string;
+  icon: React.ReactNode;
   active: boolean;
   onClick?: () => void;
 }) => (
@@ -28,10 +28,7 @@ const RepoNavItem = ({
     href={href}
     onClick={onClick}
   >
-    {type === "collection" && <FileStack className="h-5 w-5 mr-2" />}
-    {type === "file" && <FileText className="h-5 w-5 mr-2" />}
-    {type === "media" && <ImageIcon className="h-5 w-5 mr-2" />}
-    {type === "settings" && <Settings className="h-5 w-5 mr-2" />}
+    {icon}
     <span className="truncate">{children}</span>
   </Link>
 );
@@ -49,26 +46,29 @@ const RepoNav = ({
     const configObject: any = config.object;
     const contentItems = configObject.content?.map((item: any) => ({
       key: item.name,
-      type: item.type,
+      icon: item.type === "collection"
+        ? <FileStack className="h-5 w-5 mr-2" />
+        : <FileText className="h-5 w-5 mr-2" />
+      ,
       href: `/${config.owner}/${config.repo}/${config.branch}/${item.type}/${encodeURIComponent(item.name)}`,
       label: item.label || item.name,
     })) || [];
 
     const mediaItem = configObject.media?.input && configObject.media?.output
       ? {
-          key: 'media',
-          type: 'media',
+          key: "media",
+          icon: <ImageIcon className="h-5 w-5 mr-2" />,
           href: `/${config.owner}/${config.repo}/${config.branch}/media`,
-          label: 'Media'
+          label: "Media"
         }
       : null;
 
     const settingsItem = configObject.settings !== false
       ? {
-          key: 'settings',
-          type: 'settings',
+          key: "settings",
+          icon: <Settings className="h-5 w-5 mr-2" />,
           href: `/${config.owner}/${config.repo}/${config.branch}/settings`,
-          label: 'Settings'
+          label: "Settings"
         }
       : null;
 
@@ -82,7 +82,7 @@ const RepoNav = ({
       {items.map(item => (
         <RepoNavItem
           key={item.key}
-          type={item.type}
+          icon={item.icon}
           href={item.href}
           active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
           onClick={onClick}
