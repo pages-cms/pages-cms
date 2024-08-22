@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Octokit } from "octokit";
 import { getAuth } from "@/lib/auth";
-import { getToken } from "@/lib/token";
+import { getUserToken } from "@/lib/token";
 import { configVersion, parseConfig, normalizeConfig } from "@/lib/config";
 import { getConfig, saveConfig, updateConfig } from "@/lib/utils/config";
 import { ConfigProvider } from "@/contexts/config-context";
@@ -19,7 +19,7 @@ export default async function Layout({
   const { session, user } = await getAuth();
   if (!session) return redirect("/sign-in");
 
-  const token = await getToken(user.id);
+  const token = await getUserToken();
   if (!token) throw new Error("Token not found");
 
   const decodedBranch = decodeURIComponent(branch);

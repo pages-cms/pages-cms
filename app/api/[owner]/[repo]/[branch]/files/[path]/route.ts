@@ -7,7 +7,7 @@ import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeO
 import { getConfig, updateConfig } from "@/lib/utils/config";
 import { getFileExtension, getFileName, normalizePath, serializedTypes } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
-import { getToken } from "@/lib/token";
+import { getUserToken } from "@/lib/token";
 
 export async function POST(
   request: Request,
@@ -17,7 +17,7 @@ export async function POST(
     const { user, session } = await getAuth();
     if (!session) return new Response(null, { status: 401 });
 
-    const token = await getToken(user.id);
+    const token = await getUserToken();
     if (!token) throw new Error("Token not found");
 
     const normalizedPath = normalizePath(params.path);
@@ -210,7 +210,7 @@ export async function DELETE(
     const { user, session } = await getAuth();
     if (!session) return new Response(null, { status: 401 });
 
-    const token = await getToken(user.id);
+    const token = await getUserToken();
     if (!token) throw new Error("Token not found");
 
     if (params.path === ".pages.yml") throw new Error(`Deleting the settings file isn't allowed.`);

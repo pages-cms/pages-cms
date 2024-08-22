@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Octokit } from "octokit";
 import { getAuth } from "@/lib/auth";
-import { getToken } from "@/lib/token";
+import { getUserToken } from "@/lib/token";
 import { User } from "@/components/user";
 import { ModeToggle } from "@/components/mode-toggle";
 import { RepoSelect } from "@/components/repo/repo-select";
@@ -24,7 +24,7 @@ export default async function Page() {
 	const { session, user } = await getAuth();
   if (!session) return redirect("/sign-in");
 
-  const token = await getToken(user.id);
+  const token = await getUserToken();
   if (!token) throw new Error("Token not found");
 
 	const octokit = new Octokit({ auth: token });

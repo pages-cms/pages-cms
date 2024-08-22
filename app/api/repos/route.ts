@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { Octokit } from "octokit";
 import { getAuth } from "@/lib/auth";
-import { getToken } from "@/lib/token";
+import { getUserToken } from "@/lib/token";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const { user, session } = await getAuth();
     if (!session) return new Response(null, { status: 401 });
 
-    const token = await getToken(user.id);
+    const token = await getUserToken();
     if (!token) throw new Error("Token not found");
 
     const searchParams = request.nextUrl.searchParams;
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const { user, session } = await getAuth();
     if (!session) return new Response(null, { status: 401 });
 
-    const token = await getToken(user.id);
+    const token = await getUserToken();
     if (!token) throw new Error("GitHub token not found");
     
     const data: any = await request.json();
