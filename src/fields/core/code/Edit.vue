@@ -1,5 +1,5 @@
 <template>
-  <CodeMirror
+  <MonacoEditor
     :modelValue="modelValue"
     :language="field.options?.format"
     @update:modelValue="$emit('update:modelValue', $event)"
@@ -14,7 +14,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import CodeMirror from '@/components/file/CodeMirror.vue';
+import MonacoEditor from '@/components/file/MonacoEditor.vue';
 import useFieldValidation from '@/composables/useFieldValidation';
 import Icon from '@/components/utils/Icon.vue';
 

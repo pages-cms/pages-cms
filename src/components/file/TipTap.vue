@@ -169,7 +169,7 @@
       <EditorContent :editor="editor"/>
     </template>
     <template v-else>
-      <CodeMirror
+      <MonacoEditor
         :modelValue="modelValue"
         :format="format"
         @update:modelValue="$emit('update:modelValue', $event)"
@@ -244,7 +244,7 @@ import FileBrowser from '@/components/FileBrowser.vue';
 import Icon from '@/components/utils/Icon.vue';
 import Modal from '@/components/utils/Modal.vue';
 
-const CodeMirror = defineAsyncComponent(() => import('@/components/file/CodeMirror.vue'));
+const MonacoEditor = defineAsyncComponent(() => import('@/components/file/MonacoEditor.vue'));
 
 const emit = defineEmits(['update:modelValue']);
 

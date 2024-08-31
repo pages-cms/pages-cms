@@ -109,11 +109,12 @@
             <field v-for="field in schema.fields" :key="field.name" :field="field" :model="model" ref="fieldRefs"></field>
           </template>
           <template v-else>
-            <CodeMirror v-model="model" :language="extension" :validation="schemaValidation"/>
+            <MonacoEditor v-model="model" :language="extension" :validation="schemaValidation"/>
           </template>
         </template>
         <template v-else-if="mode === 'code'">
-          <CodeMirror v-model="model" :language="extension" :validation="schemaValidation"/>
+          <MonacoEditor v-model="model" :language="extension" :validation="schemaValidation"/>
+          !!!
         </template>
         <template v-else-if="mode === 'datagrid'">
           <div class="overflow-x-auto">
@@ -162,7 +163,7 @@ import github from '@/services/github';
 import config from '@/services/config';
 import serialization from '@/services/serialization';
 import useSchema from '@/composables/useSchema';
-import CodeMirror from '@/components/file/CodeMirror.vue';
+import MonacoEditor from '@/components/file/MonacoEditor.vue';
 import Datagrid from '@/components/file/Datagrid.vue';
 import Dropdown from '@/components/utils/Dropdown.vue';
 import Icon from '@/components/utils/Icon.vue';

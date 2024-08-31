@@ -1,8 +1,8 @@
-@import './codemirror.css';
 @import './datagrid.css';
 @import './filebrowser.css';
 @import './tiptap.css';
 @import './prose.css';
+@import 'monaco-editor/min/vs/editor/editor.main.css';
 
 @tailwind base;
 @tailwind components;
