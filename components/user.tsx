@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "next-themes";
 import { useUser } from "@/contexts/user-context";
 import { handleSignOut }  from "@/lib/actions/auth";
 import { getInitialsFromName } from "@/lib/utils/avatar";
@@ -10,6 +11,8 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -29,6 +32,7 @@ export function User({
   onClick?: () => void
 }) {
   const { user } = useUser();
+  const { theme, setTheme } = useTheme();
   
   if (!user) return null;
 
@@ -58,6 +62,12 @@ export function User({
             </a>
           </DropdownMenuItem>
         </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+          <DropdownMenuRadioItem value="light" onClick={onClick}>Light</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="dark" onClick={onClick}>Dark</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="system" onClick={onClick}>System</DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={async () => { if (onClick) onClick(); await handleSignOut() }}>
           Log out
