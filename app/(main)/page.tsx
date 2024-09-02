@@ -3,7 +3,6 @@ import { Octokit } from "octokit";
 import { getAuth } from "@/lib/auth";
 import { getUserToken } from "@/lib/token";
 import { User } from "@/components/user";
-import { ModeToggle } from "@/components/mode-toggle";
 import { RepoSelect } from "@/components/repo/repo-select";
 import { RepoTemplates } from "@/components/repo/repo-templates";
 import { About } from "@/components/about";
@@ -73,7 +72,6 @@ export default async function Page() {
 			</main>
 			<footer className="flex items-center gap-2 border-t px-2 py-2 lg:px-4 lg:py-3 mt-auto">
         <User className="mr-auto"/>
-        <ModeToggle/>
         <About/>
       </footer>
 		</div>

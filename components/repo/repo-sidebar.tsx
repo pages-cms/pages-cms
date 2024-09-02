@@ -3,7 +3,6 @@
 import { User } from "@/components/user";
 import { RepoDropdown } from "@/components/repo/repo-dropdown";
 import { RepoNav } from "@/components/repo/repo-nav";
-import { ModeToggle } from "@/components/mode-toggle";
 import { About } from "@/components/about";
 
 const RepoSidebar = ({
@@ -20,7 +19,6 @@ const RepoSidebar = ({
     </nav>
     <footer className="flex items-center gap-2 border-t px-3 py-2 mt-auto">
       <User className="mr-auto" onClick={onClick}/>
-      <ModeToggle onClick={onClick}/>
       <About onClick={onClick}/>
     </footer>
   </>
