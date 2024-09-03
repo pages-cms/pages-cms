@@ -53,7 +53,7 @@ export function About({
           </a>
           <a className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full")} href="https://github.com/pages-cms/pages-cms" target="_blank">
             <Github className="h-4 w-4 shrink-0 mr-2"/>
-            Website
+            GitHub
           </a>
         </footer>
       </DialogContent>
