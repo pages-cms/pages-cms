@@ -1,5 +1,10 @@
 {
-  "name": "next",
+  "name": "pages-cms",
+  "description": "A user-friendly CMS for Next.js, Astro, Hugo, Nuxt, Jekyll or any other SSR",
+  "license": "MIT",
+  "author": {
+    "name": "Ronan Berder"
+  },
   "version": "0.1.0",
   "private": true,
   "scripts": {
