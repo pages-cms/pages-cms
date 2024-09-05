@@ -1,6 +1,6 @@
 {
   "name": "pages-cms",
-  "description": "A user-friendly CMS for Next.js, Astro, Hugo, Nuxt, Jekyll or any other SSR",
+  "description": "A user-friendly CMS for Next.js, Astro, Hugo, Nuxt, Jekyll or any other SSG",
   "license": "MIT",
   "author": {
     "name": "Ronan Berder"
