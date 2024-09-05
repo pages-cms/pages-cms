@@ -1,11 +1,11 @@
 const serializedTypes = ["yaml-frontmatter", "json-frontmatter", "toml-frontmatter", "yaml", "json", "toml"];
 
 const extensionCategories: Record<string, string[]> = {
-  image: ["jpg", "jpeg", "png", "gif", "svg", "bmp", "tif", "tiff"],
+  image: ["jpg", "jpeg", "apng", "png", "gif", "svg", "ico", "avif", "bmp", "tif", "tiff", "webp"],
   document: ["pdf", "doc", "docx", "ppt", "pptx", "vxls", "xlsx", "txt", "rtf"],
-  video: ["mp4", "avi", "mov", "wmv", "flv"],
-  audio: ["mp3", "wav", "aac", "ogg", "flac"],
-  compressed: ["zip", "rar", "7z", "tar", "gz", "tgz"]
+  video: ["mp4", "avi", "mov", "wmv", "flv", "mpeg", "webm", "ogv", "ts", "3gp", "3g2"],
+  audio: ["mp3", "wav", "aac", "ogg", "flac", "weba", "oga", "opus", "mid", "midi", "3gp", "3g2"],
+  compressed: ["zip", "rar", "7z", "tar", "gz", "tgz", "bz", "bz2"]
 };
 
 const getFileSize = (
@@ -25,7 +25,7 @@ const getFileSize = (
 
 const getFileExtension = (path: string): string => {
   const filename = getFileName(path);
-  if (filename.startsWith('.') && !filename.includes('.', 1)) return "";
+  if (filename.startsWith(".") && !filename.includes(".", 1)) return "";
   const extensionMatch = /(?:\.([^.]+))?$/.exec(filename);
   return extensionMatch ? extensionMatch[1] : "";
 }
