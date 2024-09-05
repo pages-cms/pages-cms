@@ -45,13 +45,29 @@ export async function POST(
           if (getFileExtension(normalizedPath) !== schema.extension) throw new Error(`Invalid extension "${getFileExtension(normalizedPath)}" for ${data.type} "${data.name}".`);
 
           if (serializedTypes.includes(schema.format) && schema.fields) {
-            let contentWithHiddenFields = data.content;
+            let contentFields;
+            let contentObject;
+
+            // Wrapping things in listWrapper to deal with lists at the root
+            if (schema.list) {
+              contentObject = { listWrapper: data.content };
+              contentFields = [{
+                name: "listWrapper",
+                type: "object",
+                list: true,
+                fields: schema.fields
+              }]
+            } else {
+              contentObject = data.content;
+              contentFields = schema.fields;
+            }
+
             // Hidden fields are stripped in the client, we add them back
-            contentWithHiddenFields = deepMap(contentWithHiddenFields, schema.fields, (value, field) => field.hidden ? getDefaultValue(field) : value);
+            contentObject = deepMap(contentObject, contentFields, (value, field) => field.hidden ? getDefaultValue(field) : value);
             // TODO: fetch the entry and merge values
             
-            const zodSchema = generateZodSchema(schema.fields);
-            const zodValidation = zodSchema.safeParse(contentWithHiddenFields);
+            const zodSchema = generateZodSchema(contentFields);
+            const zodValidation = zodSchema.safeParse(contentObject);
             
             if (zodValidation.success === false ) {
               const errorMessages = zodValidation.error.errors.map((error: any) => {
@@ -62,9 +78,11 @@ export async function POST(
               throw new Error(`Content validation failed: ${errorMessages.join(", ")}`);
             }
 
-            const contentObject = deepMap(zodValidation.data, schema.fields, (value, field) => writeFns[field.type] ? writeFns[field.type](value, field, config || {}) : value);
-            
-            const sanitizedContentObject = sanitizeObject(contentObject);
+            const validatedContentObject = deepMap(zodValidation.data, contentFields, (value, field) => writeFns[field.type] ? writeFns[field.type](value, field, config || {}) : value);
+
+            const sanitizedContentObject = schema.list
+              ? sanitizeObject(validatedContentObject.listWrapper)
+              : sanitizeObject(validatedContentObject);
             
             const stringifiedContentObject = stringify(
               sanitizedContentObject,
