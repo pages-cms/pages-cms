@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useRef, useState } from "react";
 import { BubbleMenu, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -46,7 +46,6 @@ import {
   Heading1,
   Heading2,
   Heading3,
-  Image as ImageIcon,
   Italic,
   Link2,
   List,
@@ -66,7 +65,6 @@ const EditComponent = forwardRef((props: any, ref) => {
   
   const { value, onChange } = props;
   const mediaDialogRef = useRef<MediaDialogHandle>(null); 
-  const editorRef = useRef<any>(null);
   const bubbleMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [isContentReady, setContentReady] = useState(false);
@@ -122,79 +120,16 @@ const EditComponent = forwardRef((props: any, ref) => {
         editor.commands.setContent(initialContent || "<p></p>");
       }
       setContentReady(true);
-      editorRef.current = editor;
-    },
-    onDestroy: () => editorRef.current = null,
+    }
   });
 
-  const handleSelectBlockType = (event: any) => {
-    if (editor) {
-      switch (event.target.value) {
-        case "h1":
-          editor.chain().focus().toggleHeading({ level: 1 }).run();
-          break;
-
-        case "h2":
-          editor.chain().focus().toggleHeading({ level: 2 }).run();
-          break;
-
-        case "h3":
-          editor.chain().focus().toggleHeading({ level: 3 }).run();
-          break;
-
-        case "ul":
-          editor.chain().focus().toggleBulletList().run();
-          break;
-
-        case "ol":
-          editor.chain().focus().toggleOrderedList().run();
-          break;
-
-        case "code":
-          editor.chain().focus().toggleCodeBlock().run();
-          break;
-
-        case "blockquote":
-          editor.chain().focus().toggleBlockquote().run();
-          break;
-
-        case "p":
-        default:
-          editor.chain().focus().setParagraph().run();
-          break;
-      }
-    }
-  };
-
-  const getBlockType = () => {
-    if (editor) {
-      if (editor.isActive("heading", { level: 1 })) {
-        return "h1";
-      } else if (editor.isActive("heading", { level: 2 })) {
-        return "h2";
-      } else if (editor.isActive("heading", { level: 3 })) {
-        return "h3";
-      } else if (editor.isActive("bulletList")) {
-        return "ul";
-      } else if (editor.isActive("orderedList")) {
-        return "ol";
-      } else if (editor.isActive("codeBlock")) {
-        return "code";
-      } else if (editor.isActive("blockquote")) {
-        return "blockquote";
-      }
-    }
-    return "p";
-  }
-
   const handleMediaDialogSubmit = useCallback(async (images: string[]) => {
-    if (config && editorRef.current) {
+    if (config && editor) {
       const content = await Promise.all(images.map(async (image) => {
         const url = await getRawUrl(config.owner, config.repo, config.branch, image, isPrivate);
         return `<p><img src="${url}"></p>`;
       }));
-      
-      editorRef.current.chain().focus().insertContent(content.join('\n')).run();
+      editor.chain().focus().insertContent(content.join('\n')).run();
     }
   }, [config, editor, isPrivate]);
 

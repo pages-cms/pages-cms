@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { Field } from "@/types/field";
 import { htmlSwapPrefix, rawToRelativeUrls } from "@/lib/githubImage";
 import { EditComponent } from "./edit-component";
@@ -9,7 +8,9 @@ import TurndownService from "turndown";
 const read = (value: any, field: Field, config: Record<string, any>) => {
   let html = field.options?.format === "html"
     ? value
-    : marked(value);
+    : value
+      ? marked(value)
+      : value;
 
   const prefixInput = field.options?.input ?? config.object.media?.input;
   const prefixOutput = field.options?.output ?? config.object.media?.output;
