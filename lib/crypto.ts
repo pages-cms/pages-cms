@@ -10,7 +10,7 @@ const importKey = async (base64Key: string) => {
 };
 
 const encrypt = async (text: string) => {
-  if (process.env.CRYPTO_KEY === undefined) throw new Error('Crypto key is not set.');
+  if (process.env.CRYPTO_KEY === undefined) throw new Error('CRYPTO_KEY environment variable is not set.');
   const key = await importKey(process.env.CRYPTO_KEY);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encodedText = new TextEncoder().encode(text);

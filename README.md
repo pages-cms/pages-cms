@@ -51,7 +51,8 @@ This online version is identical to what's in this repo, but you can also instal
 
 1. **Create a new GitHub Oauth app**: same steps as above, however the authorization callback URL should be `https://localhost:3000`. You can name the app differently (e.g. "Pages CMS (dev)").
 2. **Update your environment variables**: update the values of `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` in the `.env.local` file with the values you got from new GitHub OAuth app.
-3. **Run it**: go to 
+3. **Migrate Database** `npx drizzle-kit migrate`
+4. **Run it**: `npm run dev`
 
 If you want to use different databases for development, create a new one on Vercel and update the  environment variables in the `.env.local` file.
 
