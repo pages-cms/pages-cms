@@ -44,7 +44,7 @@ To get a local version up and running:
     - Application name: `Pages CMS (dev)`
     - Homepage URL: `https://pagescms.org`
     - Authorization callback URL: `http://localhost:8788/auth/callback`
-1. **Create a file for environment variables**: copy `.dev.vars.exmple` into `.dev.vars` and replace `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` with the values you got for your GitHub OAuth app. You shouldn't have to modify `BASE_URL`.
+1. **Create a file for environment variables**: copy `.env.local.exmple` into `.env.local` and replace `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` with the values you got for your GitHub OAuth app. You shouldn't have to modify `BASE_URL`.
 1. **Run it**: `npm run dev`. This should [run the app locally with Wrangler](https://developers.cloudflare.com/pages/functions/local-development/) (allowing us to run the serverless functions locally).
 1. **Visit [localhost:8788](http://localhost:8788)**.
 
