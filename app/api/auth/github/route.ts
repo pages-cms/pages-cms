@@ -65,17 +65,22 @@ export async function GET(request: Request): Promise<Response> {
 			}
 		});
 	} catch (e) {		
+    console.error(`GET /api/auth/github/route.ts error: `, e);
     // the specific error message depends on the provider
-		if (e instanceof OAuth2RequestError) {
-			// invalid code
-			return new Response(null, {
-				status: 400
-			});
-		}
-		return new Response(null, {
-			status: 500
-		});
-	}
+    let statusText = "Unknown error";
+    let status = 500;
+    if (e instanceof OAuth2RequestError) {
+      // invalid code
+      statusText = e.description || "Unknown OAuth2 error";
+      status = 400;
+    } else if (e instanceof Error) {
+      statusText = e.message;
+    }
+    return new Response(statusText, {
+      status,
+      statusText,
+    });
+  }
 }
 
 interface GitHubUser {
