@@ -53,7 +53,7 @@ export default function useSchema() {
       case 'number':
         return null;
       case 'date':
-        return moment().format('YYYY-MM-DD');
+        return moment().format(field.options?.time ? 'YYYY-MM-DDTHH:mm' : 'YYYY-MM-DD');
       default:
         return '';
     }
