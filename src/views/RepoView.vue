@@ -28,7 +28,7 @@
                 </button>
               </template>
               <template #content>
-                <ul>
+                <ul v-if="repoStore.config?.object?.github !== false">
                   <li><div class="font-medium text-xs pb-1 px-3 text-neutral-400 dark:text-neutral-500">Owner & Repository</div></li>
                   <li>
                     <a class="link w-full" :href="`https://github.com/${props.owner}`" target="_blank">
@@ -62,6 +62,7 @@
                   <li><hr class="border-t border-neutral-150 dark:border-neutral-750 my-1"/></li>
                   <li><button @click.prevent="branchesModal.openModal(); isSidebarActive = false;" class="link w-full">Manage branches</button></li>
                 </ul>
+                <button v-else @click.prevent="repoMenuModal.openModal(); isSidebarActive = false;" class="link w-full">Change repository</button>
               </template>
             </Dropdown>
           </div>

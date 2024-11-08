@@ -8,6 +8,7 @@
         :owner="owner"
         :repo="repo"
         :branch="branch"
+        :config="config"
         :root="config.media.input"
         :defaultPath="config.media.default"
         :filterByExtensions="config.media.extensions"
