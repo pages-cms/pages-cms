@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 import notifications from '@/services/notifications';
 import github from '@/services/github';
 
@@ -22,6 +22,7 @@ const props = defineProps({
 
 const fileInput = ref(null);
 const status = ref('');
+const repoStore = inject('repoStore', { owner: null, repo: null, branch: null, config: null, details: null });
 
 function openFileInput() {
   fileInput.value.click();
@@ -41,20 +42,32 @@ async function processFiles(files) {
   status.value = '';
 }
 
+async function generateSha256Hash(fileName) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(fileName);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
 const upload = async (file) => {
   if (file) {
     let content = await readFileContent(file);
     if (content) {
+      const isHashNameEnabled = repoStore.config?.document?.media?.hash;
+      const fileName = isHashNameEnabled
+        ? `${await generateSha256Hash(file.name)}${file.name.match(/\.[^\.]+$/)[0]}`
+        : file.name;
       const notificationId = notifications.notify(`Uploading "${file.name}".`, 'processing', { delay: 0 });
       content = content.replace(/^(.+,)/, ''); // We strip out the info at the beginning of the file (mime type + encoding)
-      const fullPath = props.path ? `${props.path}/${file.name}` : file.name;
+      const fullPath = props.path ? `${props.path}/${fileName}` : fileName;
       const data = await github.saveFile(props.owner, props.repo, props.branch, fullPath, content, null, true);
       notifications.close(notificationId);
       if (data) {
         if (data.content.path === fullPath) {
-          notifications.notify(`File '${file.name}' successfully uploaded.`, 'success');
+          notifications.notify(`File '${fileName}' successfully uploaded.`, 'success');
         } else {
-          notifications.notify(`File '${file.name}' successfully uploaded but renamed to '${data.content.name}'.`, 'success');
+          notifications.notify(`File '${fileName}' successfully uploaded but renamed to '${data.content.name}'.`, 'success');
         }
         emits('uploaded', data);
       } else {
