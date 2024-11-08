@@ -62,6 +62,7 @@
                   <li><hr class="border-t border-neutral-150 dark:border-neutral-750 my-1"/></li>
                   <li><button @click.prevent="branchesModal.openModal(); isSidebarActive = false;" class="link w-full">Manage branches</button></li>
                 </ul>
+                <button v-else @click.prevent="repoMenuModal.openModal(); isSidebarActive = false;" class="link w-full">Change repository</button>
               </template>
             </Dropdown>
           </div>
