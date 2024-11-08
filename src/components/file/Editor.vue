@@ -82,7 +82,7 @@
           </template>
           <template #content>
             <ul>
-              <li>
+              <li v-if="props.config?.github !== false">
                 <a :href="`https://github.com/${props.owner}/${props.repo}/blob/${props.branch}/${props.path}`" target="_blank" class="link">
                   <div>See file on GitHub</div>
                   <Icon name="ExternalLink" class="h-4 w-4 stroke-2 shrink-0 ml-auto text-neutral-400 dark:text-neutral-500"/>

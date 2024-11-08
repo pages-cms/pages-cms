@@ -113,7 +113,7 @@
                     </template>
                     <template #content>
                       <ul>
-                        <li>
+                        <li v-if="props.config?.github !== false">
                           <a class="link w-full" :href="`https://github.com/${props.owner}/${props.repo}/blob/${props.branch}/${item.path}`" target="_blank">
                             <div class="truncate">See file on GitHub</div>
                             <Icon name="ExternalLink" class="h-4 w-4 stroke-2 shrink-0 ml-auto text-neutral-400 dark:text-neutral-500"/>
@@ -212,6 +212,7 @@ const props = defineProps({
   owner: String,
   repo: String,
   branch: String,
+  config: Object,
   root: { type: String, default: '' },
   defaultPath: String,
   defaultLayout: String,

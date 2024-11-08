@@ -28,7 +28,7 @@
                 </button>
               </template>
               <template #content>
-                <ul>
+                <ul v-if="repoStore.config?.object?.github !== false">
                   <li><div class="font-medium text-xs pb-1 px-3 text-neutral-400 dark:text-neutral-500">Owner & Repository</div></li>
                   <li>
                     <a class="link w-full" :href="`https://github.com/${props.owner}`" target="_blank">

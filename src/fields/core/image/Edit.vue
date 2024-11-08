@@ -39,6 +39,7 @@
           :owner="repoStore.owner"
           :repo="repoStore.repo"
           :branch="repoStore.branch"
+          :config="repoStore.config"
           :root="props.field.options?.input ?? repoStore.config.object.media?.input"
           :defaultPath="props.field.options?.path ?? repoStore.config.object.media?.path"
           :filterByCategories="props.field.options?.extensions ? undefined : [ 'image' ]"
