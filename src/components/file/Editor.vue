@@ -161,6 +161,7 @@ import notifications from '@/services/notifications';
 import github from '@/services/github';
 import config from '@/services/config';
 import serialization from '@/services/serialization';
+import i18n from '@/services/i18n';
 import useSchema from '@/composables/useSchema';
 import CodeMirror from '@/components/file/CodeMirror.vue';
 import Datagrid from '@/components/file/Datagrid.vue';
@@ -442,6 +443,7 @@ const save = async () => {
       // We've updated the configuration, we need to reload it
       await config.set(repoStore.owner, repoStore.repo, repoStore.branch);
     }
+    await i18n.saveLocaleFiles(model.value, currentPath.value, mode.value, props, repoStore);
     status.value = '';
   } catch (error) {
     notifications.notify(`Failed to save the file "${currentPath.value}"`, 'error');

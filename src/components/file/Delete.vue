@@ -20,9 +20,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 import notifications from '@/services/notifications';
 import github from '@/services/github';
+import i18n from '@/services/i18n';
 import Modal from '@/components/utils/Modal.vue';
 
 const emits = defineEmits(['file-deleted', 'error']);
@@ -37,6 +38,7 @@ const props = defineProps({
 
 const deleteModal = ref(null);
 const status = ref('');
+const repoStore = inject('repoStore', { owner: null, repo: null, branch: null, config: null, details: null });
 
 const deleteEntry = async () => {
   status.value = 'deleting';
@@ -47,6 +49,7 @@ const deleteEntry = async () => {
     emits('file-deleted', props.path);
     notifications.notify(`"${props.path}" was deleted.`, 'success');
     deleteModal.value.closeModal();
+    await i18n.deleteLocaleFiles(props.path, props, repoStore);
   }
   status.value = '';
 };
