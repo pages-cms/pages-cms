@@ -20,9 +20,10 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch, inject } from 'vue';
 import notifications from '@/services/notifications';
 import github from '@/services/github';
+import i18n from '@/services/i18n';
 import Modal from '@/components/utils/Modal.vue';
 
 const emits = defineEmits(['file-renamed']);
@@ -37,6 +38,7 @@ const props = defineProps({
 const renameModal = ref(null);
 const newPath = ref('');
 const status = ref('');
+const repoStore = inject('repoStore', { owner: null, repo: null, branch: null, config: null, details: null });
 
 const renameEntry = async () => {
   status.value = 'renaming';
@@ -47,6 +49,7 @@ const renameEntry = async () => {
     emits('file-renamed', { renamedPath: newPath.value, renamedSha: newSha });
     notifications.notify(`File "${props.path}" renamed to "${newPath.value}".`, 'success');
     renameModal.value.closeModal();
+    await i18n.renameLocaleFiles(props.path, newPath.value, props, repoStore);
   }
   status.value = '';
 };
