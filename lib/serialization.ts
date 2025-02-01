@@ -68,7 +68,6 @@ const deserialize = (content: string = "", format: SerialFormat = "yaml") => {
 // Convert an object into straight YAML/JSON/TOML or YAML/JSON/TOML frontmatter strings
 const stringify = (contentObject: Record<string, any> = {}, options: { delimiters?: string, format?: Format } = {}) => {
   const format = options.format || "yaml-frontmatter";
-  console.log('==== stringify format', format)
 
   // YAML/JSON/TOML without frontmatter
   if (["yaml", "json", "toml"].includes(format)) return serialize(contentObject, format as SerialFormat);
