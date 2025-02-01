@@ -54,7 +54,7 @@ const deserialize = (content: string = "", format: SerialFormat = "yaml") => {
     case "yaml":
       return YAML.parse(content, { strict: false, uniqueKeys: false });
     case "csv":
-      return CSVP.parse(content, { columns: true });
+      return CSVP.parse(content, { columns: true, relax_quotes: true, });
     case "json":
       return JSON.parse(content);
     case "toml":
