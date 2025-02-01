@@ -54,7 +54,17 @@ const deserialize = (content: string = "", format: SerialFormat = "yaml") => {
     case "yaml":
       return YAML.parse(content, { strict: false, uniqueKeys: false });
     case "csv":
-      return CSVP.parse(content, { columns: true, relax_quotes: true, });
+      // Deserialise lists (and objects?). Ideally not naively (ie: using the schema).
+      return CSVP.parse(content, {
+        columns: true, relax_quotes: true,
+        cast: function (value, context) {
+          try {
+            return JSON.parse(value)
+          } catch (err) {
+            return value
+          }
+        },
+      });
     case "json":
       return JSON.parse(content);
     case "toml":
