@@ -4,9 +4,11 @@
 
 import YAML from "yaml";
 import * as TOML from "@ltd/j-toml"
+import * as CSVS from "csv-stringify/sync";
+import * as CSVP from "csv-parse/sync";
 
 type FrontmatterFormat = "json-frontmatter" | "yaml-frontmatter" | "toml-frontmatter";
-type SerialFormat = "json" | "yaml" | "toml";
+type SerialFormat = "json" | "yaml" | "toml" | "csv";
 type Format = FrontmatterFormat | SerialFormat;
 
 // Parse straight YAML/JSON/TOML and YAML/JSON/TOML frontmatter strings into an object
@@ -14,8 +16,8 @@ const parse = (content: string = "", options: { delimiters?: string, format?: Fo
   const format = options.format || "yaml-frontmatter";
   
   // YAML/JSON/TOML without frontmatter
-  if (["yaml", "json", "toml"].includes(format)) return deserialize(content, format as SerialFormat);
-  
+  if (["yaml", "json", "toml", "datagrid", "csv"].includes(format)) return deserialize(content, format as SerialFormat);
+
   const delimiters = setDelimiter(options.delimiters, format as FrontmatterFormat);
   const startDelimiter = delimiters[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const endDelimiter = delimiters[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -51,6 +53,8 @@ const deserialize = (content: string = "", format: SerialFormat = "yaml") => {
   switch (format) {
     case "yaml":
       return YAML.parse(content, { strict: false, uniqueKeys: false });
+    case "csv":
+      return CSVP.parse(content, { });
     case "json":
       return JSON.parse(content);
     case "toml":
@@ -64,9 +68,11 @@ const deserialize = (content: string = "", format: SerialFormat = "yaml") => {
 // Convert an object into straight YAML/JSON/TOML or YAML/JSON/TOML frontmatter strings
 const stringify = (contentObject: Record<string, any> = {}, options: { delimiters?: string, format?: Format } = {}) => {
   const format = options.format || "yaml-frontmatter";
-  
+  console.log('==== stringify format', format)
+
   // YAML/JSON/TOML without frontmatter
   if (["yaml", "json", "toml"].includes(format)) return serialize(contentObject, format as SerialFormat);
+  if (["datagrid", "csv"].includes(format)) return serialize(contentObject, "csv" as SerialFormat);
 
   // Frontmatter
   const delimiters = setDelimiter(options.delimiters, format as FrontmatterFormat);
@@ -96,6 +102,8 @@ const serialize = (contentObject: Record<string, any> = {}, format: SerialFormat
       return JSON.stringify(contentObject, null, 2);
     case "toml":
       return TOML.stringify(contentObject, { newline: "\n"});
+    case "csv":
+      return CSVS.stringify(contentObject as any[], { header: true });
     default:
       return "";
   }
