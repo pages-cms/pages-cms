@@ -96,8 +96,7 @@ const parseContent = (
   schema: Record<string, any>,
   config: Record<string, any>
 ) => {
-  const serializedTypes = ["yaml-frontmatter", "json-frontmatter", "toml-frontmatter", "yaml", "json", "toml"];
-  
+  const serializedTypes = ["yaml-frontmatter", "json-frontmatter", "toml-frontmatter", "yaml", "json", "toml", "datagrid", "csv"];
   let contentObject: Record<string, any> = {};
 
   if (serializedTypes.includes(schema && schema.format) && schema.fields && schema.fields.length > 0) {

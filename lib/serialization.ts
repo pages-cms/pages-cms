@@ -14,9 +14,9 @@ type Format = FrontmatterFormat | SerialFormat;
 // Parse straight YAML/JSON/TOML and YAML/JSON/TOML frontmatter strings into an object
 const parse = (content: string = "", options: { delimiters?: string, format?: Format } = {}) => {
   const format = options.format || "yaml-frontmatter";
-  
   // YAML/JSON/TOML without frontmatter
-  if (["yaml", "json", "toml", "datagrid", "csv"].includes(format)) return deserialize(content, format as SerialFormat);
+  if (["yaml", "json", "toml"].includes(format)) return deserialize(content, format as SerialFormat);
+  if (["datagrid", "csv"].includes(format)) return deserialize(content, "csv" as SerialFormat);
 
   const delimiters = setDelimiter(options.delimiters, format as FrontmatterFormat);
   const startDelimiter = delimiters[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -54,7 +54,7 @@ const deserialize = (content: string = "", format: SerialFormat = "yaml") => {
     case "yaml":
       return YAML.parse(content, { strict: false, uniqueKeys: false });
     case "csv":
-      return CSVP.parse(content, { });
+      return CSVP.parse(content, { columns: true });
     case "json":
       return JSON.parse(content);
     case "toml":
