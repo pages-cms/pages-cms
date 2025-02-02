@@ -26,7 +26,7 @@ const EmptyCreate = ({
   let path = "";
   let content: string | Record<string, any> = "";
   let toCreate = "";
-  let redirectTo = `/${config.owner}/${config.repo}/${config.branch}`;
+  let redirectTo = `/${config.owner}/${config.repo}/${encodeURIComponent(branch)}`;
 
   if (type === "settings") {
     path = ".pages.yml";
@@ -60,12 +60,12 @@ const EmptyCreate = ({
   } else {
     throw new Error(`Invalid type "${type}".`);
   }
-  
+
   const handleCreate = async () => {
     try {
       const createPromise = new Promise(async (resolve, reject) => {
         try {
-          const response = await fetch(`/api/${config.owner}/${config.repo}/${config.branch}/files/${encodeURIComponent(normalizePath(path))}`, {
+          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(normalizePath(path))}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

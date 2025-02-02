@@ -23,7 +23,7 @@ export default async function Layout({
   const token = await getToken(user, owner, repo);
   if (!token) throw new Error("Token not found");
 
-  const decodedBranch = decodeURIComponent(branch);
+  const decodedBranch = decodeURIComponent(decodeURIComponent(branch));
 
   let config = {
     owner: owner.toLowerCase(),
