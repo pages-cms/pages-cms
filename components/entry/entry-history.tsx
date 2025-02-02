@@ -52,7 +52,7 @@ export function EntryHistoryBlock({
         ))}
         {history.length > 3 && (
           <a
-            href={`https://github.com/${config?.owner}/${config?.repo}/commits/${config?.branch}/${path}`}
+            href={`https://github.com/${config?.owner}/${config?.repo}/commits/${encodeURIComponent(config?.branch)}/${path}`}
             target="_blank"
             className="flex items-center rounded-lg px-3 py-2 transition-all hover:bg-accent ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
@@ -104,7 +104,7 @@ export function EntryHistoryDropdown({
               <DropdownMenuSeparator/>
               <DropdownMenuItem>
                 <a
-                  href={`https://github.com/${config?.owner}/${config?.repo}/commits/${config?.branch}/${path}`}
+                  href={`https://github.com/${config?.owner}/${config?.repo}/commits/${encodeURIComponent(config?.branch)}/${path}`}
                   target="_blank"
                   className="flex items-center w-full"
                 >

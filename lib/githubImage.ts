@@ -18,7 +18,7 @@ const getRelativeUrl = (
   let relativePath = path;
 
   if (path.startsWith("https://raw.githubusercontent.com/")) {
-    const pattern = new RegExp(`^https://raw\\.githubusercontent\\.com/${owner}/${repo}/${branch}/`, "i");
+    const pattern = new RegExp(`^https://raw\\.githubusercontent\\.com/${owner}/${repo}/${encodeURIComponent(branch)}/`, "i");
     relativePath = path.replace(pattern, "");
     relativePath = relativePath.split("?")[0];
   }
@@ -74,7 +74,7 @@ const getRawUrl = async (
 
     return cache[parentFullPath]?.files?.[filename];
   } else {
-    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${encodeURI(decodedPath)}`;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(branch)}/${encodeURI(decodedPath)}`;
   }
 };
 
@@ -91,7 +91,7 @@ const rawToRelativeUrls = (
     const quote = match[1] ? "\"" : "'";
 
     if (src.startsWith("https://raw.githubusercontent.com/")) {
-      let relativePath = src.replace(new RegExp(`https://raw\\.githubusercontent\\.com/${owner}/${repo}/${branch}/`, "gi"), "");
+      let relativePath = src.replace(new RegExp(`https://raw\\.githubusercontent\\.com/${owner}/${repo}/${encodeURIComponent(branch)}/`, "gi"), "");
       relativePath = relativePath.split("?")[0];
 
       if (!encode) relativePath = decodeURIComponent(relativePath);
@@ -118,7 +118,7 @@ const relativeToRawUrls = async (
     const src = match[1] || match[2];
     const quote = match[1] ? "\"" : "'";
 
-    if (!src.startsWith("/") && !src.startsWith("http://") && !src.startsWith("https://") && !src.startsWith("data:image/")) {  
+    if (!src.startsWith("/") && !src.startsWith("http://") && !src.startsWith("https://") && !src.startsWith("data:image/")) {
       // TODO: what does the function returns if it fails?
       const rawUrl = await getRawUrl(owner, repo, branch, src, isPrivate, true);
       if (rawUrl) {
