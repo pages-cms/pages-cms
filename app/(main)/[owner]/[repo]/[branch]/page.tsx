@@ -12,7 +12,7 @@ export default function Page() {
 
   useEffect(() => {
     if (config?.object.content?.[0]) {
-      router.replace(`/${config.owner}/${config.repo}/${config.branch}/${config.object.content[0].type}/${config.object.content[0].name}`);
+      router.replace(`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/${config.object.content[0].type}/${config.object.content[0].name}`);
     } else if (config?.object.media) {
       router.replace(`/${config.owner}/${config.repo}/${config.branch}/media`);
     } else if (config?.object.settings !== false) {
