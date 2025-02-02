@@ -40,14 +40,14 @@ const getRawUrl = async (
     const filename = getFileName(decodedPath);
     if (!filename) return null;
     const parentPath = getParentPath(decodedPath);
-    
-    const parentFullPath = `${owner}/${repo}/${branch}/${parentPath}`;
-    
+
+    const parentFullPath = `${owner}/${repo}/${encodeURIComponent(branch)}/${parentPath}`;
+
     if (!cache[parentFullPath]?.files?.[filename] || (Date.now() - (cache[parentFullPath]?.time || 0) > ttl)) {
       delete cache[parentFullPath];
       
       if (!requests[parentFullPath]) {
-        requests[parentFullPath] = fetch(`/api/${owner}/${repo}/${branch}/media/${encodeURIComponent(parentPath)}`)
+        requests[parentFullPath] = fetch(`/api/${owner}/${repo}/${encodeURIComponent(branch)}/media/${encodeURIComponent(parentPath)}`)
           .then(response => {
             if (!response.ok) throw new Error(`Failed to fetch media: ${response.status} ${response.statusText}`);
             
