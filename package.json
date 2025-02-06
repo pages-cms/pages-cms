@@ -57,6 +57,7 @@
     "@tiptap/extension-table-row": "^2.5.7",
     "@tiptap/extension-text-align": "^2.5.7",
     "@tiptap/extension-underline": "^2.4.0",
+    "@tiptap/extension-youtube": "^2.11.5",
     "@tiptap/pm": "^2.4.0",
     "@tiptap/react": "^2.4.0",
     "@tiptap/starter-kit": "^2.4.0",
