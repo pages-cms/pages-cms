@@ -217,9 +217,79 @@ export function CollectionView({
     };
   }, [schema, primaryField, viewFields]);
 
-  const filesData = useMemo(() => data.filter((item: any) => item.type === "file"), [data]);
-  
-  const foldersData = useMemo(() => data.filter((item: any) => item.type === "dir"), [data]);
+  const hasSubfolders = schema.filename.includes('/');
+  const filename = schema.filename.split('/').pop();
+
+  const applyFilters = useCallback((items: any[]) => {
+    if (!items) return [];
+    return schema.filters.reduce((filtered: any[], filter: { name: string, value: any }) => {
+      return filtered.filter((item: { type: string, object: any }) => {
+        if (item.type === "file") return item.object[filter.name] === filter.value;
+        return true;
+      });
+    }, items);
+  }, [schema.filters]);
+
+  const hasValidFile = useCallback((children: any[]): boolean => {
+    return applyFilters(children).some((child: any) => {
+      if (child.type === 'file') return true;
+      if (child.type === 'dir' && child.children) return hasValidFile(child.children);
+      return false;
+    });
+  }, [applyFilters]);
+
+  const filesData = useMemo(() => {
+    if (!data) return [];
+
+    const filteredData = applyFilters(data);
+
+    return filteredData
+      .filter((item: any) => {
+        if (hasSubfolders && filename) {
+          // Include regular files and directories with index.md
+          return item.type === "file" || (item.type === "dir" && item.children?.some((child: any) => child.name === filename) && !item.children?.some((child: any) => child.type === "dir"));
+        }
+        return item.type === "file";
+      })
+      .map((item: any) => {
+        if (hasSubfolders && filename && item.type === "dir" && item.children) {
+          const indexFile = item.children.find((child: any) => child.name === filename);
+          return {
+            ...item,
+            path: item.path + '/' + filename,
+            object: indexFile.object
+          };
+        }
+        return item;
+      });
+  }, [data, hasSubfolders, filename, applyFilters]);
+
+  const foldersData = useMemo(() => {
+    if (!data) return [];
+
+    const filteredData = applyFilters(data);
+
+    return filteredData.filter((item: any) => {
+      if (hasSubfolders && filename) {
+        return item.type === "dir" && 
+               item.children && 
+               item.children?.some((child: any) => child.type === 'dir') && 
+               hasValidFile(item.children);
+      }
+      return item.type === "dir";
+    })
+    .map((item: any) => {
+      if (hasSubfolders && filename && item.type === "dir" && item.children) {
+        const indexFile = item.children.find((child: any) => child.name === filename);
+
+        return {
+          ...item,
+          name: indexFile.object?.title ?? item.name
+        };
+      }
+      return item;
+    });
+  }, [data, hasSubfolders, filename, applyFilters, hasValidFile]);
 
   useEffect(() => {
     async function fetchCollection() {

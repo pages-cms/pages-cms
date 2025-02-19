@@ -47,6 +47,32 @@ export async function GET(
                     text
                     oid
                   }
+                  ... on Tree {
+                    entries {
+                      name
+                      path
+                      type
+                      object {
+                        ... on Blob {
+                          text
+                          oid
+                        }
+                        ... on Tree {
+                          entries {
+                            name
+                            path
+                            type
+                            object {
+                              ... on Blob {
+                                text
+                                oid
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -99,38 +125,31 @@ const parseContents = (
   let parsedContents: Record<string, any>[] = [];
   let parsedErrors: string[] = [];
 
-  parsedContents = contents.map((item: any) => {
-    // If it's a file and it matches the schema extension
+  const parseEntry = (item: any): any => {
     if (item.type === "blob" && (item.path.endsWith(`.${schema.extension}`) || schema.extension === "") && !excludedFiles.includes(item.name)) {
       let contentObject: Record<string, any> = {};
       
       if (serializedTypes.includes(schema.format) && schema.fields) {
-        // If we are dealing with a serialized format and we have fields defined
         try {
           contentObject = parse(item.object.text, { format: schema.format, delimiters: schema.delimiters });
           contentObject = deepMap(contentObject, schema.fields, (value, field) => readFns[field.type] ? readFns[field.type](value, field, config) : value);
         } catch (error: any) {
-          // TODO: send this to the client?
           console.error(`Error parsing frontmatter for file "${item.path}": ${error.message}`);
           parsedErrors.push(`Error parsing frontmatter for file "${item.path}": ${error.message}`);
         }
       }
 
       if (!schema.fields || schema.fields.length === 0) {
-        // If we don't have fields defined, we just add the name for display
         contentObject.name = item.name;
       }
       
-      // TODO: make this configurable
-      // TODO: support other date formats
       if (!contentObject.date && schema.filename.startsWith("{year}-{month}-{day}")) {
-        // If we couldn"t get a date from the content and filenames have a date, we extract it
         const filenameDate = getDateFromFilename(item.name);
         if (filenameDate) {
           contentObject.date = filenameDate.string;
         }
       }
-      // TODO: handle proper returns
+
       return {
         sha: item.object.oid,
         name: item.name,
@@ -140,13 +159,18 @@ const parseContents = (
         type: "file",
       };
     } else if (item.type === "tree") {
+      const children = item.object?.entries?.map(parseEntry).filter(Boolean) || [];
       return {
         name: item.name,
         path: item.path,
         type: "dir",
+        children
       };
     }
-  }).filter((item: any) => item !== undefined);
+    return null;
+  };
+
+  parsedContents = contents.map(parseEntry).filter(Boolean);
 
   return {
     contents: parsedContents,

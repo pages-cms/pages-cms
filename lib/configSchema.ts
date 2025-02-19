@@ -113,6 +113,11 @@ const ContentObjectSchema = z.object({
   filename: z.string({
     message: "'filename' must be a string."
   }).optional().nullable(),
+  filters: z.array(z.object({
+    message: "Entries in the 'filters' array must be an object."
+  }), {
+    message: "'filters' must be an array of objects."
+  }).optional(),
   exclude: z.array(z.string({
     message: "Entries in the 'exclude' array must be strings."
   }), {
