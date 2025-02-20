@@ -40,6 +40,7 @@ export function EntryEditor({
   const [sha, setSha] = useState<string | undefined>();
   const [displayTitle, setDisplayTitle] = useState<string>(title ?? "Edit");
   const [history, setHistory] = useState<Record<string, any>[]>();
+  const [collection, setCollection] = useState<Record<string, any>[]>();
   const [isLoading, setIsLoading] = useState(path ? true : false);
   const [error, setError] = useState<string | undefined | null>(null);
   // TODO: this feels like a bit of a hack
@@ -93,14 +94,57 @@ export function EntryEditor({
   }, [schema, entry, path]);
 
   const navigateBack = useMemo(() => {
-    const parentPath = path ? getParentPath(path) : undefined;
-    console.log(entry);
+    const filepath = schema?.filename.split("/").pop();
+    const formattedPath = path?.replace(`/${filepath}`, "");
+    const parentPath = path ? getParentPath(formattedPath) : undefined;
 
-    return schema && schema.type === "collection"
-      ? `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${schema.name}${parentPath && parentPath !== schema.path ? `?path=${encodeURIComponent(parentPath)}` : ""}`
-      : ""},
-    [schema, config.owner, config.repo, config.branch, path, entry]
-  );
+    if (!schema || schema.type !== "collection") return "";
+
+    // If collection has more than one item, navigate to parent path
+    if (collection?.length > 1) {
+      return `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${schema.name}${
+        parentPath && parentPath !== schema.path ? `?path=${encodeURIComponent(parentPath)}` : ""
+      }`;
+    }
+
+    // Otherwise navigate to root collection path
+    return `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${schema.name}`;
+  }, [schema, config.owner, config.repo, config.branch, path, collection]);
+
+  useEffect(() => {
+    async function fetchCollection() {
+      if (path) {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+          const filepath = schema?.filename.split("/").pop();
+          const formattedPath = path?.replace(`/${filepath}`, "");
+          const parentPath = path ? getParentPath(formattedPath) : undefined;
+
+          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collections/${schema.name}?path=${encodeURIComponent(parentPath || schema.path)}`);
+          if (!response.ok) throw new Error(`Failed to fetch collection: ${response.status} ${response.statusText}`);
+
+          const data: any = await response.json();
+
+          if (data.status !== "success") throw new Error(data.message);
+
+          setCollection(data.data.contents);
+
+          if (data.data.errors && data.data.errors.length > 0) {
+            data.data.errors.forEach((error: any) => toast.error(error));
+          }
+        } catch (error: any) {
+          console.error(error);
+          setError(error.message);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchCollection();
+  }, [config, name, path, schema.path]);
 
   useEffect(() => {
     const fetchEntry = async () => {
