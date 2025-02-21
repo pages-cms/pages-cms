@@ -124,6 +124,6 @@ const parseContent = (
   } else {
     contentObject = { body: content };
   }
-  
+
   return contentObject; 
 };
