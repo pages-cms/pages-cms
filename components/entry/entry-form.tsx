@@ -31,6 +31,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -55,7 +63,7 @@ import {
   restrictToParentElement
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
 
 const SortableItem = ({
   id,
@@ -166,19 +174,16 @@ const ListField = ({
                         : field.types !== undefined ? 
                           (() => {
                             const nestedConfig = field.types.find(t => t.name === arrayField.type);
-                    
-                            return Object.keys(arrayField).map((key) => {
-                              const nestedField = nestedConfig?.fields.find(f => f.name === key);
-                              console.log(nestedField);
 
-                              if (nestedField?.fields) {
-                                return renderFields([nestedField], `${fieldName}.${index}`, control, true);
-                              } else if (nestedField) {
-                                return renderSingleField(nestedField, `${fieldName}.${index}.${key}`, control, true);
-                              }
-
-                              return null;
-                            })
+                            return renderFields([{
+                              type: 'object',
+                              name: nestedConfig?.label || arrayField.type,
+                              poly: true,
+                              fields: Object.keys(arrayField).map((key) => {
+                                const nestedField = nestedConfig?.fields.find(f => f.name === key);
+                                return nestedField;
+                              }).filter(Boolean)
+                            }], `${fieldName}.${index}`)
                           })()
                         :
                         renderSingleField(field, `${fieldName}.${index}`, control, false)
@@ -200,6 +205,33 @@ const ListField = ({
             </DndContext>
             {typeof field.list === "object" && field.list?.max && arrayFields.length >= field.list.max
               ? null
+              : field.types !== undefined ?
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      Add an entry
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {field.types?.map(type => (
+                      <DropdownMenuItem
+                        key={type.name}
+                        onClick={() => {
+                          const selectedType = field.types?.find(t => t.name === type.name);
+                          if (selectedType) {
+                            append({
+                              type: type.name,
+                              ...initializeState(selectedType.fields, {}, true)
+                            });
+                          }
+                        }}
+                      >
+                        {type.label || type.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               : <Button
                   type="button"
                   variant="outline"
@@ -299,13 +331,11 @@ const EntryForm = ({
     return fields.map((field) => {
       if (field.hidden) return null;
       
-      const fieldName = parentName ? `${parentName}.${field.name}` : field.name;
+      const fieldName = field.poly ? parentName : parentName ? `${parentName}.${field.name}` : field.name;
 
-      if (field.type === "object" && field.list && !supportsList[field.type]) {
-        if (field.types) {
-          return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
-        }
-
+      if (field.types) {
+        return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
+      } else if (field.type === "object" && field.list && !supportsList[field.type]) {
         return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
       } else if (field.type === "object") {
         return (
@@ -329,6 +359,7 @@ const EntryForm = ({
 
   const handleSubmit = async (values: any) => {
     setIsSubmitting(true);
+
     try {
       await onSubmit(values);
     } finally {

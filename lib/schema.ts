@@ -133,23 +133,41 @@ const generateZodSchema = (
 
       let fieldSchemaFn = schemas?.[field.type] || schemas["text"];
       
-      let schema = field.list
-        ? z.array(field.type === "object"
-          ? nestArrays
-            ? { value: z.object(buildSchema(field.fields || [])) }
-            : z.object(buildSchema(field.fields || []))
-          : nestArrays
-            ? { value: fieldSchemaFn(field) }
-            : fieldSchemaFn(field)
-          )
-        : field.type === "object"
+      let schema: z.ZodTypeAny;
+
+      if (field.types) {
+        // Handle polymorphic types
+        const typeSchemas = field.types.map(type => {
+          const typeSchema = z.object({
+            type: z.literal(type.name),
+            ...buildSchema(type.fields)
+          });
+          return typeSchema;
+        });
+        
+        schema = z.array(z.discriminatedUnion("type", typeSchemas));
+      } else if (field.list) {
+        // Handle regular lists
+        schema = z.array(
+          field.type === "object"
+            ? nestArrays
+              ? z.object({ value: z.object(buildSchema(field.fields || [])) })
+              : z.object(buildSchema(field.fields || []))
+            : nestArrays
+              ? z.object({ value: fieldSchemaFn(field) })
+              : fieldSchemaFn(field)
+        );
+
+        // Apply list constraints if specified
+        if (typeof field.list === "object") {
+          if (field.list.min) schema = schema.min(field.list.min);
+          if (field.list.max) schema = schema.max(field.list.max);
+        }
+      } else {
+        // Handle single fields
+        schema = field.type === "object"
           ? z.object(buildSchema(field.fields || []))
           : fieldSchemaFn(field);
-
-      if (field.list && typeof field.list === "object") {
-        // TODO: do we check the type of min and max or do we leave that to the normalize function? Probably normalize as we'll need to also support field options schema.
-        if (field.list.min) schema = schema.min(field.list.min);
-        if (field.list.max) schema = schema.max(field.list.max);
       }
 
       if (!field.required) {
