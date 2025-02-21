@@ -217,7 +217,16 @@ export function CollectionView({
     };
   }, [schema, primaryField, viewFields]);
 
-  const filesData = useMemo(() => data.filter((item: any) => item.type === "file"), [data]);
+  const filesData = useMemo(() => data.filter((item: any) => {
+    if (schema.filters && item.type === "file") {
+      return schema.filters.every(filter => {
+        const value = item.object[filter.name];
+        return value !== undefined && value === filter.value;
+      });
+    }
+
+    return item.type === "file";
+  }), [data, schema]);
   
   const foldersData = useMemo(() => data.filter((item: any) => item.type === "dir"), [data]);
 
