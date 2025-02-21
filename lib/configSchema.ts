@@ -63,6 +63,9 @@ const FieldObjectSchema: z.ZodType<any> = z.lazy(() => z.object({
       message: "'list' must be either a boolean or an object with 'min' and 'max' properties."
     }).strict()
   ]).optional(),
+  types: z.array({
+    message: "'types' must be an array."
+  }).optional(),
   hidden: z.boolean({
     message: "'hidden' must be a boolean."
   }).optional().nullable(),

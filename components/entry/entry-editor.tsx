@@ -49,7 +49,7 @@ export function EntryEditor({
   
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
-  
+
   let schema = useMemo(() => {
     if (!name) return;
     return getSchemaByName(config?.object, name)

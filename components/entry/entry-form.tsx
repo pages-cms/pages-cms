@@ -140,7 +140,7 @@ const ListField = ({
       setValue(fieldName, updatedValues);
     }
   };
-  
+
   return (
     <FormField
       name={fieldName}
@@ -163,7 +163,26 @@ const ListField = ({
                     <div className="grid gap-6 flex-1">
                       {field.type === "object" && field.fields
                         ? renderFields(field.fields, `${fieldName}.${index}`)
-                        : renderSingleField(field, `${fieldName}.${index}`, control, false)}
+                        : field.types !== undefined ? 
+                          (() => {
+                            const nestedConfig = field.types.find(t => t.name === arrayField.type);
+                    
+                            return Object.keys(arrayField).map((key) => {
+                              const nestedField = nestedConfig?.fields.find(f => f.name === key);
+                              console.log(nestedField);
+
+                              if (nestedField?.fields) {
+                                return renderFields([nestedField], `${fieldName}.${index}`, control, true);
+                              } else if (nestedField) {
+                                return renderSingleField(nestedField, `${fieldName}.${index}.${key}`, control, true);
+                              }
+
+                              return null;
+                            })
+                          })()
+                        :
+                        renderSingleField(field, `${fieldName}.${index}`, control, false)
+                      }
                     </div>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -263,7 +282,7 @@ const EntryForm = ({
   }, [fields]);
 
   const defaultValues = useMemo(() => {
-    return initializeState(fields, sanitizeObject(contentObject), true);
+    return initializeState(fields, sanitizeObject(contentObject), true, true);
   }, [fields, contentObject]);
 
   const form = useForm({
@@ -283,6 +302,10 @@ const EntryForm = ({
       const fieldName = parentName ? `${parentName}.${field.name}` : field.name;
 
       if (field.type === "object" && field.list && !supportsList[field.type]) {
+        if (field.types) {
+          return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
+        }
+
         return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
       } else if (field.type === "object") {
         return (

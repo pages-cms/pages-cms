@@ -22,11 +22,21 @@ const deepMap = (
       // TOOD: do we want to check for undefined or null?
       if (field.list) {
         result[field.name] = Array.isArray(value)
-          ? value.map(item =>
-              field.type === "object"
-                ? traverse(item, field.fields || [])
-                : apply(item, field)
-            )
+          ? value.map(item => {
+              if (field.type === "object" && field.types) {
+                // For polymorphic types, use the type field to determine which fields to use
+                const typeSchema = field.types.find(t => t.name === item.type);
+                if (!typeSchema) {
+                  console.warn(`Unknown type ${item.type} in polymorphic field ${field.name}`);
+                  return item;
+                }
+                return traverse({...item, }, [...typeSchema.fields, { name: 'type', type: 'hidden' } ] || []);
+              } else if (field.type === "object") {
+                return traverse(item, field.fields || []);
+              } else {
+                return apply(item, field);
+              }
+            })
           : [];
       } else if (field.type === "object") {
         result[field.name] = value !== undefined
