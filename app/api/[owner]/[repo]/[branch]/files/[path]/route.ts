@@ -63,7 +63,7 @@ export async function POST(
             }
             
             // Hidden fields are stripped in the client, we add them back
-            contentObject = deepMap(contentObject, (value, field) => field.hidden ? getDefaultValue(field) : value);
+            contentObject = deepMap(contentObject, contentFields, (value, field) => field.hidden ? getDefaultValue(field) : value);
             
             const zodSchema = generateZodSchema(contentFields);
             const zodValidation = zodSchema.safeParse(contentObject);
@@ -77,7 +77,7 @@ export async function POST(
               throw new Error(`Content validation failed: ${errorMessages.join(", ")}`);
             }
 
-            const validatedContentObject = deepMap(zodValidation.data, (value, field) => writeFns[field.type] ? writeFns[field.type](value, field, config || {}) : value);
+            const validatedContentObject = deepMap(zodValidation.data, contentFields, (value, field) => writeFns[field.type] ? writeFns[field.type](value, field, config || {}) : value);
             
             // Merge validated fields with original content to preserve any extra fields
             const mergedContentObject = schema.list 

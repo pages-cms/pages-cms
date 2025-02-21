@@ -10,32 +10,37 @@ import { format } from "date-fns";
 
 const deepMap = (
   contentObject: Record<string, any>,
+  fields: Field[],
   apply: (value: any, field: Field) => any
 ): Record<string, any> => {
-  const traverse = (data: any): any => {
-    const result: any = {};
+  const traverse = (data: any, schema: Field[]): any => {
+    const result: any = { ...data };
 
-    Object.keys(data).forEach(key => {
-      const value = data[key];
+    schema.forEach(field => {
+      const value = data[field.name];
       
-      if (Array.isArray(value)) {
-        result[key] = value.map(item => {
-          if (item && typeof item === 'object') {
-            return traverse(item);
-          }
-          return item;
-        });
-      } else if (value && typeof value === 'object') {
-        result[key] = traverse(value);
+      // TOOD: do we want to check for undefined or null?
+      if (field.list) {
+        result[field.name] = Array.isArray(value)
+          ? value.map(item =>
+              field.type === "object"
+                ? traverse(item, field.fields || [])
+                : apply(item, field)
+            )
+          : [];
+      } else if (field.type === "object") {
+        result[field.name] = value !== undefined
+          ? traverse(value, field.fields || [])
+          : {};
       } else {
-        result[key] = value;
+        result[field.name] = apply(value, field);
       }
     });
 
     return result;
   };
 
-  return traverse(contentObject);
+  return traverse(contentObject, fields);
 };
 
 // Create an initial state for an entry based on the schema fields and content
@@ -47,7 +52,7 @@ const initializeState = (
 ): Record<string, any> => {
   if (!fields) return {};
 
-  return deepMap(contentObject, (value, field) => {
+  return deepMap(contentObject, fields, (value, field) => {
     let appliedValue = value;
     if (value === undefined) {
       appliedValue = field.list && addDefaultEntryToLists ? [getDefaultValue(field)] : getDefaultValue(field);
