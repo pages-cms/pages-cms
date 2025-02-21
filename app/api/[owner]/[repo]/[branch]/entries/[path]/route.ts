@@ -89,35 +89,45 @@ const parseContent = (
   
   let contentObject: Record<string, any> = {};
 
-  if (serializedTypes.includes(schema && schema.format) && schema.fields && schema.fields.length > 0) {
-    // If we are dealing with a serialized format and we have fields defined
+  if (serializedTypes.includes(schema?.format)) {
+    // If we are dealing with a serialized format
     try {
       contentObject = parse(content, { format: schema.format, delimiters: schema.delimiters });
-      // We resort to the same trick as with the client, wrapping things in a listWrapper object if we're dealing with a list at the root
-      let entryFields;
-      if (schema.list) {
-        contentObject = { listWrapper: contentObject };
-        entryFields = [{
-          name: "listWrapper",
-          type: "object",
-          list: true,
-          fields: schema.fields
-        }]
-      } else {
-        entryFields = schema.fields;
-      }
-
-      contentObject = deepMap(
-        contentObject,
-        entryFields,
-        (value, field) => {
-          if (field.hidden) return;
-          return readFns[field.type]
-            ? readFns[field.type](value, field,  config)
-            : value;
+      
+      // Only transform fields that are defined in the schema
+      if (schema.fields?.length > 0) {
+        let entryFields;
+        let transformedContent;
+        
+        if (schema.list) {
+          transformedContent = { listWrapper: contentObject };
+          entryFields = [{
+            name: "listWrapper",
+            type: "object",
+            list: true,
+            fields: schema.fields
+          }];
+        } else {
+          transformedContent = contentObject;
+          entryFields = schema.fields;
         }
-      );
-      if (schema.list) contentObject = contentObject.listWrapper;
+
+        // Transform only the fields defined in schema, preserve other fields
+        const transformedFields = deepMap(
+          transformedContent,
+          (value, field) => {
+            if (field.hidden) return value;
+            return readFns[field.type]
+              ? readFns[field.type](value, field, config)
+              : value;
+          }
+        );
+
+        // Merge transformed fields with original content
+        contentObject = schema.list
+          ? transformedFields.listWrapper
+          : { ...contentObject, ...transformedFields };
+      }
     } catch (error: any) {
       throw new Error(`Error parsing frontmatter: ${error.message}`);
     }
@@ -125,5 +135,5 @@ const parseContent = (
     contentObject = { body: content };
   }
   
-  return contentObject; 
+  return contentObject;
 };
