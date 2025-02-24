@@ -14,7 +14,7 @@ const deepMap = (
   apply: (value: any, field: Field) => any
 ): Record<string, any> => {
   const traverse = (data: any, schema: Field[]): any => {
-    const result: any = {};
+    const result: any = { ...data };
 
     schema.forEach(field => {
       const value = data[field.name];

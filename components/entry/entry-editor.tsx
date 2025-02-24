@@ -127,7 +127,7 @@ export function EntryEditor({
           const data: any = await response.json();
           
           if (data.status !== "success") throw new Error(data.message);
-          
+
           setEntry(data.data);
           setSha(data.data.sha);
 
@@ -172,6 +172,7 @@ export function EntryEditor({
     const savePromise = new Promise(async (resolve, reject) => {
       try {
         const savePath = path ?? `${parent ?? schema.path}/${generateFilename(schema.filename, schema, contentObject)}`;
+        contentObject = { ...entry?.contentObject, ...contentObject };
 
         const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(savePath)}`, {
           method: "POST",
