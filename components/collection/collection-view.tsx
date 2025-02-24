@@ -225,7 +225,7 @@ export function CollectionView({
       });
     }
 
-    return item.type === "file" || item.type === "fileDir"));
+    return item.type === "file" || item.type === "fileDir";
   }), [data, schema]);
   
   const foldersData = useMemo(() => data.filter((item: any) => item.type === "dir"), [data]);
