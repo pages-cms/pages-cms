@@ -117,6 +117,7 @@ const parseContent = (
             : value;
         }
       );
+
       if (schema.list) contentObject = contentObject.listWrapper;
     } catch (error: any) {
       throw new Error(`Error parsing frontmatter: ${error.message}`);
@@ -124,6 +125,6 @@ const parseContent = (
   } else {
     contentObject = { body: content };
   }
-  
+
   return contentObject; 
 };

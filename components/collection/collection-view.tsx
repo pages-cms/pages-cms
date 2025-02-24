@@ -66,7 +66,7 @@ export function CollectionView({
         });
       } else {
         pathAndFieldArray = schema.fields
-          .filter((field: any) => field?.type !== 'object')
+          .filter((field: any) => field?.type !== 'object' && !field.hidden)
           .map((field: any) => ({ path: field.name, field: field }));
       }
     } else {
@@ -225,7 +225,7 @@ export function CollectionView({
       });
     }
 
-    return item.type === "file";
+    return item.type === "file" || item.type === "fileDir"));
   }), [data, schema]);
   
   const foldersData = useMemo(() => data.filter((item: any) => item.type === "dir"), [data]);

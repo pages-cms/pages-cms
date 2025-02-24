@@ -10,4 +10,5 @@ export type Field = {
   pattern?: string | { regex: string; message?: string };
   options?: Record<string, unknown> | null;
   fields?: Field[];
+  types?: { name: string; label?: string; fields: Field[] }[];
 };
