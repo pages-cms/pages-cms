@@ -4,7 +4,7 @@
 
 import slugify from "slugify";
 import { defaultValues, schemas } from "@/fields/registry";
-import { z } from "zod";
+import { AnyZodObject, z } from "zod";
 import { Field } from "@/types/field";
 import { format } from "date-fns";
 
@@ -30,7 +30,7 @@ const deepMap = (
                   console.warn(`Unknown type ${item.type} in polymorphic field ${field.name}`);
                   return item;
                 }
-                return traverse({...item, }, [...typeSchema.fields, { name: 'type', type: 'hidden' } ] || []);
+                return traverse(item, [...typeSchema.fields, { name: 'type', type: 'hidden' } ] || []);
               } else if (field.type === "object") {
                 return traverse(item, field.fields || []);
               } else {
@@ -133,19 +133,24 @@ const generateZodSchema = (
 
       let fieldSchemaFn = schemas?.[field.type] || schemas["text"];
       
-      let schema: z.ZodTypeAny;
+      let schema;
 
       if (field.types) {
         // Handle polymorphic types
-        const typeSchemas = field.types.map(type => {
-          const typeSchema = z.object({
+        const typeSchemas = field.types.map(type => 
+          z.object({
             type: z.literal(type.name),
             ...buildSchema(type.fields)
-          });
-          return typeSchema;
-        });
-        
-        schema = z.array(z.discriminatedUnion("type", typeSchemas));
+          })
+        );
+
+        if (typeSchemas.length === 1) {
+          // If there's only one type, just use `z.union` to avoid discriminatedUnion issues
+          schema = z.array(typeSchemas[0]);
+        } else {
+          // Ensure at least two elements in discriminatedUnion
+          schema = z.array(z.discriminatedUnion("type", typeSchemas as [typeof typeSchemas[0], ...typeof typeSchemas]));
+        }
       } else if (field.list) {
         // Handle regular lists
         schema = z.array(

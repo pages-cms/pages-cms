@@ -173,16 +173,18 @@ const ListField = ({
                         ? renderFields(field.fields, `${fieldName}.${index}`)
                         : field.types !== undefined ? 
                           (() => {
-                            const nestedConfig = field.types.find(t => t.name === arrayField.type);
+                            const type = (arrayField as any).type;
+                            const nestedConfig = field.types.find(t => t.name === type);
 
                             return renderFields([{
                               type: 'object',
-                              name: nestedConfig?.label || arrayField.type,
-                              poly: true,
-                              fields: Object.keys(arrayField).map((key) => {
-                                const nestedField = nestedConfig?.fields.find(f => f.name === key);
-                                return nestedField;
-                              }).filter(Boolean)
+                              name: '',
+                              fields: Object.keys(arrayField)
+                                .map((key) => {
+                                  const nestedField = nestedConfig?.fields.find(f => f.name === key);
+                                  return nestedField || null;
+                                })
+                                .filter((field): field is Field => field !== null)
                             }], `${fieldName}.${index}`)
                           })()
                         :
@@ -321,7 +323,7 @@ const EntryForm = ({
     resolver: zodSchema && zodResolver(zodSchema),
     defaultValues,
   });
-
+  
   const { isDirty } = useFormState({
     control: form.control
   });
@@ -331,7 +333,7 @@ const EntryForm = ({
     return fields.map((field) => {
       if (field.hidden) return null;
       
-      const fieldName = field.poly ? parentName : parentName ? `${parentName}.${field.name}` : field.name;
+      const fieldName = parentName ? field.name ? `${parentName}.${field.name}` : parentName : field.name;
 
       if (field.types) {
         return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
