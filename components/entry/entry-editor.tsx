@@ -9,6 +9,7 @@ import { generateFilename, getPrimaryField, getSchemaByName } from "@/lib/schema
 import {
   getFileExtension,
   getFileName,
+  getNestedCollectionPath,
   getParentPath,
   normalizePath
 } from "@/lib/utils/file";
@@ -93,7 +94,20 @@ export function EntryEditor({
   }, [schema, entry, path]);
 
   const navigateBack = useMemo(() => {
-    const parentPath = path ? getParentPath(path) : undefined;
+    let parentPath = path ? getParentPath(path) : undefined;
+    const nestedCollectionPath = getNestedCollectionPath(schema?.filename);
+
+    if (nestedCollectionPath && path) {
+      const pathSplit = path?.split("/").filter(segment => segment !== nestedCollectionPath);
+      pathSplit.pop();
+      
+      if (pathSplit.length > 1) {
+        parentPath = pathSplit?.join('/');
+      } else {
+        parentPath = "";
+      }
+    }
+    
     return schema && schema.type === "collection"
       ? `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${schema.name}${parentPath && parentPath !== schema.path ? `?path=${encodeURIComponent(parentPath)}` : ""}`
       : ""},
