@@ -9,6 +9,7 @@ import { generateFilename, getPrimaryField, getSchemaByName } from "@/lib/schema
 import {
   getFileExtension,
   getFileName,
+  getNestedCollectionPath,
   getParentPath,
   normalizePath
 } from "@/lib/utils/file";
@@ -21,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, EllipsisVertical, History } from "lucide-react";
+import { isNestedCollectionFilename } from "@/lib/utils/file";
 
 export function EntryEditor({
   name = "",
@@ -93,7 +95,22 @@ export function EntryEditor({
   }, [schema, entry, path]);
 
   const navigateBack = useMemo(() => {
-    const parentPath = path ? getParentPath(path) : undefined;
+    let parentPath = path ? getParentPath(path) : undefined;
+    const nestedCollectionPath = getNestedCollectionPath(schema?.filename);
+
+    if (nestedCollectionPath && path) {
+      const pathSplit = path?.split("/").filter(segment => segment !== nestedCollectionPath);
+      pathSplit.pop();
+      
+      if (pathSplit.length > 1) {
+        parentPath = pathSplit?.join('/');
+      } else {
+        parentPath = "";
+      }
+
+      console.log(parentPath);
+    }
+    
     return schema && schema.type === "collection"
       ? `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${schema.name}${parentPath && parentPath !== schema.path ? `?path=${encodeURIComponent(parentPath)}` : ""}`
       : ""},

@@ -6,7 +6,7 @@ import { readFns } from "@/fields/registry";
 import { parse } from "@/lib/serialization";
 import { deepMap, getDateFromFilename, getSchemaByName } from "@/lib/schema";
 import { getConfig } from "@/lib/utils/config";
-import { normalizePath } from "@/lib/utils/file";
+import { getNestedCollectionPath, normalizePath } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
 import { getToken } from "@/lib/token";
 
@@ -43,6 +43,19 @@ export async function GET(
                 path
                 type
                 object {
+                  ... on Tree {
+                    entries {
+                      name
+                      path 
+                      type
+                      object {
+                        ... on Blob {
+                          text
+                          oid
+                        }
+                      }
+                    }
+                  }
                   ... on Blob {
                     text
                     oid
@@ -135,15 +148,33 @@ const parseContents = (
         sha: item.object.oid,
         name: item.name,
         path: item.path,
-        content: item.object.text,
         object: contentObject,
         type: "file",
       };
     } else if (item.type === "tree") {
+      const nestedCollectionPath = getNestedCollectionPath(schema?.filename);
+
+      if (nestedCollectionPath) {
+        const indexFile = item.object?.entries.find((entry: any) => entry.path === `${item.path}/${nestedCollectionPath}`);
+        const hasSubfolders = item.object?.entries.some((entry: any) => entry.type == 'tree');
+
+        if (indexFile && !hasSubfolders) {
+          const parsedContents = parseContents([indexFile], schema, config);
+          const indexFileContent = parsedContents.contents[0];
+
+          return {
+            name: indexFileContent.name || item.name,
+            path: indexFileContent.path || item.path,
+            object: indexFileContent.object,
+            type: "fileDir"
+          };
+        }
+      }
+
       return {
         name: item.name,
         path: item.path,
-        type: "dir",
+        type: "dir"
       };
     }
   }).filter((item: any) => item !== undefined);

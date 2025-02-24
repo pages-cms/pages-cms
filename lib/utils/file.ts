@@ -83,6 +83,10 @@ const sortFiles = (data: Record<string, any>[]): Record<string, any>[] => {
   });
 };
 
+const getNestedCollectionPath = (path: string): string => {
+  return path?.split("/").pop() || null;
+}
+
 export {
   getFileSize,
   getFileExtension,
@@ -93,5 +97,6 @@ export {
   joinPathSegments,
   sortFiles,
   extensionCategories,
-  serializedTypes
+  serializedTypes,
+  getNestedCollectionPath
 };
