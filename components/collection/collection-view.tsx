@@ -219,7 +219,7 @@ export function CollectionView({
 
   const filesData = useMemo(() => data.filter((item: any) => {
     if (schema.filters && item.type === "file") {
-      return schema.filters.every(filter => {
+      return schema.filters.every((filter: { name: string; value: any }) => {
         const value = item.object[filter.name];
         return value !== undefined && value === filter.value;
       });
