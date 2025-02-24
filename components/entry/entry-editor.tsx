@@ -107,8 +107,6 @@ export function EntryEditor({
       } else {
         parentPath = "";
       }
-
-      console.log(parentPath);
     }
     
     return schema && schema.type === "collection"
