@@ -83,7 +83,7 @@ const sortFiles = (data: Record<string, any>[]): Record<string, any>[] => {
   });
 };
 
-const getNestedCollectionPath = (path: string): string => {
+const getNestedCollectionPath = (path: string): string | null => {
   return path?.split("/").pop() || null;
 }
 
