@@ -22,7 +22,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, EllipsisVertical, History } from "lucide-react";
-import { isNestedCollectionFilename } from "@/lib/utils/file";
 
 export function EntryEditor({
   name = "",
