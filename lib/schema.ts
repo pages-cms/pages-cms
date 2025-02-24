@@ -4,7 +4,7 @@
 
 import slugify from "slugify";
 import { defaultValues, schemas } from "@/fields/registry";
-import { z } from "zod";
+import { AnyZodObject, z } from "zod";
 import { Field } from "@/types/field";
 import { format } from "date-fns";
 
@@ -14,7 +14,7 @@ const deepMap = (
   apply: (value: any, field: Field) => any
 ): Record<string, any> => {
   const traverse = (data: any, schema: Field[]): any => {
-    const result: any = {};
+    const result: any = { ...data };
 
     schema.forEach(field => {
       const value = data[field.name];
@@ -22,11 +22,21 @@ const deepMap = (
       // TOOD: do we want to check for undefined or null?
       if (field.list) {
         result[field.name] = Array.isArray(value)
-          ? value.map(item =>
-              field.type === "object"
-                ? traverse(item, field.fields || [])
-                : apply(item, field)
-            )
+          ? value.map(item => {
+              if (field.type === "object" && field.types) {
+                // For polymorphic types, use the type field to determine which fields to use
+                const typeSchema = field.types.find(t => t.name === item.type);
+                if (!typeSchema) {
+                  console.warn(`Unknown type ${item.type} in polymorphic field ${field.name}`);
+                  return item;
+                }
+                return traverse(item, [...typeSchema.fields, { name: 'type', type: 'hidden' } ] || []);
+              } else if (field.type === "object") {
+                return traverse(item, field.fields || []);
+              } else {
+                return apply(item, field);
+              }
+            })
           : [];
       } else if (field.type === "object") {
         result[field.name] = value !== undefined
@@ -123,23 +133,46 @@ const generateZodSchema = (
 
       let fieldSchemaFn = schemas?.[field.type] || schemas["text"];
       
-      let schema = field.list
-        ? z.array(field.type === "object"
-          ? nestArrays
-            ? { value: z.object(buildSchema(field.fields || [])) }
-            : z.object(buildSchema(field.fields || []))
-          : nestArrays
-            ? { value: fieldSchemaFn(field) }
-            : fieldSchemaFn(field)
-          )
-        : field.type === "object"
+      let schema;
+
+      if (field.types) {
+        // Handle polymorphic types
+        const typeSchemas = field.types.map(type => 
+          z.object({
+            type: z.literal(type.name),
+            ...buildSchema(type.fields)
+          })
+        );
+
+        if (typeSchemas.length === 1) {
+          // If there's only one type, just use `z.union` to avoid discriminatedUnion issues
+          schema = z.array(typeSchemas[0]);
+        } else {
+          // Ensure at least two elements in discriminatedUnion
+          schema = z.array(z.discriminatedUnion("type", typeSchemas as [typeof typeSchemas[0], ...typeof typeSchemas]));
+        }
+      } else if (field.list) {
+        // Handle regular lists
+        schema = z.array(
+          field.type === "object"
+            ? nestArrays
+              ? z.object({ value: z.object(buildSchema(field.fields || [])) })
+              : z.object(buildSchema(field.fields || []))
+            : nestArrays
+              ? z.object({ value: fieldSchemaFn(field) })
+              : fieldSchemaFn(field)
+        );
+
+        // Apply list constraints if specified
+        if (typeof field.list === "object") {
+          if (field.list.min) schema = schema.min(field.list.min);
+          if (field.list.max) schema = schema.max(field.list.max);
+        }
+      } else {
+        // Handle single fields
+        schema = field.type === "object"
           ? z.object(buildSchema(field.fields || []))
           : fieldSchemaFn(field);
-
-      if (field.list && typeof field.list === "object") {
-        // TODO: do we check the type of min and max or do we leave that to the normalize function? Probably normalize as we'll need to also support field options schema.
-        if (field.list.min) schema = schema.min(field.list.min);
-        if (field.list.max) schema = schema.max(field.list.max);
       }
 
       if (!field.required) {

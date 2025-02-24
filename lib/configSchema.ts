@@ -87,6 +87,23 @@ const FieldObjectSchema: z.ZodType<any> = z.lazy(() => z.object({
   ]).optional(),
   options: z.object({}).optional().nullable(),
   fields: z.array(z.lazy(() => FieldObjectSchema)).optional(),
+  types: z.array(z.lazy(() => TypeObjectSchema)).optional(),
+}).strict());
+
+const TypeObjectSchema: z.ZodType<any> = z.lazy(() => z.object({
+  name: z.string({
+    required_error: "'name' is required.",
+    invalid_type_error: "'name' must be a string.",
+  }).regex(/^[a-zA-Z0-9-_]+$/, {
+    message: "'name' must be alphanumeric with dashes and underscores.",
+  }),
+  label: z.union([
+    z.literal(false),
+    z.string({
+      message: "'label' must be a string or 'false'."
+    })
+  ]).optional(),
+  fields: z.array(z.lazy(() => FieldObjectSchema)).optional(),
 }).strict());
 
 // Define the schema for content objects
@@ -113,6 +130,14 @@ const ContentObjectSchema = z.object({
   filename: z.string({
     message: "'filename' must be a string."
   }).optional().nullable(),
+  filters: z.array(z.object({
+    name: z.string({
+      message: "'name' must be a string."
+    }).optional().nullable(),
+    value: z.any().optional().nullable()
+  }), {
+    message: "'filters' must be an array of objects."
+  }).optional(),
   exclude: z.array(z.string({
     message: "Entries in the 'exclude' array must be strings."
   }), {

@@ -9,6 +9,7 @@ import { generateFilename, getPrimaryField, getSchemaByName } from "@/lib/schema
 import {
   getFileExtension,
   getFileName,
+  getNestedCollectionPath,
   getParentPath,
   normalizePath
 } from "@/lib/utils/file";
@@ -49,7 +50,7 @@ export function EntryEditor({
   
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
-  
+
   let schema = useMemo(() => {
     if (!name) return;
     return getSchemaByName(config?.object, name)
@@ -93,7 +94,20 @@ export function EntryEditor({
   }, [schema, entry, path]);
 
   const navigateBack = useMemo(() => {
-    const parentPath = path ? getParentPath(path) : undefined;
+    let parentPath = path ? getParentPath(path) : undefined;
+    const nestedCollectionPath = getNestedCollectionPath(schema?.filename);
+
+    if (nestedCollectionPath && path) {
+      const pathSplit = path?.split("/").filter(segment => segment !== nestedCollectionPath);
+      pathSplit.pop();
+      
+      if (pathSplit.length > 1) {
+        parentPath = pathSplit?.join('/');
+      } else {
+        parentPath = "";
+      }
+    }
+    
     return schema && schema.type === "collection"
       ? `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${schema.name}${parentPath && parentPath !== schema.path ? `?path=${encodeURIComponent(parentPath)}` : ""}`
       : ""},
@@ -113,7 +127,7 @@ export function EntryEditor({
           const data: any = await response.json();
           
           if (data.status !== "success") throw new Error(data.message);
-          
+
           setEntry(data.data);
           setSha(data.data.sha);
 
@@ -158,6 +172,7 @@ export function EntryEditor({
     const savePromise = new Promise(async (resolve, reject) => {
       try {
         const savePath = path ?? `${parent ?? schema.path}/${generateFilename(schema.filename, schema, contentObject)}`;
+        contentObject = { ...entry?.contentObject, ...contentObject };
 
         const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(savePath)}`, {
           method: "POST",

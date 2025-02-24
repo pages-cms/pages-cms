@@ -31,6 +31,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -55,7 +63,7 @@ import {
   restrictToParentElement
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
 
 const SortableItem = ({
   id,
@@ -140,7 +148,7 @@ const ListField = ({
       setValue(fieldName, updatedValues);
     }
   };
-  
+
   return (
     <FormField
       name={fieldName}
@@ -163,7 +171,25 @@ const ListField = ({
                     <div className="grid gap-6 flex-1">
                       {field.type === "object" && field.fields
                         ? renderFields(field.fields, `${fieldName}.${index}`)
-                        : renderSingleField(field, `${fieldName}.${index}`, control, false)}
+                        : field.types !== undefined ? 
+                          (() => {
+                            const type = (arrayField as any).type;
+                            const nestedConfig = field.types.find(t => t.name === type);
+
+                            return renderFields([{
+                              type: 'object',
+                              name: '',
+                              fields: Object.keys(arrayField)
+                                .map((key) => {
+                                  const nestedField = nestedConfig?.fields.find(f => f.name === key);
+                                  return nestedField || null;
+                                })
+                                .filter((field): field is Field => field !== null)
+                            }], `${fieldName}.${index}`)
+                          })()
+                        :
+                        renderSingleField(field, `${fieldName}.${index}`, control, false)
+                      }
                     </div>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -181,6 +207,33 @@ const ListField = ({
             </DndContext>
             {typeof field.list === "object" && field.list?.max && arrayFields.length >= field.list.max
               ? null
+              : field.types !== undefined ?
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      Add an entry
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {field.types?.map(type => (
+                      <DropdownMenuItem
+                        key={type.name}
+                        onClick={() => {
+                          const selectedType = field.types?.find(t => t.name === type.name);
+                          if (selectedType) {
+                            append({
+                              type: type.name,
+                              ...initializeState(selectedType.fields, {}, true)
+                            });
+                          }
+                        }}
+                      >
+                        {type.label || type.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               : <Button
                   type="button"
                   variant="outline"
@@ -263,14 +316,14 @@ const EntryForm = ({
   }, [fields]);
 
   const defaultValues = useMemo(() => {
-    return initializeState(fields, sanitizeObject(contentObject), true);
+    return initializeState(fields, sanitizeObject(contentObject), true, true);
   }, [fields, contentObject]);
 
   const form = useForm({
     resolver: zodSchema && zodResolver(zodSchema),
     defaultValues,
   });
-
+  
   const { isDirty } = useFormState({
     control: form.control
   });
@@ -280,9 +333,11 @@ const EntryForm = ({
     return fields.map((field) => {
       if (field.hidden) return null;
       
-      const fieldName = parentName ? `${parentName}.${field.name}` : field.name;
+      const fieldName = parentName ? field.name ? `${parentName}.${field.name}` : parentName : field.name;
 
-      if (field.type === "object" && field.list && !supportsList[field.type]) {
+      if (field.types) {
+        return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
+      } else if (field.type === "object" && field.list && !supportsList[field.type]) {
         return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
       } else if (field.type === "object") {
         return (
@@ -306,6 +361,7 @@ const EntryForm = ({
 
   const handleSubmit = async (values: any) => {
     setIsSubmitting(true);
+
     try {
       await onSubmit(values);
     } finally {

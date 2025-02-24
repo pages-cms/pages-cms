@@ -66,7 +66,7 @@ export function CollectionView({
         });
       } else {
         pathAndFieldArray = schema.fields
-          .filter((field: any) => field?.type !== 'object')
+          .filter((field: any) => field?.type !== 'object' && !field.hidden)
           .map((field: any) => ({ path: field.name, field: field }));
       }
     } else {
@@ -217,7 +217,16 @@ export function CollectionView({
     };
   }, [schema, primaryField, viewFields]);
 
-  const filesData = useMemo(() => data.filter((item: any) => item.type === "file"), [data]);
+  const filesData = useMemo(() => data.filter((item: any) => {
+    if (schema.filters && item.type === "file") {
+      return schema.filters.every((filter: { name: string; value: any }) => {
+        const value = item.object[filter.name];
+        return value !== undefined && value === filter.value;
+      });
+    }
+
+    return item.type === "file" || item.type === "fileDir"));
+  }), [data, schema]);
   
   const foldersData = useMemo(() => data.filter((item: any) => item.type === "dir"), [data]);
 
