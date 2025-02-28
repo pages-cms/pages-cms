@@ -123,6 +123,11 @@ const ListField = ({
 
   useEffect(() => {
     const defaultEntry = getDefaultValue(field);
+
+    if (typeof defaultEntry === "object" && Object.keys(defaultEntry).length === 0) {
+      return;
+    }
+
     if (arrayFields.length === 0 && !hasAppended.current && defaultEntry) {
       append(defaultEntry);
       hasAppended.current = true;
@@ -272,21 +277,25 @@ const renderSingleField = (
       name={fieldName}
       key={fieldName}
       control={control}
-      render={({ field: fieldProps }) => (
-        <FormItem>
-          {showLabel && field.label !== false &&
-            <FormLabel className="h-5">
-              {field.label || field.name}
-            </FormLabel>
-          }
-          {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
-          <FormControl>
-            <FieldComponent {...fieldProps} field={field} />
-          </FormControl>
-          {field.description && <FormDescription>{field.description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field: fieldProps }) => {
+        console.log(fieldProps);
+
+        return (
+          <FormItem>
+            {showLabel && field.label !== false &&
+              <FormLabel className="h-5">
+                {field.label || field.name}
+              </FormLabel>
+            }
+            {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
+            <FormControl>
+              <FieldComponent {...fieldProps} field={field} />
+            </FormControl>
+            {field.description && <FormDescription>{field.description}</FormDescription>}
+            <FormMessage />
+          </FormItem>
+        );
+      }}
     />
   );
 };
@@ -317,7 +326,7 @@ const EntryForm = ({
   }, [fields]);
 
   const defaultValues = useMemo(() => {
-    return initializeState(fields, sanitizeObject(contentObject), true, true);
+    return initializeState(fields, sanitizeObject(contentObject), true);
   }, [fields, contentObject]);
 
   const form = useForm({

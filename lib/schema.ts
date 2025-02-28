@@ -67,7 +67,7 @@ const initializeState = (
     if (value === undefined) {
       appliedValue = field.list && addDefaultEntryToLists ? [getDefaultValue(field)] : getDefaultValue(field);
     }
-    if (field.list && nestArrays) appliedValue = { value: appliedValue}
+    if ((field.list && nestArrays) || field.types?.length) appliedValue = { value: appliedValue}
     return appliedValue;
   });
 };
