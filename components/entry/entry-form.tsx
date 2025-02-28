@@ -44,7 +44,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  DndContext, 
+  DndContext,
   closestCenter,
   KeyboardSensor,
   PointerSensor,
@@ -89,9 +89,9 @@ const SortableItem = ({
   };
 
   return (
-    <div ref={setNodeRef} className={cn("bg-background flex gap-x-1 rounded-lg border items-center", type === "object" ? "px-2 py-4" : "px-1 py-2", isDragging ? "z-50" : "z-10" )} style={style}>
+    <div ref={setNodeRef} className={cn("bg-background flex gap-x-1 rounded-lg border items-center", type === "object" ? "px-2 py-4" : "px-1 py-2", isDragging ? "z-50" : "z-10")} style={style}>
       <Button type="button" variant="ghost" size="icon-sm" className="h-8 cursor-move" {...attributes} {...listeners}>
-        <GripVertical className="h-4 w-4"/>
+        <GripVertical className="h-4 w-4" />
       </Button>
       {children}
     </div>
@@ -122,8 +122,9 @@ const ListField = ({
   const hasAppended = useRef(false);
 
   useEffect(() => {
-    if (arrayFields.length === 0 && !hasAppended.current) {
-      append(getDefaultValue(field));
+    const defaultEntry = getDefaultValue(field);
+    if (arrayFields.length === 0 && !hasAppended.current && defaultEntry) {
+      append(defaultEntry);
       hasAppended.current = true;
     }
   }, [arrayFields, append, field]);
@@ -171,7 +172,7 @@ const ListField = ({
                     <div className="grid gap-6 flex-1">
                       {field.type === "object" && field.fields
                         ? renderFields(field.fields, `${fieldName}.${index}`)
-                        : field.types !== undefined ? 
+                        : field.types !== undefined ?
                           (() => {
                             const type = (arrayField as any).type;
                             const nestedConfig = field.types.find(t => t.name === type);
@@ -187,8 +188,8 @@ const ListField = ({
                                 .filter((field): field is Field => field !== null)
                             }], `${fieldName}.${index}`)
                           })()
-                        :
-                        renderSingleField(field, `${fieldName}.${index}`, control, false)
+                          :
+                          renderSingleField(field, `${fieldName}.${index}`, control, false)
                       }
                     </div>
                     <Tooltip>
@@ -234,7 +235,7 @@ const ListField = ({
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-              : <Button
+                : <Button
                   type="button"
                   variant="outline"
                   size="sm"
@@ -251,7 +252,7 @@ const ListField = ({
                 </Button>
             }
           </div>
-          <FormMessage/>
+          <FormMessage />
         </FormItem>
       )}
     />
@@ -283,7 +284,7 @@ const renderSingleField = (
             <FieldComponent {...fieldProps} field={field} />
           </FormControl>
           {field.description && <FormDescription>{field.description}</FormDescription>}
-          <FormMessage/>
+          <FormMessage />
         </FormItem>
       )}
     />
@@ -323,7 +324,7 @@ const EntryForm = ({
     resolver: zodSchema && zodResolver(zodSchema),
     defaultValues,
   });
-  
+
   const { isDirty } = useFormState({
     control: form.control
   });
@@ -332,7 +333,7 @@ const EntryForm = ({
   const renderFields = (fields: Field[], parentName?: string) => {
     return fields.map((field) => {
       if (field.hidden) return null;
-      
+
       const fieldName = parentName ? field.name ? `${parentName}.${field.name}` : parentName : field.name;
 
       if (field.types) {
@@ -380,17 +381,17 @@ const EntryForm = ({
                   className={cn(buttonVariants({ variant: "outline", size: "icon-xs" }), "mr-4 shrink-0")}
                   href={navigateBack}
                 >
-                  <ChevronLeft className="h-4 w-4"/>
+                  <ChevronLeft className="h-4 w-4" />
                 </Link>
               }
-              
+
               <h1 className="font-semibold text-lg md:text-2xl truncate">{title}</h1>
             </header>
             <div onSubmit={form.handleSubmit(handleSubmit)} className="grid items-start gap-6">
               {renderFields(fields)}
             </div>
           </div>
-          
+
           <div className="hidden lg:block w-64">
             <div className="flex flex-col gap-y-4 sticky top-0">
               <div className="flex gap-x-2">
@@ -400,11 +401,11 @@ const EntryForm = ({
                 </Button>
                 {options ? options : null}
               </div>
-              {path && history && <EntryHistoryBlock history={history} path={path}/>}
+              {path && history && <EntryHistoryBlock history={history} path={path} />}
             </div>
           </div>
           <div className="lg:hidden fixed top-0 right-0 h-14 flex items-center gap-x-2 z-10 pr-4 md:pr-6">
-            {path && history && <EntryHistoryDropdown history={history} path={path}/>}
+            {path && history && <EntryHistoryDropdown history={history} path={path} />}
             <Button type="submit" disabled={isSubmitting}>
               Save
               {isSubmitting && (<Loader className="ml-2 h-4 w-4 animate-spin" />)}
