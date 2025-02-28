@@ -8,6 +8,7 @@ import { getConfig, updateConfig } from "@/lib/utils/config";
 import { getFileExtension, getFileName, normalizePath, serializedTypes } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
 import { getToken } from "@/lib/token";
+import { mergeDeep } from "@/lib/utils";
 
 export async function POST(
   request: Request,
@@ -81,13 +82,13 @@ export async function POST(
             
             // Merge validated fields with original content to preserve any extra fields
             const mergedContentObject = schema.list 
-              ? validatedContentObject
-              : { ...data.content, ...validatedContentObject };
+              ? mergeDeep(data.initial.listWrapper, validatedContentObject.listWrapper)
+              : mergeDeep(data.initial, validatedContentObject);
 
             const sanitizedContentObject = schema.list
               ? sanitizeObject(mergedContentObject.listWrapper)
               : sanitizeObject(mergedContentObject);
-
+            
             const stringifiedContentObject = stringify(
               sanitizedContentObject,
               {
