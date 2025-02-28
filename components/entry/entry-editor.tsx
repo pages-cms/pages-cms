@@ -19,7 +19,7 @@ import { Message } from "@/components/message";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner";
-import { cn, mergeDeep } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { ChevronLeft, EllipsisVertical, History } from "lucide-react";
 
 export function EntryEditor({
@@ -159,7 +159,6 @@ export function EntryEditor({
     const savePromise = new Promise(async (resolve, reject) => {
       try {
         const savePath = path ?? `${parent ?? schema.path}/${generateFilename(schema.filename, schema, contentObject)}`;
-        contentObject = mergeDeep(entry?.contentObject, contentObject);
 
         const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(savePath)}`, {
           method: "POST",
