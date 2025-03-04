@@ -43,7 +43,7 @@ export interface DatabaseUserAttributes {
 	email: string;
 }
 
-export const github = new GitHub(process.env.GITHUB_APP_CLIENT_ID!, process.env.GITHUB_APP_CLIENT_SECRET!);
+export const github = new GitHub(process.env.GITHUB_APP_CLIENT_ID!, process.env.GITHUB_APP_CLIENT_SECRET!, null);
 
 export const getAuth = cache(
 	async (): Promise<{ user: User; session: Session } | { user: null; session: null }> => {

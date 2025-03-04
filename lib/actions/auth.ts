@@ -61,7 +61,7 @@ const handleEmailSignIn = async (prevState: any, formData: FormData) => {
 
 const handleGithubSignIn = async () => {
   const state = generateState();
-	const url = await github.createAuthorizationURL(state, { scopes: ["repo", "user:email"] });
+	const url = await github.createAuthorizationURL(state, ["repo", "user:email"]);
 
 	(await cookies()).set("github_oauth_state", state, {
 		path: "/",

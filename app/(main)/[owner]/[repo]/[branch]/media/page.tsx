@@ -13,7 +13,7 @@ export default function Page() {
   if (!config) throw new Error(`Configuration not found.`);
 
   return (
-    <div className="max-w-screen-xl mx-auto flex-1 flex flex-col h-full">
+    <div className="max-w-(--breakpoint-xl) mx-auto flex-1 flex flex-col h-full">
       <header className="flex items-center mb-6">
         <h1 className="font-semibold text-lg md:text-2xl">Media</h1>
       </header>

@@ -30,8 +30,9 @@ export async function GET(request: Request): Promise<Response> {
 			}
 		});
 		const githubUser: GitHubUser = await githubUserResponse.json();
+		const accessToken: string = token.accessToken();
     
-    const { ciphertext, iv } = await encrypt(token.accessToken);
+    const { ciphertext, iv } = await encrypt(accessToken);
 
 		const existingUser = await db.query.userTable.findFirst({
 			where: eq(userTable.githubId, Number(githubUser.id))

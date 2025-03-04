@@ -316,7 +316,7 @@ const EntryForm = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)}>
-        <div className="max-w-screen-xl mx-auto flex w-full gap-x-8">
+        <div className="max-w-(--breakpoint-xl) mx-auto flex w-full gap-x-8">
           <div className="flex-1 w-0">
             <header className="flex items-center mb-6">
               {navigateBack &&
