@@ -8,7 +8,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build && npm run db:migrate",
     "start": "next start",
     "lint": "next lint",
@@ -29,7 +29,7 @@
     "@libsql/client": "^0.8.1",
     "@ltd/j-toml": "^1.38.0",
     "@lucia-auth/adapter-drizzle": "^1.0.7",
-    "@next/env": "^14.2.4",
+    "@next/env": "15.2.1",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-dialog": "^1.1.1",
@@ -72,12 +72,12 @@
     "lucia": "^3.2.0",
     "lucide-react": "^0.378.0",
     "marked": "^12.0.2",
-    "next": "^14.2.20",
+    "next": "15.2.1",
     "next-themes": "^0.3.0",
     "octokit": "^4.0.2",
-    "react": "^18.3.1",
+    "react": "19.0.0",
     "react-day-picker": "^8.10.1",
-    "react-dom": "^18.3.1",
+    "react-dom": "19.0.0",
     "react-hook-form": "^7.51.5",
     "resend": "^3.5.0",
     "slugify": "^1.6.6",
@@ -91,16 +91,20 @@
   },
   "devDependencies": {
     "@types/node": "^20.12.8",
-    "@types/react": "^18.3.1",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "19.0.10",
+    "@types/react-dom": "19.0.4",
     "@types/turndown": "^5.0.4",
-    "drizzle-kit": "^0.22.7",
+    "drizzle-kit": "^0.19.1",
     "eslint": "^8.57.0",
-    "eslint-config-next": "14.2.3",
+    "eslint-config-next": "15.2.1",
     "npm": "^10.8.1",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.5",
     "uninstall": "^0.0.0"
+  },
+  "overrides": {
+    "@types/react": "19.0.10",
+    "@types/react-dom": "19.0.4"
   }
 }

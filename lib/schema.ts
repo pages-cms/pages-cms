@@ -122,6 +122,10 @@ const generateZodSchema = (
       if (ignoreHidden && field.hidden) return acc;
 
       let fieldSchemaFn = schemas?.[field.type] || schemas["text"];
+
+      if (!fieldSchemaFn) {
+        console.error(schemas, `No schema found for field type: ${field.type}`);
+      }
       
       let schema = field.list
         ? z.array(field.type === "object"

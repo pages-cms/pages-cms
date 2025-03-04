@@ -9,10 +9,8 @@ import { collaboratorTable } from "@/db/schema";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { owner: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ owner: string }> }) {
+  const params = await props.params;
   try {
     const { user, session } = await getAuth();
     if (!session) return new Response(null, { status: 401 });
