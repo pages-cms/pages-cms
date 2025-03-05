@@ -6,15 +6,18 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function mergeDeep(target: any, source: any) {
-  if (target && source) {
+  // Create a deep copy of the target to avoid modifying the original
+  const targetCopy = JSON.parse(JSON.stringify(target));
+
+  if (targetCopy && source) {
     Object.keys(source).forEach(key => {
-      if (typeof source[key] === 'object') {
-        if (!target[key]) Object.assign(target, { [key]: {} });
-        mergeDeep(target[key], source[key]);
+      if (typeof source[key] === 'object' && source[key] !== null) {
+        if (!targetCopy[key]) Object.assign(targetCopy, { [key]: {} });
+        targetCopy[key] = mergeDeep(targetCopy[key], source[key]);
       } else {
-        Object.assign(target, { [key]: source[key] });
+        Object.assign(targetCopy, { [key]: source[key] });
       }
     });
   }
-  return target;
+  return targetCopy; // Return the modified copy instead of the original target
 }
