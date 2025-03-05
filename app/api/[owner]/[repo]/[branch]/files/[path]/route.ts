@@ -8,6 +8,7 @@ import { getConfig, updateConfig } from "@/lib/utils/config";
 import { getFileExtension, getFileName, normalizePath, serializedTypes } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
 import { getToken } from "@/lib/token";
+import { getEntry } from "@/lib/utils/entry";
 import { mergeDeep } from "@/lib/utils";
 
 export async function POST(
@@ -80,10 +81,12 @@ export async function POST(
 
             const validatedContentObject = deepMap(zodValidation.data, contentFields, (value, field) => writeFns[field.type] ? writeFns[field.type](value, field, config || {}) : value);
             
+            const entry = await getEntry(user, params.owner, params.repo, params.branch, params.path, data.name);
+
             // Merge validated fields with original content to preserve any extra fields
             const mergedContentObject = schema.list 
-              ? mergeDeep(data.initial.listWrapper, validatedContentObject.listWrapper)
-              : mergeDeep(data.initial, validatedContentObject);
+              ? mergeDeep(entry.contentObject.listWrapper, validatedContentObject.listWrapper)
+              : mergeDeep(entry.contentObject, validatedContentObject);
 
             const sanitizedContentObject = schema.list
               ? sanitizeObject(mergedContentObject.listWrapper)
