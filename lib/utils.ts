@@ -5,19 +5,24 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function mergeDeep(target: any, source: any) {
-  // Create a deep copy of the target to avoid modifying the original
-  const targetCopy = JSON.parse(JSON.stringify(target));
+export function isObject(item: any) {
+  return (item && typeof item === 'object' && !Array.isArray(item));
+}
 
-  if (targetCopy && source) {
-    Object.keys(source).forEach(key => {
-      if (typeof source[key] === 'object' && source[key] !== null) {
-        if (!targetCopy[key]) Object.assign(targetCopy, { [key]: {} });
-        targetCopy[key] = mergeDeep(targetCopy[key], source[key]);
+export function mergeDeep(target: object, ...sources: object[]) {
+  if (!sources.length) return target;
+  const source = sources.shift();
+
+  if (isObject(target) && isObject(source)) {
+    for (const key in source) {
+      if (isObject(source[key])) {
+        if (!target[key]) Object.assign(target, { [key]: {} });
+        mergeDeep(target[key], source[key]);
       } else {
-        Object.assign(targetCopy, { [key]: source[key] });
+        Object.assign(target, { [key]: source[key] });
       }
-    });
+    }
   }
-  return targetCopy; // Return the modified copy instead of the original target
+
+  return mergeDeep(target, ...sources);
 }
