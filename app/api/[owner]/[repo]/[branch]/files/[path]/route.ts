@@ -81,7 +81,16 @@ export async function POST(
 
             const validatedContentObject = deepMap(zodValidation.data, contentFields, (value, field) => writeFns[field.type] ? writeFns[field.type](value, field, config || {}) : value);
             
-            const entry = await getEntry(user, params.owner, params.repo, params.branch, params.path, data.name);
+            let entry;
+            try {
+              entry = await getEntry(user, params.owner, params.repo, params.branch, params.path, data.name);
+            } catch (error: any) {
+              if (error.status == 404) {
+                entry = { contentObject: schema.list ? { listWrapper: [] } : {} }; // Create a default entry if not found
+              } else {
+                throw error; // Rethrow if it's a different error
+              }
+            }
 
             // Merge validated fields with original content to preserve any extra fields
             const mergedContentObject = schema.list 
