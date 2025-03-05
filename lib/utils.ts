@@ -9,7 +9,7 @@ export function isObject(item: any) {
   return (item && typeof item === 'object' && !Array.isArray(item));
 }
 
-export function mergeDeep(target: object, ...sources: object[]) {
+export function mergeDeep(target: any, ...sources: any) {
   if (!sources.length) return target;
   const source = sources.shift();
 
