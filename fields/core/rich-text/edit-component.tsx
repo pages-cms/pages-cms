@@ -156,7 +156,7 @@ const EditComponent = forwardRef((props: any, ref) => {
       <Skeleton className={cn("rounded-md h-[8.5rem]", isContentReady ? "hidden" : "")} />
       <div className={!isContentReady ? "hidden" : ""}>
         {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 25, animation: "scale", maxWidth: "370px" }}>
-          <div className="p-1 rounded-md bg-popover border flex gap-x-[1px] items-center focus-visible:outline-none shadow-md" ref={bubbleMenuRef}>
+          <div className="p-1 rounded-md bg-popover border flex gap-x-[1px] items-center focus-visible:outline-hidden shadow-md" ref={bubbleMenuRef}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

@@ -54,7 +54,7 @@ const SortableItem = ({
     <div ref={setNodeRef} style={style}>
       <div className="relative w-28">
         <div {...attributes} {...listeners}>
-          <Thumbnail path={path} className="aspect-square rounded-md outline-none"/>
+          <Thumbnail path={path} className="aspect-square rounded-md outline-hidden"/>
         </div>
         {children}
       </div>
