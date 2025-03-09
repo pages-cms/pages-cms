@@ -217,7 +217,7 @@ export function CollectionView({
     };
   }, [schema, primaryField, viewFields]);
 
-  const filesData = useMemo(() => data.filter((item: any) => item.type === "file"), [data]);
+  const filesData = useMemo(() => data.filter((item: any) => item.type === "file" || item.type === "fileDir"), [data]);
   
   const foldersData = useMemo(() => data.filter((item: any) => item.type === "dir"), [data]);
 
