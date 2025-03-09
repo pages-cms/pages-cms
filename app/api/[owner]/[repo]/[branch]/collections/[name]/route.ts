@@ -151,7 +151,7 @@ const parseContents = (
         object: contentObject,
         type: "file",
       };
-    } else if (item.type === "tree") {
+    } else if (item.type === "tree" && !excludedFiles.includes(item.name)) {
       const nestedCollectionPath = getNestedCollectionPath(schema?.filename);
 
       if (nestedCollectionPath) {
