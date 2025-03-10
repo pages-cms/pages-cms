@@ -31,12 +31,20 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  DndContext, 
+  DndContext,
   closestCenter,
   KeyboardSensor,
   PointerSensor,
@@ -55,7 +63,7 @@ import {
   restrictToParentElement
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
 
 const SortableItem = ({
   id,
@@ -81,9 +89,9 @@ const SortableItem = ({
   };
 
   return (
-    <div ref={setNodeRef} className={cn("bg-background flex gap-x-1 rounded-lg border items-center", type === "object" ? "px-2 py-4" : "px-1 py-2", isDragging ? "z-50" : "z-10" )} style={style}>
+    <div ref={setNodeRef} className={cn("bg-background flex gap-x-1 rounded-lg border items-center", type === "object" ? "px-2 py-4" : "px-1 py-2", isDragging ? "z-50" : "z-10")} style={style}>
       <Button type="button" variant="ghost" size="icon-sm" className="h-8 cursor-move" {...attributes} {...listeners}>
-        <GripVertical className="h-4 w-4"/>
+        <GripVertical className="h-4 w-4" />
       </Button>
       {children}
     </div>
@@ -114,8 +122,14 @@ const ListField = ({
   const hasAppended = useRef(false);
 
   useEffect(() => {
-    if (arrayFields.length === 0 && !hasAppended.current) {
-      append(getDefaultValue(field));
+    const defaultEntry = getDefaultValue(field);
+
+    if (typeof defaultEntry === "object" && Object.keys(defaultEntry).length === 0) {
+      return;
+    }
+
+    if (arrayFields.length === 0 && !hasAppended.current && defaultEntry) {
+      append(defaultEntry);
       hasAppended.current = true;
     }
   }, [arrayFields, append, field]);
@@ -140,7 +154,7 @@ const ListField = ({
       setValue(fieldName, updatedValues);
     }
   };
-  
+
   return (
     <FormField
       name={fieldName}
@@ -163,7 +177,25 @@ const ListField = ({
                     <div className="grid gap-6 flex-1">
                       {field.type === "object" && field.fields
                         ? renderFields(field.fields, `${fieldName}.${index}`)
-                        : renderSingleField(field, `${fieldName}.${index}`, control, false)}
+                        : field.types !== undefined ?
+                          (() => {
+                            const type = (arrayField as any).type;
+                            const nestedConfig = field.types.find(t => t.name === type);
+
+                            return renderFields([{
+                              type: 'object',
+                              name: '',
+                              fields: Object.keys(arrayField)
+                                .map((key) => {
+                                  const nestedField = nestedConfig?.fields.find(f => f.name === key);
+                                  return nestedField || null;
+                                })
+                                .filter((field): field is Field => field !== null)
+                            }], `${fieldName}.${index}`)
+                          })()
+                          :
+                          renderSingleField(field, `${fieldName}.${index}`, control, false)
+                      }
                     </div>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -181,7 +213,34 @@ const ListField = ({
             </DndContext>
             {typeof field.list === "object" && field.list?.max && arrayFields.length >= field.list.max
               ? null
-              : <Button
+              : field.types !== undefined ?
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      Add an entry
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {field.types?.map(type => (
+                      <DropdownMenuItem
+                        key={type.name}
+                        onClick={() => {
+                          const selectedType = field.types?.find(t => t.name === type.name);
+                          if (selectedType) {
+                            append({
+                              type: type.name,
+                              ...initializeState(selectedType.fields, {}, true)
+                            });
+                          }
+                        }}
+                      >
+                        {type.label || type.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                : <Button
                   type="button"
                   variant="outline"
                   size="sm"
@@ -198,7 +257,7 @@ const ListField = ({
                 </Button>
             }
           </div>
-          <FormMessage/>
+          <FormMessage />
         </FormItem>
       )}
     />
@@ -218,21 +277,25 @@ const renderSingleField = (
       name={fieldName}
       key={fieldName}
       control={control}
-      render={({ field: fieldProps }) => (
-        <FormItem>
-          {showLabel && field.label !== false &&
-            <FormLabel className="h-5">
-              {field.label || field.name}
-            </FormLabel>
-          }
-          {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
-          <FormControl>
-            <FieldComponent {...fieldProps} field={field} />
-          </FormControl>
-          {field.description && <FormDescription>{field.description}</FormDescription>}
-          <FormMessage/>
-        </FormItem>
-      )}
+      render={({ field: fieldProps }) => {
+        console.log(fieldProps);
+
+        return (
+          <FormItem>
+            {showLabel && field.label !== false &&
+              <FormLabel className="h-5">
+                {field.label || field.name}
+              </FormLabel>
+            }
+            {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
+            <FormControl>
+              <FieldComponent {...fieldProps} field={field} />
+            </FormControl>
+            {field.description && <FormDescription>{field.description}</FormDescription>}
+            <FormMessage />
+          </FormItem>
+        );
+      }}
     />
   );
 };
@@ -279,10 +342,12 @@ const EntryForm = ({
   const renderFields = (fields: Field[], parentName?: string) => {
     return fields.map((field) => {
       if (field.hidden) return null;
-      
-      const fieldName = parentName ? `${parentName}.${field.name}` : field.name;
 
-      if (field.type === "object" && field.list && !supportsList[field.type]) {
+      const fieldName = parentName ? field.name ? `${parentName}.${field.name}` : parentName : field.name;
+
+      if (field.types) {
+        return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
+      } else if (field.type === "object" && field.list && !supportsList[field.type]) {
         return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
       } else if (field.type === "object") {
         return (
@@ -306,6 +371,7 @@ const EntryForm = ({
 
   const handleSubmit = async (values: any) => {
     setIsSubmitting(true);
+
     try {
       await onSubmit(values);
     } finally {
@@ -324,17 +390,17 @@ const EntryForm = ({
                   className={cn(buttonVariants({ variant: "outline", size: "icon-xs" }), "mr-4 shrink-0")}
                   href={navigateBack}
                 >
-                  <ChevronLeft className="h-4 w-4"/>
+                  <ChevronLeft className="h-4 w-4" />
                 </Link>
               }
-              
+
               <h1 className="font-semibold text-lg md:text-2xl truncate">{title}</h1>
             </header>
             <div onSubmit={form.handleSubmit(handleSubmit)} className="grid items-start gap-6">
               {renderFields(fields)}
             </div>
           </div>
-          
+
           <div className="hidden lg:block w-64">
             <div className="flex flex-col gap-y-4 sticky top-0">
               <div className="flex gap-x-2">
@@ -344,11 +410,11 @@ const EntryForm = ({
                 </Button>
                 {options ? options : null}
               </div>
-              {path && history && <EntryHistoryBlock history={history} path={path}/>}
+              {path && history && <EntryHistoryBlock history={history} path={path} />}
             </div>
           </div>
           <div className="lg:hidden fixed top-0 right-0 h-14 flex items-center gap-x-2 z-10 pr-4 md:pr-6">
-            {path && history && <EntryHistoryDropdown history={history} path={path}/>}
+            {path && history && <EntryHistoryDropdown history={history} path={path} />}
             <Button type="submit" disabled={isSubmitting}>
               Save
               {isSubmitting && (<Loader className="ml-2 h-4 w-4 animate-spin" />)}
