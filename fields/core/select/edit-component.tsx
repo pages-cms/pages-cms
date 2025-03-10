@@ -1,6 +1,4 @@
-"use client";
-
-import { forwardRef } from "react";
+"use client";;
 import {
   Select,
   SelectContent,
@@ -9,7 +7,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLTextAreaElement>) => {
+const EditComponent = (
+  {
+    ref,
+    ...props
+  }
+) => {
   const { value, field, onChange } = props;
 
   return (
@@ -35,6 +38,6 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLTextAreaElement
       </SelectContent>
     </Select>
   )
-});
+};
 
 export { EditComponent };
