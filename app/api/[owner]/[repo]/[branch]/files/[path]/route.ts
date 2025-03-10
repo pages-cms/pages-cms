@@ -92,14 +92,21 @@ export async function POST(
               }
             }
 
-            // Merge validated fields with original content to preserve any extra fields
-            const mergedContentObject = schema.list 
-              ? mergeDeep(entry.contentObject.listWrapper, validatedContentObject.listWrapper)
-              : mergeDeep(entry.contentObject, validatedContentObject);
+            // Determine whether to merge or replace based on schema configuration
+            const shouldMerge = schema?.merge ?? config?.object?.settings?.merge ?? false;
+
+            // Either merge validated fields with original content or use only validated content
+            const contentObjectToSanitize = schema.list 
+              ? shouldMerge 
+                ? mergeDeep(entry.contentObject.listWrapper, validatedContentObject.listWrapper)
+                : validatedContentObject.listWrapper
+              : shouldMerge
+                ? mergeDeep(entry.contentObject, validatedContentObject)
+                : validatedContentObject;
 
             const sanitizedContentObject = schema.list
-              ? sanitizeObject(mergedContentObject.listWrapper)
-              : sanitizeObject(mergedContentObject);
+              ? sanitizeObject(contentObjectToSanitize.listWrapper)
+              : sanitizeObject(contentObjectToSanitize);
             
             const stringifiedContentObject = stringify(
               sanitizedContentObject,
