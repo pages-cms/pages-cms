@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { getParentPath } from "@/lib/utils/file";
 import { MediaDialog } from "@/components/media/media-dialog";
 import { Thumbnail } from "@/components/thumbnail";
@@ -62,7 +62,12 @@ const SortableItem = ({
   );
 };
 
-const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) => {
+const EditComponent = (
+  {
+    ref,
+    ...props
+  }
+) => {
   const { value, field, onChange } = props;
   const [images, setImages] = useState<{ id: string, path: string }[]>(() => 
     value
@@ -169,6 +174,6 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
       </SortableContext>
     </DndContext>
   );
-});
+};
 
 export { EditComponent };

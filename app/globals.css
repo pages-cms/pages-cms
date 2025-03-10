@@ -84,7 +84,7 @@
   --border: hsl(0 0% 85.8%);
   --input: hsl(0 0% 85.8%);
   --ring: hsl(0 0% 3.9%);
-  --radius: hsl(0.75rem);
+  --radius: 0.75rem;
 }
 
 .dark {

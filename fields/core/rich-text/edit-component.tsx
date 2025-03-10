@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { BubbleMenu, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -59,16 +59,21 @@ import {
   Underline as UnderlineIcon
 } from "lucide-react";
 
-const EditComponent = forwardRef((props: any, ref) => {
+const EditComponent = (
+  {
+    ref,
+    ...props
+  }
+) => {
   const { config } = useConfig();
   const { isPrivate } = useRepo();
-  
+
   const { value, onChange } = props;
-  const mediaDialogRef = useRef<MediaDialogHandle>(null); 
+  const mediaDialogRef = useRef<MediaDialogHandle>(null);
   const bubbleMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [isContentReady, setContentReady] = useState(false);
-  
+
   const [linkUrl, setLinkUrl] = useState("");
 
   const openMediaDialog = config?.object.media?.input
@@ -76,10 +81,10 @@ const EditComponent = forwardRef((props: any, ref) => {
     : undefined;
 
   const editor = useEditor({
-    immediatelyRender: true,
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
-        dropcursor: { width: 2}
+        dropcursor: { width: 2 }
       }),
       Image.extend({
         addAttributes() {
@@ -116,7 +121,7 @@ const EditComponent = forwardRef((props: any, ref) => {
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
     onCreate: async ({ editor }) => {
       if (config && value) {
-        const initialContent = await relativeToRawUrls(config.owner, config.repo, config.branch, value, isPrivate); 
+        const initialContent = await relativeToRawUrls(config.owner, config.repo, config.branch, value, isPrivate);
         editor.commands.setContent(initialContent || "<p></p>");
       }
       setContentReady(true);
@@ -150,7 +155,7 @@ const EditComponent = forwardRef((props: any, ref) => {
     if (editor.isActive({ textAlign: "justify" })) return <AlignJustify className="h-4 w-4" />;
     return <AlignLeft className="h-4 w-4" />;
   };
-  
+
   return (
     <>
       <Skeleton className={cn("rounded-md h-[8.5rem]", isContentReady ? "hidden" : "")} />
@@ -166,10 +171,10 @@ const EditComponent = forwardRef((props: any, ref) => {
                   className="gap-x-1"
                 >
                   {getBlockIcon(editor)}
-                  <ChevronsUpDown className="w-3 h-3"/>
+                  <ChevronsUpDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" portalProps={{container: bubbleMenuRef.current}}>
+              <DropdownMenuContent align="start" portalProps={{ container: bubbleMenuRef.current }}>
                 <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()} className="gap-x-1.5">
                   <Pilcrow className="h-4 w-4" />
                   Text
@@ -232,7 +237,7 @@ const EditComponent = forwardRef((props: any, ref) => {
                     onClick={() => linkUrl
                       ? editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run()
                       : editor.chain().focus().extendMarkRange('link').unsetLink()
-                      .run()
+                        .run()
                     }
                   >Link</Button>
                   <Button
@@ -248,7 +253,7 @@ const EditComponent = forwardRef((props: any, ref) => {
                 </div>
               </PopoverContent>
             </Popover>
-            {(editor.isActive("paragraph") || editor.isActive("heading")) && 
+            {(editor.isActive("paragraph") || editor.isActive("heading")) &&
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -258,10 +263,10 @@ const EditComponent = forwardRef((props: any, ref) => {
                     className="gap-x-1"
                   >
                     {getAlignIcon(editor)}
-                    <ChevronsUpDown className="w-3 h-3"/>
+                    <ChevronsUpDown className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent portalProps={{container: bubbleMenuRef.current}}>
+                <DropdownMenuContent portalProps={{ container: bubbleMenuRef.current }}>
                   <DropdownMenuItem onClick={() => editor.chain().focus().setTextAlign("left").run()} className="gap-x-1.5">
                     <AlignLeft className="h-4 w-4" />
                     Align left
@@ -335,7 +340,7 @@ const EditComponent = forwardRef((props: any, ref) => {
             >
               <RemoveFormatting className="h-4 w-4" />
             </Button>
-            {editor.isActive("table") && 
+            {editor.isActive("table") &&
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -345,10 +350,10 @@ const EditComponent = forwardRef((props: any, ref) => {
                     className="gap-x-1"
                   >
                     <TableIcon className="h-4 w-4" />
-                    <ChevronsUpDown className="w-3 h-3"/>
+                    <ChevronsUpDown className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" portalProps={{container: bubbleMenuRef.current}}>
+                <DropdownMenuContent align="end" portalProps={{ container: bubbleMenuRef.current }}>
                   <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()}>Add a column</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()}>Add a row</DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -364,10 +369,10 @@ const EditComponent = forwardRef((props: any, ref) => {
           </div>
         </BubbleMenu>}
         <EditorContent editor={editor} />
-        <MediaDialog ref={mediaDialogRef} selected={[]} onSubmit={handleMediaDialogSubmit}/>
+        <MediaDialog ref={mediaDialogRef} selected={[]} onSubmit={handleMediaDialogSubmit} />
       </div>
     </>
   )
-});
+};
 
 export { EditComponent };
