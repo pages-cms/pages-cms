@@ -95,21 +95,23 @@ export async function POST(
             // Determine whether to merge or replace based on schema configuration
             const shouldMerge = schema?.merge ?? config?.object?.settings?.merge ?? false;
 
-            // Either merge validated fields with original content or use only validated content
-            const contentObjectToSanitize = schema.list 
-              ? shouldMerge 
-                ? mergeDeep(entry.contentObject.listWrapper, validatedContentObject.listWrapper)
-                : validatedContentObject.listWrapper
-              : shouldMerge
-                ? mergeDeep(entry.contentObject, validatedContentObject)
-                : validatedContentObject;
-
+            // Get the original content object
+            const originalContentObject = schema.list
+              ? sanitizeObject(entry.contentObject.listWrapper)
+              : sanitizeObject(entry.contentObject);
+            
+            // Sanitize the content object
             const sanitizedContentObject = schema.list
-              ? sanitizeObject(contentObjectToSanitize.listWrapper)
-              : sanitizeObject(contentObjectToSanitize);
+              ? sanitizeObject(validatedContentObject.listWrapper)
+              : sanitizeObject(validatedContentObject);
+            
+            // Merge the sanitized content object with the original content object
+            const mergedContentObject = shouldMerge
+              ? mergeDeep(originalContentObject, sanitizedContentObject)
+              : sanitizedContentObject;
             
             const stringifiedContentObject = stringify(
-              sanitizedContentObject,
+              mergedContentObject,
               {
                 format: schema.format,
                 delimiters: schema.delimiters
