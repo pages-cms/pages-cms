@@ -8,6 +8,8 @@ import { getConfig, updateConfig } from "@/lib/utils/config";
 import { getFileExtension, getFileName, normalizePath, serializedTypes } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
 import { getToken } from "@/lib/token";
+import { getEntry } from "@/lib/utils/entry";
+import { mergeDeep } from "@/lib/utils";
 
 export async function POST(
   request: Request,
@@ -61,10 +63,9 @@ export async function POST(
               contentObject = data.content;
               contentFields = schema.fields;
             }
-
+            
             // Hidden fields are stripped in the client, we add them back
             contentObject = deepMap(contentObject, contentFields, (value, field) => field.hidden ? getDefaultValue(field) : value);
-            // TODO: fetch the entry and merge values
             
             const zodSchema = generateZodSchema(contentFields);
             const zodValidation = zodSchema.safeParse(contentObject);
@@ -79,13 +80,38 @@ export async function POST(
             }
 
             const validatedContentObject = deepMap(zodValidation.data, contentFields, (value, field) => writeFns[field.type] ? writeFns[field.type](value, field, config || {}) : value);
+            
+            let entry;
+            try {
+              entry = await getEntry(user, params.owner, params.repo, params.branch, params.path, data.name);
+            } catch (error: any) {
+              if (error.status == 404) {
+                entry = { contentObject: schema.list ? { listWrapper: [] } : {} }; // Create a default entry if not found
+              } else {
+                throw error; // Rethrow if it's a different error
+              }
+            }
 
+            // Determine whether to merge or replace based on schema configuration
+            const shouldMerge = schema?.merge ?? config?.object?.settings?.merge ?? false;
+
+            // Get the original content object
+            const originalContentObject = schema.list
+              ? sanitizeObject(entry.contentObject.listWrapper)
+              : sanitizeObject(entry.contentObject);
+            
+            // Sanitize the content object
             const sanitizedContentObject = schema.list
               ? sanitizeObject(validatedContentObject.listWrapper)
               : sanitizeObject(validatedContentObject);
-
+            
+            // Merge the sanitized content object with the original content object
+            const mergedContentObject = shouldMerge
+              ? mergeDeep(originalContentObject, sanitizedContentObject)
+              : sanitizedContentObject;
+            
             const stringifiedContentObject = stringify(
-              sanitizedContentObject,
+              mergedContentObject,
               {
                 format: schema.format,
                 delimiters: schema.delimiters
