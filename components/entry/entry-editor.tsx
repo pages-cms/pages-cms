@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useConfig } from "@/contexts/config-context";
-import { parseAndValidateConfig } from "@/lib/config"; 
-import { generateFilename, getPrimaryField, getSchemaByName } from "@/lib/schema";
+import { parseAndValidateConfig } from "@/lib/config";
+import { generateFilename, generateFromPattern, getPrimaryField, getSchemaByName } from "@/lib/schema";
 import {
   getFileExtension,
   getFileName,
@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, EllipsisVertical, History } from "lucide-react";
+import { useUser } from "@/contexts/user-context";
 
 export function EntryEditor({
   name = "",
@@ -46,39 +47,40 @@ export function EntryEditor({
   const [refetchTrigger, setRefetchTrigger] = useState<number>(0);
 
   const router = useRouter();
-  
+  const { user } = useUser();
+
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
-  
+
   let schema = useMemo(() => {
     if (!name) return;
     return getSchemaByName(config?.object, name)
   }, [config, name]);
-  
+
   let entryFields = useMemo(() => {
     return !schema?.fields || schema.fields.length === 0
       ? [{
-          name: "body",
-          type: "code",
-          label: false,
-          options: {
-            format: schema?.extension || (entry?.name && getFileExtension(entry.name)) || "markdown",
-            lintFn: path === ".pages.yml"
-              ? (view: any) => {
-                  const {parseErrors, validationErrors} = parseAndValidateConfig(view.state.doc.toString());
-                  return [...parseErrors, ...validationErrors];
-                }
-              : undefined
-          }
-        }]
+        name: "body",
+        type: "code",
+        label: false,
+        options: {
+          format: schema?.extension || (entry?.name && getFileExtension(entry.name)) || "markdown",
+          lintFn: path === ".pages.yml"
+            ? (view: any) => {
+              const { parseErrors, validationErrors } = parseAndValidateConfig(view.state.doc.toString());
+              return [...parseErrors, ...validationErrors];
+            }
+            : undefined
+        }
+      }]
       : schema?.list === true
         ? [{
-            name: "listWrapper",
-            label: false,
-            type: "object",
-            list: true,
-            fields: schema.fields
-          }]
+          name: "listWrapper",
+          label: false,
+          type: "object",
+          list: true,
+          fields: schema.fields
+        }]
         : schema.fields;
   }, [schema, entry, path]);
 
@@ -96,7 +98,8 @@ export function EntryEditor({
     const parentPath = path ? getParentPath(path) : undefined;
     return schema && schema.type === "collection"
       ? `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${schema.name}${parentPath && parentPath !== schema.path ? `?path=${encodeURIComponent(parentPath)}` : ""}`
-      : ""},
+      : ""
+  },
     [schema, config.owner, config.repo, config.branch, path]
   );
 
@@ -111,9 +114,9 @@ export function EntryEditor({
           if (!response.ok) throw new Error(`Failed to fetch entry: ${response.status} ${response.statusText}`);
 
           const data: any = await response.json();
-          
+
           if (data.status !== "success") throw new Error(data.message);
-          
+
           setEntry(data.data);
           setSha(data.data.sha);
 
@@ -131,7 +134,7 @@ export function EntryEditor({
 
     fetchEntry();
   }, [config.branch, config.owner, config.repo, name, path, refetchTrigger, initialPath, schema]);
-  
+
   useEffect(() => {
     // TODO: add loading for history ?
     const fetchHistory = async () => {
@@ -139,11 +142,11 @@ export function EntryEditor({
         try {
           const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/entries/${encodeURIComponent(path)}/history?name=${encodeURIComponent(name)}`);
           if (!response.ok) throw new Error(`Failed to fetch entry's history: ${response.status} ${response.statusText}`);
-          
+
           const data: any = await response.json();
-          
+
           if (data.status !== "success") throw new Error(data.message);
-          
+
           setHistory(data.data);
         } catch (error: any) {
           console.error(error);
@@ -173,9 +176,9 @@ export function EntryEditor({
         });
         if (!response.ok) throw new Error(`Failed to save file: ${response.status} ${response.statusText}`);
         const data: any = await response.json();
-      
+
         if (data.status !== "success") throw new Error(data.message);
-        
+
         if (data.data.sha !== sha) setSha(data.data.sha);
 
         if (!path && schema.type === "collection") router.push(`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/edit/${encodeURIComponent(data.data.path)}`);
@@ -225,37 +228,37 @@ export function EntryEditor({
               className={cn(buttonVariants({ variant: "outline", size: "icon-xs" }), "mr-4 shrink-0")}
               href={navigateBack}
             >
-              <ChevronLeft className="h-4 w-4"/>
+              <ChevronLeft className="h-4 w-4" />
             </Link>
           }
-          
+
           <h1 className="font-semibold text-lg md:text-2xl truncate">{displayTitle}</h1>
         </header>
         <div className="grid items-start gap-6">
           {path !== ".pages.yml"
-            ? 
-              <>
-                <div className="space-y-2">
-                  <Skeleton className="w-24 h-5 rounded" />
-                  <Skeleton className="w-full h-10 rounded-md" />
+            ?
+            <>
+              <div className="space-y-2">
+                <Skeleton className="w-24 h-5 rounded" />
+                <Skeleton className="w-full h-10 rounded-md" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="w-24 h-5 rounded" />
+                <Skeleton className="w-48 h-10 rounded-md" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="w-24 h-5 rounded" />
+                <div className="grid grid-flow-col auto-cols-max gap-4">
+                  <Skeleton className="w-28 h-28 rounded-md" />
+                  <Skeleton className="w-28 h-28 rounded-md" />
+                  <Skeleton className="w-28 h-28 rounded-md" />
                 </div>
-                <div className="space-y-2">
-                  <Skeleton className="w-24 h-5 rounded" />
-                  <Skeleton className="w-48 h-10 rounded-md" />
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="w-24 h-5 rounded" />
-                  <div className="grid grid-flow-col auto-cols-max gap-4">
-                    <Skeleton className="w-28 h-28 rounded-md" />
-                    <Skeleton className="w-28 h-28 rounded-md" />
-                    <Skeleton className="w-28 h-28 rounded-md" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Skeleton className="w-24 h-5 rounded" />
-                  <Skeleton className="w-full h-60 rounded-md" />
-                </div>
-              </>
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="w-24 h-5 rounded" />
+                <Skeleton className="w-full h-60 rounded-md" />
+              </div>
+            </>
             : <Skeleton className="w-full h-96 rounded-md" />
           }
         </div>
@@ -270,38 +273,38 @@ export function EntryEditor({
               </Button>
             }
           </div>
-          {path && 
+          {path &&
             <div className="flex flex-col gap-y-1 text-sm">
               <div className="flex items-center rounded-lg px-3 py-2">
-                <Skeleton className="rounded-full h-8 w-8"/>
+                <Skeleton className="rounded-full h-8 w-8" />
                 <div className="ml-3">
-                  <Skeleton className="w-24 h-5 rounded mb-2"/>
-                  <Skeleton className="w-16 h-2 rounded"/>
+                  <Skeleton className="w-24 h-5 rounded mb-2" />
+                  <Skeleton className="w-16 h-2 rounded" />
                 </div>
               </div>
               <div className="flex items-center rounded-lg px-3 py-2">
-                <Skeleton className="rounded-full h-8 w-8"/>
+                <Skeleton className="rounded-full h-8 w-8" />
                 <div className="ml-3">
-                  <Skeleton className="w-24 h-5 rounded mb-2"/>
-                  <Skeleton className="w-16 h-2 rounded"/>
+                  <Skeleton className="w-24 h-5 rounded mb-2" />
+                  <Skeleton className="w-16 h-2 rounded" />
                 </div>
               </div>
               <div className="flex items-center rounded-lg px-3 py-2">
-                <Skeleton className="rounded-full h-8 w-8"/>
+                <Skeleton className="rounded-full h-8 w-8" />
                 <div className="ml-3">
-                  <Skeleton className="w-24 h-5 rounded mb-2"/>
-                  <Skeleton className="w-16 h-2 rounded"/>
+                  <Skeleton className="w-24 h-5 rounded mb-2" />
+                  <Skeleton className="w-16 h-2 rounded" />
                 </div>
               </div>
               <div className="px-3 py-2">
-                <Skeleton className="w-28 h-5 rounded mb-2"/>
+                <Skeleton className="w-28 h-5 rounded mb-2" />
               </div>
             </div>
           }
         </div>
       </div>
       <div className="lg:hidden fixed top-0 right-0 h-14 flex items-center gap-x-2 z-10 pr-4 md:pr-6">
-      {path &&
+        {path &&
           <Button variant="outline" size="icon" className="shrink-0" disabled>
             <History className="h-4 w-4" />
           </Button>
@@ -316,17 +319,16 @@ export function EntryEditor({
     </div>
   ), [displayTitle, navigateBack, path]);
 
-  
   if (error) {
     // TODO: should we use a custom error class with code?
     // TODO: errors show no header (unlike collection and media). Consider standardizing templates.
     if (error === "Not found") {
       return (
         <Message
-            title="File missing"
-            description={`The file "${schema.path}" has not been created yet.`}
-            className="absolute inset-0"
-          >
+          title="File missing"
+          description={`The file "${schema.path}" has not been created yet.`}
+          className="absolute inset-0"
+        >
           <EmptyCreate type="content" name={schema.name}>Create file</EmptyCreate>
         </Message>
       );

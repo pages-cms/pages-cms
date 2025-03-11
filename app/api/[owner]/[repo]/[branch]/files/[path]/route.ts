@@ -3,11 +3,12 @@ import { createOctokitInstance } from "@/lib/utils/octokit";
 import { writeFns } from "@/fields/registry";
 import { configVersion, parseConfig, normalizeConfig } from "@/lib/config";
 import { stringify } from "@/lib/serialization";
-import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeObject } from "@/lib/schema";
+import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeObject, generateFromPattern } from "@/lib/schema";
 import { getConfig, updateConfig } from "@/lib/utils/config";
 import { getFileExtension, getFileName, normalizePath, serializedTypes } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
 import { getToken } from "@/lib/token";
+import { useConfig } from "@/contexts/config-context";
 
 export async function POST(
   request: Request,
@@ -28,7 +29,35 @@ export async function POST(
     const data: any = await request.json();
 
     let contentBase64;
+    let message;
 
+    const index = {
+      filename: getFileName(normalizedPath),
+      path: normalizedPath,
+      collection: {
+        name: data.name,
+      },
+      user: {
+        name: user.githubName,
+        username: user.githubUsername,
+        email: user.githubEmail || user.email
+      }
+    }
+
+    if (data.sha) {
+      message = `Update ${normalizedPath} (via Pages CMS)`;
+
+      if (config.object?.commit?.message?.update) {
+        message = generateFromPattern(config.object.commit.message.update, index);
+      }
+    } else {
+      message = `Create ${normalizedPath} (via Pages CMS)`;
+
+      if (config.object?.commit?.message?.create) {
+        message = generateFromPattern(config.object.commit.message.create, index);
+      }
+    }
+    
     switch (data.type) {
       case "content":
         if (!data.name) throw new Error(`"name" is required for content.`);
@@ -123,7 +152,7 @@ export async function POST(
         throw new Error(`Invalid type "${data.type}".`);
     }
     
-    const response = await githubSaveFile(token, params.owner, params.repo, params.branch, normalizedPath, contentBase64, data.sha);
+    const response = await githubSaveFile(token, params.owner, params.repo, params.branch, normalizedPath, contentBase64, data.sha, message);
   
     const savedPath = response?.data.content?.path;
 
@@ -176,6 +205,7 @@ const githubSaveFile = async (
   path: string,
   contentBase64: string,
   sha?: string,
+  message?: string
 ) => {
   const generateUniqueFilename = (path: string, attempt: number) => {
     const [filename, extension] = path.split(".");
@@ -196,9 +226,7 @@ const githubSaveFile = async (
         owner,
         repo,
         path: currentPath,
-        message: sha
-          ? `Update ${currentPath} (via Pages CMS)`
-          : `Create ${currentPath} (via Pages CMS)`,
+        message,
         content: contentBase64,
         branch,
         sha: sha || undefined,
@@ -248,6 +276,25 @@ export async function DELETE(
     if (!config) throw new Error(`Configuration not found for ${params.owner}/${params.repo}/${params.branch}.`);
 
     const normalizedPath = normalizePath(params.path);
+
+    let message = `File "${normalizedPath}" deleted successfully.`;
+
+    if (config.object?.commit?.message?.delete) {
+      const index = {
+        filename: getFileName(normalizedPath),
+        path: normalizedPath,
+        collection: {
+          name: name,
+        },
+        user: {
+          name: user.githubName,
+          username: user.githubUsername,
+          email: user.githubEmail || user.email
+        }
+      }
+
+      message = generateFromPattern(config.object.commit.message.delete, index);
+    }
     
     switch (type) {
       case "content":
@@ -283,7 +330,7 @@ export async function DELETE(
 
     return Response.json({
       status: "success",
-      message: `File "${normalizedPath}" deleted successfully.`,
+      message,
       data: {
         sha: response?.data.commit.sha,
         name: response?.data.content?.name,
