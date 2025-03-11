@@ -248,10 +248,20 @@ const getPrimaryField = (schema: Record<string, any>) => {
   return schema?.view?.primary
     || schema?.fields?.find((item: any) => item.name === "title")
       ? "title"
-      : schema.fields?.[0]?.name;
+      : schema?.fields?.[0]?.name;
 }
 
-// Generate a filename for an entry
+// Generate a new string from a pattern and a schema
+const generateFromPattern = (pattern: string, data: Record<string, any>) => {
+  return pattern.replace(/\{([^}]+)\}/g, (_, fieldName) => {
+    const value = safeAccess(data, fieldName);
+    return value ? String(value) : "";
+  });
+}
+
+export {
+  generateFromPattern
+};
 const generateFilename = (
   pattern: string,
   schema: Record<string, any>,
