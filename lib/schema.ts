@@ -69,7 +69,7 @@ const getDefaultValue = (field: Record<string, any>) => {
   } else if (field.type === "object") {
     return initializeState(field.fields, {});
   } else {
-    return defaultValues?.[field.type] || "";
+    return defaultValues?.[field.type] || null;
   }
 };
 
