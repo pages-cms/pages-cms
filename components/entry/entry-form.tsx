@@ -56,6 +56,7 @@ import {
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
+import { FieldProvider } from "@/contexts/field-context";
 
 const SortableItem = ({
   id,
@@ -220,26 +221,28 @@ const renderSingleField = (
   const FieldComponent = editComponents?.[field.type] || editComponents["text"];
 
   return (
-    <FormField
-      name={fieldName}
-      key={fieldName}
-      control={control}
-      render={({ field: fieldProps }) => (
-        <FormItem>
-          {showLabel && field.label !== false &&
-            <FormLabel className="h-5">
-              {field.label || field.name}
-            </FormLabel>
-          }
-          {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
-          <FormControl>
-            <FieldComponent {...fieldProps} field={field} />
-          </FormControl>
-          {field.description && <FormDescription>{field.description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+    <FieldProvider key={fieldName} field={field}>
+      <FormField
+        name={fieldName}
+        key={fieldName}
+        control={control}
+        render={({ field: fieldProps }) => (
+          <FormItem>
+            {showLabel && field.label !== false &&
+              <FormLabel className="h-5">
+                {field.label || field.name}
+              </FormLabel>
+            }
+            {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
+            <FormControl>
+              <FieldComponent {...fieldProps} field={field} />
+            </FormControl>
+            {field.description && <FormDescription>{field.description}</FormDescription>}
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </FieldProvider>
   );
 };
 
@@ -289,21 +292,27 @@ const EntryForm = ({
       const fieldName = parentName ? `${parentName}.${field.name}` : field.name;
 
       if (field.type === "object" && field.list && !supportsList[field.type]) {
-        return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
+        return <FieldProvider key={fieldName} field={field}>
+          <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />
+        </FieldProvider>;
       } else if (field.type === "object") {
         return (
-          <fieldset key={fieldName} className="grid gap-6 rounded-lg border p-4">
-            {field.label !== false &&
-              <legend className="text-sm font-medium leading-none">
-                {field.label || field.name}
-                {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
-              </legend>
-            }
-            {renderFields(field.fields || [], fieldName)}
-          </fieldset>
+          <FieldProvider key={fieldName} field={field}>
+            <fieldset className="grid gap-6 rounded-lg border p-4">
+              {field.label !== false &&
+                <legend className="text-sm font-medium leading-none">
+                  {field.label || field.name}
+                  {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
+                </legend>
+              }
+              {renderFields(field.fields || [], fieldName)}
+            </fieldset>
+          </FieldProvider>
         );
       } else if (field.list && !supportsList[field.type]) {
-        return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
+        return <FieldProvider key={fieldName} field={field}>
+          <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />
+        </FieldProvider>;
       }
 
       return renderSingleField(field, fieldName, form.control);

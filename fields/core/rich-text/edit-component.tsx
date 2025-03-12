@@ -58,10 +58,12 @@ import {
   Trash2,
   Underline as UnderlineIcon
 } from "lucide-react";
+import { useField } from "@/contexts/field-context";
 
 const EditComponent = forwardRef((props: any, ref) => {
   const { config } = useConfig();
   const { isPrivate } = useRepo();
+  const { field } = useField();
 
   const { value, onChange } = props;
   const mediaDialogRef = useRef<MediaDialogHandle>(null);
@@ -116,7 +118,7 @@ const EditComponent = forwardRef((props: any, ref) => {
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
     onCreate: async ({ editor }) => {
       if (config && value) {
-        const initialContent = await relativeToRawUrls(config.owner, config.repo, config.branch, value, isPrivate);
+        const initialContent = await relativeToRawUrls(config.owner, config.repo, config.branch, value, field, isPrivate);
         editor.commands.setContent(initialContent || "<p></p>");
       }
       setContentReady(true);
@@ -126,12 +128,12 @@ const EditComponent = forwardRef((props: any, ref) => {
   const handleMediaDialogSubmit = useCallback(async (images: string[]) => {
     if (config && editor) {
       const content = await Promise.all(images.map(async (image) => {
-        const url = await getRawUrl(config.owner, config.repo, config.branch, image, isPrivate);
+        const url = await getRawUrl(config.owner, config.repo, config.branch, image, field, isPrivate);
         return `<p><img src="${url}"></p>`;
       }));
       editor.chain().focus().insertContent(content.join('\n')).run();
     }
-  }, [config, editor, isPrivate]);
+  }, [config, editor, field, isPrivate]);
 
   const getBlockIcon = (editor: any) => {
     if (editor.isActive("heading", { level: 1 })) return <Heading1 className="h-4 w-4" />;

@@ -23,7 +23,7 @@ const ViewComponent = ({
 
   return (
     <span className="flex items-center gap-x-1.5">
-      <Thumbnail path={path} className="w-8 rounded-md"/>
+      <Thumbnail path={path} className="w-8 rounded-md" />
       {extraValuesCount > 0 && (
         <span className="text-muted-foreground text-xs">
           +{extraValuesCount}
