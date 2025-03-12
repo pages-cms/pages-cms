@@ -30,8 +30,6 @@ export async function GET(
       ...queryParams
     };
 
-    console.log(mediaConfig);
-
     const normalizedPath = normalizePath(params.path);
     if (!normalizedPath.startsWith(mediaConfig.input)) throw new Error(`Invalid path "${params.path}" for media.`);
 
