@@ -122,14 +122,14 @@ const ListField = ({
   const hasAppended = useRef(false);
 
   useEffect(() => {
-    const defaultEntry = getDefaultValue(field);
-
-    if (typeof defaultEntry === "object" && Object.keys(defaultEntry).length === 0) {
+    if ((field.list && typeof field.list === 'object' && field.list.min === undefined) || field.list === true) {
       return;
     }
 
-    if (arrayFields.length === 0 && !hasAppended.current && defaultEntry) {
-      append(defaultEntry);
+    const defaultValue = getDefaultValue(field);
+
+    if (arrayFields.length === 0 && !hasAppended.current && defaultValue) {
+      append(defaultValue);
       hasAppended.current = true;
     }
   }, [arrayFields, append, field]);
@@ -255,6 +255,21 @@ const ListField = ({
                   <Plus className="h-4 w-4" />
                   Add an entry
                 </Button>
+              : <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                append(field.type === "object"
+                  ? initializeState(field.fields, {}, true)
+                  : getDefaultValue(field)
+                );
+              }}
+              className="gap-x-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add an entry
+            </Button>
             }
           </div>
           <FormMessage />
@@ -277,25 +292,21 @@ const renderSingleField = (
       name={fieldName}
       key={fieldName}
       control={control}
-      render={({ field: fieldProps }) => {
-        console.log(fieldProps);
-
-        return (
-          <FormItem>
-            {showLabel && field.label !== false &&
-              <FormLabel className="h-5">
-                {field.label || field.name}
-              </FormLabel>
-            }
-            {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
-            <FormControl>
-              <FieldComponent {...fieldProps} field={field} />
-            </FormControl>
-            {field.description && <FormDescription>{field.description}</FormDescription>}
-            <FormMessage />
-          </FormItem>
-        );
-      }}
+      render={({ field: fieldProps }) => (
+        <FormItem>
+          {showLabel && field.label !== false &&
+            <FormLabel className="h-5">
+              {field.label || field.name}
+            </FormLabel>
+          }
+          {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
+          <FormControl>
+            <FieldComponent {...fieldProps} field={field} />
+          </FormControl>
+          {field.description && <FormDescription>{field.description}</FormDescription>}
+          <FormMessage />
+        </FormItem>
+      )}
     />
   );
 };
