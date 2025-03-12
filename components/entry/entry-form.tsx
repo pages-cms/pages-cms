@@ -255,21 +255,6 @@ const ListField = ({
                   <Plus className="h-4 w-4" />
                   Add an entry
                 </Button>
-              : <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                append(field.type === "object"
-                  ? initializeState(field.fields, {}, true)
-                  : getDefaultValue(field)
-                );
-              }}
-              className="gap-x-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add an entry
-            </Button>
             }
           </div>
           <FormMessage />
