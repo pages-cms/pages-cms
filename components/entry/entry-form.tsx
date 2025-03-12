@@ -115,8 +115,14 @@ const ListField = ({
   const hasAppended = useRef(false);
 
   useEffect(() => {
-    if (arrayFields.length === 0 && !hasAppended.current) {
-      append(getDefaultValue(field));
+    if ((field.list && typeof field.list === 'object' && field.list.min === undefined) || field.list === true) {
+      return;
+    }
+
+    const defaultValue = getDefaultValue(field);
+
+    if (arrayFields.length === 0 && !hasAppended.current && defaultValue) {
+      append(defaultValue);
       hasAppended.current = true;
     }
   }, [arrayFields, append, field]);
