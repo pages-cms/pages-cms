@@ -56,6 +56,7 @@ import {
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
+import { Blocker } from "../navigation-block";
 
 const SortableItem = ({
   id,
@@ -321,6 +322,7 @@ const EntryForm = ({
 
   return (
     <Form {...form}>
+      {isDirty && <Blocker />}
       <form onSubmit={form.handleSubmit(handleSubmit)}>
         <div className="max-w-screen-xl mx-auto flex w-full gap-x-8">
           <div className="flex-1 w-0">
