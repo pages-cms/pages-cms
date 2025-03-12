@@ -3,7 +3,7 @@
  */
 
 import { getFileName, getParentPath } from "@/lib/utils/file";
-
+import { Field } from "@/types/field";
 const ttl = 10000; // TTL for the cache (in milliseconds)
 const cache: { [key: string]: any } = {};
 const requests: { [key: string]: Promise<any> } = {};
@@ -31,6 +31,7 @@ const getRawUrl = async (
   repo: string,
   branch: string,
   path: string,
+  field?: Field,
   isPrivate = false,
   decode = false
 ) => {
@@ -45,9 +46,16 @@ const getRawUrl = async (
     
     if (!cache[parentFullPath]?.files?.[filename] || (Date.now() - (cache[parentFullPath]?.time || 0) > ttl)) {
       delete cache[parentFullPath];
-      
+
       if (!requests[parentFullPath]) {
-        requests[parentFullPath] = fetch(`/api/${owner}/${repo}/${encodeURIComponent(branch)}/media/${encodeURIComponent(parentPath)}`)
+        const url = new URL(`/api/${owner}/${repo}/${encodeURIComponent(branch)}/media/${encodeURIComponent(parentPath)}`, window.location.origin);
+        if (field?.options) {
+          Object.entries(field.options).forEach(([name, value]) => {
+            url.searchParams.set(name, String(value));
+          });
+        }
+
+        requests[parentFullPath] = fetch(url.toString())
           .then(response => {
             if (!response.ok) throw new Error(`Failed to fetch media: ${response.status} ${response.statusText}`);
             
@@ -108,6 +116,7 @@ const relativeToRawUrls = async (
   repo: string,
   branch: string,
   html: string,
+  field?: Field,
   isPrivate = false,
   decode = false
 ) => {
@@ -120,7 +129,7 @@ const relativeToRawUrls = async (
 
     if (!src.startsWith("/") && !src.startsWith("http://") && !src.startsWith("https://") && !src.startsWith("data:image/")) {  
       // TODO: what does the function returns if it fails?
-      const rawUrl = await getRawUrl(owner, repo, branch, src, isPrivate, true);
+      const rawUrl = await getRawUrl(owner, repo, branch, src, field, isPrivate, true);
       if (rawUrl) {
         newHtml = newHtml.replace(`src=${quote}${src}${quote}`, `src=${quote}${rawUrl}${quote}`);
       }

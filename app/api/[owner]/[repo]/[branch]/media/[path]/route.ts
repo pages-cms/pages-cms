@@ -20,8 +20,20 @@ export async function GET(
     
     if (!config.object.media) throw new Error(`No media configuration found for ${params.owner}/${params.repo}/${params.branch}.`);
 
+    // Get options from URL query parameters
+    const url = new URL(request.url);
+    const queryParams = Object.fromEntries(url.searchParams.entries());
+    
+    // Merge query parameters into media config, overriding existing values
+    const mediaConfig = {
+      ...config.object.media,
+      ...queryParams
+    };
+
+    console.log(mediaConfig);
+
     const normalizedPath = normalizePath(params.path);
-    if (!normalizedPath.startsWith(config.object.media.input)) throw new Error(`Invalid path "${params.path}" for media.`);
+    if (!normalizedPath.startsWith(mediaConfig.input)) throw new Error(`Invalid path "${params.path}" for media.`);
 
     const octokit = createOctokitInstance(token);
     const response = await octokit.rest.repos.getContent({
@@ -37,11 +49,11 @@ export async function GET(
 
     let results = response.data;
 
-    if (config.object.media.extensions && config.object.media.extensions.length > 0) {
+    if (mediaConfig.extensions && mediaConfig.extensions.length > 0) {
       results = response.data.filter((item) => {
         if (item.type === "dir") return true;
         const extension = getFileExtension(item.name);
-        return config.object.media.extensions.includes(extension);
+        return mediaConfig.extensions.includes(extension);
       });
     }
 

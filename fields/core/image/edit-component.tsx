@@ -6,7 +6,7 @@ import { MediaDialog } from "@/components/media/media-dialog";
 import { Thumbnail } from "@/components/thumbnail";
 import { Button } from "@/components/ui/button";
 import {
-  DndContext, 
+  DndContext,
   closestCenter,
   KeyboardSensor,
   PointerSensor,
@@ -54,7 +54,7 @@ const SortableItem = ({
     <div ref={setNodeRef} style={style}>
       <div className="relative w-28">
         <div {...attributes} {...listeners}>
-          <Thumbnail path={path} className="aspect-square rounded-md outline-none"/>
+          <Thumbnail path={path} className="aspect-square rounded-md outline-none" />
         </div>
         {children}
       </div>
@@ -64,14 +64,14 @@ const SortableItem = ({
 
 const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) => {
   const { value, field, onChange } = props;
-  const [images, setImages] = useState<{ id: string, path: string }[]>(() => 
+  const [images, setImages] = useState<{ id: string, path: string }[]>(() =>
     value
       ? Array.isArray(value)
         ? value.map((path, index) => ({ id: `image-${index}`, path }))
         : [{ id: "image-0", path: value }]
       : []
   );
-  
+
   const maxImages = useMemo(() => {
     if (field.list && typeof field.list.max === 'number') {
       return field.list.max;
@@ -82,11 +82,11 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
   const handleRemove = useCallback((index: number) => {
     let newImages = [...images];
     newImages.splice(index, 1);
-    
+
     if (newImages.length === 0) {
       setImages([]);
       onChange(field.list ? [] : "");
-    } else { 
+    } else {
       setImages(newImages);
       field.list
         ? onChange(newImages.map((item: any) => item.path))
@@ -98,7 +98,7 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
     if (newImages.length === 0) {
       setImages([]);
       onChange(field.list ? [] : "");
-    } else {    
+    } else {
       const newImagesObjects = newImages.map((path: string, index: number) => ({ id: `image-${index}`, path }));
       setImages(newImagesObjects);
       field.list
@@ -132,7 +132,7 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
         {/* <div className="grid grid-flow-col auto-cols-max gap-4"> */}
         <div className="flex flex-wrap gap-4 items-start">
 
-          {images.map((item, index) => 
+          {images.map((item, index) =>
             <SortableItem key={item.id} id={item.id} path={item.path}>
               <footer className="absolute bottom-2 right-2">
                 <Button type="button" size="icon-xs" variant="outline" className="rounded-r-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:bg-muted" onClick={() => handleRemove(index)}>
@@ -151,7 +151,7 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
               </footer>
             </SortableItem>
           )}
-          {(!maxImages || images.length < maxImages) && 
+          {(!maxImages || images.length < maxImages) &&
             <MediaDialog
               selected={images.map((image: any) => image.path)}
               onSubmit={handleSubmit}
@@ -170,5 +170,7 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
     </DndContext>
   );
 });
+
+EditComponent.displayName = "EditComponent";
 
 export { EditComponent };
