@@ -58,6 +58,7 @@ import {
   Trash2,
   Underline as UnderlineIcon
 } from "lucide-react";
+import CustomImage from "./custom-image/image";
 
 const EditComponent = forwardRef((props: any, ref) => {
   const { config } = useConfig();
@@ -81,17 +82,18 @@ const EditComponent = forwardRef((props: any, ref) => {
       StarterKit.configure({
         dropcursor: { width: 2 }
       }),
-      Image.extend({
-        addAttributes() {
-          return {
-            ...this.parent?.(),
-            class: { default: null },
-            style: { default: null },
-            width: { default: null },
-            height: { default: null }
-          };
-        }
-      }).configure({ inline: true }),
+      CustomImage.configure({ inline: true }),
+      // Image.extend({
+      //   addAttributes() {
+      //     return {
+      //       ...this.parent?.(),
+      //       class: { default: null },
+      //       style: { default: null },
+      //       width: { default: null },
+      //       height: { default: null }
+      //     };
+      //   }
+      // }).configure({ inline: true }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -112,7 +114,7 @@ const EditComponent = forwardRef((props: any, ref) => {
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Underline
     ],
-    content: "<p></p>",
+    content: `<p></p>`,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
     onCreate: async ({ editor }) => {
       if (config && value) {
