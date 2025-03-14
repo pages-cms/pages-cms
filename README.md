@@ -74,6 +74,11 @@ You will need to fill in the following information:
     - Repository (you'll probably need to add this after creating the GitHub App)
 - **Where can this GitHub App be installed?**: you'll want to select "Any account" unless you intend to only use Pages CMS on the account this GitHub App is created under.
 
+Once setup, if you don't want the user to be logged out due to the token expiring, then adjust the token settings:
+
+- Go to "Optional features"
+- User-to-server token expiration, click "Opt out".
+
 ### Environment variables
 
 Variable | Comments
