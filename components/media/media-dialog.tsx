@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
+import { useCallback, useImperativeHandle, useRef, useState } from "react";
 import { useConfig } from "@/contexts/config-context";
 import { MediaView } from "@/components/media/media-view";
 import { Button } from "@/components/ui/button";
@@ -20,19 +20,24 @@ export interface MediaDialogHandle {
   close: () => void;
 }
 
-const MediaDialog = forwardRef(({
-  selected,
-  onSubmit,
-  maxSelected,
-  initialPath,
-  children
-}: {
-  selected: string[],
-  onSubmit: (images: string[]) => void,
-  maxSelected?: number,
-  initialPath?: string,
-  children?: React.ReactNode
-}, ref) => {
+const MediaDialog = (
+  {
+    ref,
+    selected,
+    onSubmit,
+    maxSelected,
+    initialPath,
+    children
+  }: {
+    selected: string[],
+    onSubmit: (images: string[]) => void,
+    maxSelected?: number,
+    initialPath?: string,
+    children?: React.ReactNode
+  } & {
+    ref: React.RefObject<unknown>;
+  }
+) => {
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
 
@@ -59,7 +64,7 @@ const MediaDialog = forwardRef(({
           {children}
         </DialogTrigger>
       }
-      <DialogContent className="w-full sm:max-w-screen-xl sm:w-[calc(100vw-6rem)] h-[calc(100vh-6rem)] grid-rows-[auto_minmax(0,1fr)_auto]">
+      <DialogContent className="w-full sm:max-w-(--breakpoint-xl) sm:w-[calc(100vw-6rem)] h-[calc(100vh-6rem)] grid-rows-[auto_minmax(0,1fr)_auto]">
         <DialogHeader>
           <DialogTitle>Select images</DialogTitle>
           <DialogDescription></DialogDescription>
@@ -76,7 +81,7 @@ const MediaDialog = forwardRef(({
       </DialogContent>
     </Dialog>
   );
-});
+};
 
 MediaDialog.displayName = "MediaDialog";
 

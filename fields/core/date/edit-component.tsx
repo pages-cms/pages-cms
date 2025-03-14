@@ -1,9 +1,12 @@
-"use client";
-
-import { forwardRef } from "react";
+"use client";;
 import { Input } from "@/components/ui/input";
 
-const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) => {
+const EditComponent = (
+  {
+    ref,
+    ...props
+  }
+) => {
   const { field, value, onChange } = props;
 
   return (
@@ -18,6 +21,6 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
       className="w-auto text-base"
     />
   );
-});
+};
 
 export { EditComponent };

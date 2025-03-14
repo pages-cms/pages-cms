@@ -1,9 +1,14 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { useEffect, useImperativeHandle, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 
-const EditComponent = forwardRef((props: any, ref) => {
+const EditComponent = (
+  {
+    ref,
+    ...props
+  }
+) => {
   const internalRef = useRef<HTMLTextAreaElement | null>(null);
 
   const adjustHeight = (el: HTMLTextAreaElement | null) => {
@@ -24,6 +29,6 @@ const EditComponent = forwardRef((props: any, ref) => {
   };
 
   return <Textarea {...props} ref={internalRef} rows={props.rows ?? 6} onInput={handleInput} className="text-base" />;
-});
+};
 
 export { EditComponent };
