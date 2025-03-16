@@ -9,6 +9,15 @@ import { getFileExtension, getFileName, normalizePath, serializedTypes } from "@
 import { getAuth } from "@/lib/auth";
 import { getToken } from "@/lib/token";
 import { useConfig } from "@/contexts/config-context";
+import { updateFileCache } from "@/lib/githubCache";
+
+/**
+ * Create, update and delete individual files in a GitHub repository.
+ * POST /api/[owner]/[repo]/[branch]/files/[path]
+ * DELETE /api/[owner]/[repo]/[branch]/files/[path]
+ * 
+ * Requires authentication.
+ */
 
 export async function POST(
   request: Request,
@@ -172,6 +181,21 @@ export async function POST(
       await updateConfig(newConfig);
     }
     
+    // Update cache for content and settings files, but not media
+    if (response?.data.content && response?.data.commit && data.type !== "media") {
+      await updateFileCache(
+        params.owner,
+        params.repo,
+        params.branch,
+        {
+          type: data.sha ? 'modify' : 'add',
+          path: response.data.content.path!,
+          sha: response.data.content.sha!,
+          content: Buffer.from(contentBase64, 'base64').toString('utf-8')
+        }
+      );
+    }
+
     return Response.json({
       status: "success",
       message: savedPath !== normalizedPath
@@ -327,6 +351,17 @@ export async function DELETE(
       sha: sha,
       message: `Delete ${params.path} (via Pages CMS)`,
     });
+
+    // Update cache after successful deletion
+    await updateFileCache(
+      params.owner,
+      params.repo,
+      params.branch,
+      {
+        type: 'delete',
+        path: params.path
+      }
+    );
 
     return Response.json({
       status: "success",
