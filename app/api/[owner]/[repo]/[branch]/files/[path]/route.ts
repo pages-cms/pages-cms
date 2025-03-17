@@ -8,7 +8,6 @@ import { getConfig, updateConfig } from "@/lib/utils/config";
 import { getFileExtension, getFileName, normalizePath, serializedTypes, getParentPath } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
 import { getToken } from "@/lib/token";
-import { useConfig } from "@/contexts/config-context";
 import { updateFileCache } from "@/lib/githubCache";
 
 /**
