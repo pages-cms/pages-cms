@@ -93,7 +93,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/lodash.merge": "^4.6.9",
     "@types/node": "^20.12.8",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
