@@ -58,27 +58,27 @@ export function EntryEditor({
   let entryFields = useMemo(() => {
     return !schema?.fields || schema.fields.length === 0
       ? [{
-          name: "body",
-          type: "code",
-          label: false,
-          options: {
-            format: schema?.extension || (entry?.name && getFileExtension(entry.name)) || "markdown",
-            lintFn: path === ".pages.yml"
-              ? (view: any) => {
-                  const {parseErrors, validationErrors} = parseAndValidateConfig(view.state.doc.toString());
-                  return [...parseErrors, ...validationErrors];
-                }
-              : undefined
-          }
-        }]
+        name: "body",
+        type: "code",
+        label: false,
+        options: {
+          format: schema?.extension || (entry?.name && getFileExtension(entry.name)) || "markdown",
+          lintFn: path === ".pages.yml"
+            ? (view: any) => {
+              const { parseErrors, validationErrors } = parseAndValidateConfig(view.state.doc.toString());
+              return [...parseErrors, ...validationErrors];
+            }
+            : undefined
+        }
+      }]
       : schema?.list === true
         ? [{
-            name: "listWrapper",
-            label: false,
-            type: "object",
-            list: true,
-            fields: schema.fields
-          }]
+          name: "listWrapper",
+          label: false,
+          type: "object",
+          list: true,
+          fields: schema.fields
+        }]
         : schema.fields;
   }, [schema, entry, path]);
 
