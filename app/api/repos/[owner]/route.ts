@@ -9,6 +9,14 @@ import { collaboratorTable } from "@/db/schema";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Fetches repositories for a user.
+ * 
+ * GET /api/repos/[owner]
+ * 
+ * Requires authentication.
+ */
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { owner: string } }
@@ -49,8 +57,8 @@ export async function GET(
         });
         repos = response.data.items;
       }
-      
-      repos = repos.map(repo => ({
+
+      repos = repos.filter(repo => repo.permissions.push).map(repo => ({
         owner: repo.owner.login,
         repo: repo.name,
         private: repo.private,
