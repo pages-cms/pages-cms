@@ -14,10 +14,8 @@ import { getInstallations, getInstallationRepos } from "@/lib/githubApp";
  * Requires authentication. Only accessible to GitHub users (not collaborators).
  */
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { slug: string[] } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ slug: string[] }> }) {
+  const params = await props.params;
   try {
     const { user, session } = await getAuth();
     if (!session) return new Response(null, { status: 401 });

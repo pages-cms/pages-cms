@@ -17,21 +17,19 @@ import { emailLoginTokenTable, userTable } from "@/db/schema";
  * Requires email login token.
  */
 
-export async function GET(
-	request: Request,
-	{ params }: { params: { token: string } }
-) {
-	const { session } = await getAuth();
-  if (session) return redirect("/");
+export async function GET(request: Request, props: { params: Promise<{ token: string }> }) {
+    const params = await props.params;
+    const { session } = await getAuth();
+    if (session) return redirect("/");
 
-	const verificationToken = params.token;
+    const verificationToken = params.token;
 
-	const tokenHash = encodeHex(await sha256(new TextEncoder().encode(verificationToken)));
-	const token = await db.query.emailLoginTokenTable.findFirst({
+    const tokenHash = encodeHex(await sha256(new TextEncoder().encode(verificationToken)));
+    const token = await db.query.emailLoginTokenTable.findFirst({
 		where: eq(emailLoginTokenTable.tokenHash, tokenHash)
 	});
 
-	if (!token) {
+    if (!token) {
 		const error = "Your sign in link is invalid.";
 		redirect(`/sign-in?error=${encodeURIComponent(error)}`);
 	} else {
@@ -62,7 +60,7 @@ export async function GET(
 			// await lucia.invalidateUserSessions(userId);
 			const session = await lucia.createSession(userId, {});
 			const sessionCookie = lucia.createSessionCookie(session.id);
-			cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+			(await cookies()).set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 			
 			redirect("/");
 		}

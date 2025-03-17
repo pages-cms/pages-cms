@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useFormState } from "react-dom";
+import { useCallback, useEffect, useRef, useState, useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { handleCopyTemplate } from "@/lib/actions/template";
@@ -28,13 +27,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ChevronsUpDown, ArrowUpRight } from "lucide-react";
-  
+
 export function RepoTemplates({ defaultAccount }: { defaultAccount?: any }) {
   const { user } = useUser();
   const router = useRouter();
   const dialogCloseRef = useRef<any>(null);
   
-  const [copyTemplateState, copyTemplateAction] = useFormState(handleCopyTemplate, {
+  const [copyTemplateState, copyTemplateAction] = useActionState(handleCopyTemplate, {
     message: "",
     data: {
       template: "",

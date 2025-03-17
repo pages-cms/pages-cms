@@ -1,22 +1,24 @@
-"use client";
+"use client";;
+import { use } from "react";
 
 import { useSearchParams } from "next/navigation";
 import { useConfig } from "@/contexts/config-context";
 import { MediaView} from "@/components/media/media-view";
 
-export default function Page({
-  params
-}: {
-  params: {
-    name: string;
+export default function Page(
+  props: {
+    params: Promise<{
+      name: string;
+    }>
   }
-}) {
+) {
+  const params = use(props.params);
   const searchParams = useSearchParams();
   const path = searchParams.get("path") || "";
 
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
-  
+
   return (
     <div className="max-w-screen-xl mx-auto flex-1 flex flex-col h-full">
       <header className="flex items-center mb-6">

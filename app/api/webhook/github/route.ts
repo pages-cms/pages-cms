@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     const data = JSON.parse(body);
 
-    const headersList = headers();
+    const headersList = await headers();
     const event = headersList.get("X-GitHub-Event");
 
     // TODO: potentially disable collaborators rather than delete, so that they can be re-instated again (e.g. uninstall/reinstall app, transfer repo, etc)

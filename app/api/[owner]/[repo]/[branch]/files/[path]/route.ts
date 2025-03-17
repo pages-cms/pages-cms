@@ -21,8 +21,9 @@ import { updateFileCache } from "@/lib/githubCache";
 
 export async function POST(
   request: Request,
-  { params }: { params: { owner: string, repo: string, branch: string, path: string } }
+  props: { params: Promise<{ owner: string, repo: string, branch: string, path: string }> }
 ) {
+  const params = await props.params;
   try {
     const { user, session } = await getAuth();
     if (!session) return new Response(null, { status: 401 });
@@ -278,8 +279,9 @@ const githubSaveFile = async (
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { owner: string, repo: string, branch: string, path: string } }
+  props: { params: Promise<{ owner: string, repo: string, branch: string, path: string }> }
 ) {
+  const params = await props.params;
   try {
     const { user, session } = await getAuth();
     if (!session) return new Response(null, { status: 401 });
