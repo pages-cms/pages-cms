@@ -1,3 +1,5 @@
+@reference "../../../app/globals.css";
+
 .cm-editor {
   @apply !bg-background rounded-md border pr-[10px] pl-[6px] py-1 text-sm ring-offset-background;
 }
