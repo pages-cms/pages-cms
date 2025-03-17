@@ -5,7 +5,7 @@ import { configVersion, parseConfig, normalizeConfig } from "@/lib/config";
 import { stringify } from "@/lib/serialization";
 import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeObject, interpolate } from "@/lib/schema";
 import { getConfig, updateConfig } from "@/lib/utils/config";
-import { getFileExtension, getFileName, normalizePath, serializedTypes } from "@/lib/utils/file";
+import { getFileExtension, getFileName, normalizePath, serializedTypes, getParentPath } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
 import { getToken } from "@/lib/token";
 import { useConfig } from "@/contexts/config-context";
@@ -13,6 +13,7 @@ import { updateFileCache } from "@/lib/githubCache";
 
 /**
  * Create, update and delete individual files in a GitHub repository.
+ * 
  * POST /api/[owner]/[repo]/[branch]/files/[path]
  * DELETE /api/[owner]/[repo]/[branch]/files/[path]
  * 
@@ -39,6 +40,7 @@ export async function POST(
 
     let contentBase64;
     let message;
+    let schema;
 
     const index = {
       filename: getFileName(normalizedPath),
@@ -71,8 +73,8 @@ export async function POST(
       case "content":
         if (!data.name) throw new Error(`"name" is required for content.`);
 
-        let schema = getSchemaByName(config?.object, data.name);
-        if (!schema) throw new Error(`Schema not found for ${data.name}.`);
+        schema = getSchemaByName(config?.object, data.name);
+        if (!schema) throw new Error(`Content schema not found for ${data.name}.`);
 
         if (!normalizedPath.startsWith(schema.path)) throw new Error(`Invalid path "${params.path}" for ${data.type} "${data.name}".`);
 
@@ -136,17 +138,20 @@ export async function POST(
         }
         break;
       case "media":
-        if (!config?.object.media) throw new Error(`No media configuration found for ${params.owner}/${params.repo}/${params.branch}.`);
+        if (!data.name) throw new Error(`"name" is required for media.`);
 
-        if (!normalizedPath.startsWith(config.object.media.input)) throw new Error(`Invalid path "${params.path}" for media.`);
+        schema = getSchemaByName(config?.object, data.name, "media");
+        if (!schema) throw new Error(`Media schema not found for ${data.name}.`);
+
+        if (!normalizedPath.startsWith(schema.input)) throw new Error(`Invalid path "${params.path}" for media "${data.name}".`);
         
         if (getFileName(normalizedPath) === ".gitkeep") {
           // Folder creation
           contentBase64 = "";
         } else {
           if (
-            config.object.media.extensions?.length > 0 &&
-            !config.object.media.extensions.includes(getFileExtension(normalizedPath))
+            schema.extensions?.length > 0 &&
+            !schema.extensions.includes(getFileExtension(normalizedPath))
           ) throw new Error(`Invalid extension "${getFileExtension(normalizedPath)}" for media.`);
 
           contentBase64 = data.content;
@@ -181,8 +186,9 @@ export async function POST(
       await updateConfig(newConfig);
     }
     
-    // Update cache for content and settings files, but not media
     if (response?.data.content && response?.data.commit && data.type !== "media") {
+      // If the file is successfully saved, update the cache
+      // TODO: add media caching (requires split between listing and displaying media)
       await updateFileCache(
         params.owner,
         params.repo,
@@ -221,6 +227,7 @@ export async function POST(
   }
 };
 
+// Helper function to save a file to GitHub (with retry logic for new files)
 const githubSaveFile = async (
   token: string,
   owner: string,
@@ -231,46 +238,71 @@ const githubSaveFile = async (
   sha?: string,
   message: string
 ) => {
-  const generateUniqueFilename = (path: string, attempt: number) => {
-    const [filename, extension] = path.split(".");
-    const baseName = `${filename}-${attempt}`;
-    return `${baseName}.${extension}`;
-  };
-
-  let currentPath = path;
-  let attempts = 0;
-  const maxAttempts = sha ? 1 : 5;
-  let uniqueFilenameCounter = 1;
-
   const octokit = createOctokitInstance(token);
 
-  while (attempts < maxAttempts) {
-    try {
-      const response = await octokit.rest.repos.createOrUpdateFileContents({
+  try {
+    // First attempt - try with original path
+    const response = await octokit.rest.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path,
+      message: sha ? `Update ${path} (via Pages CMS)` : `Create ${path} (via Pages CMS)`,
+      content: contentBase64,
+      branch,
+      sha: sha || undefined,
+    });
+
+    if (response.data.content && response.data.commit) {
+      return response;
+    }
+    throw new Error("Invalid response structure");
+  } catch (error: any) {
+    // Only handle 422 errors for new files (no sha)
+    if (error.status === 422 && !sha) {
+      // Get directory contents to find next available name
+      const parentDir = getParentPath(path);
+      const { data } = await octokit.rest.repos.getContent({
         owner,
         repo,
-        path: currentPath,
-        message,
-        content: contentBase64,
-        branch,
-        sha: sha || undefined,
+        path: parentDir || '.',
+        ref: branch,
       });
 
-      // TODO: is that really what I have to do here?
-      if (response.data.content && response.data.commit) {
-        return response;
-      } else {
-        throw new Error("Invalid response structure");
+      if (!Array.isArray(data)) {
+        throw new Error('Expected directory listing');
       }
-    } catch (error: any) {
-      if (error.status === 422 && maxAttempts && maxAttempts > 1) {
-        attempts++;
-        currentPath = generateUniqueFilename(path, uniqueFilenameCounter);
-        uniqueFilenameCounter++;
-      } else {
-        throw error;
+
+      const [filename, extension] = path.split('/').pop()!.split('.');
+      const pattern = new RegExp(`^${filename}-(\\d+)\\.${extension}$`);
+      const maxNumber = Math.max(0, ...data
+        .map(file => {
+          const match = file.name.match(pattern);
+          return match ? parseInt(match[1], 10) : 0;
+        }));
+
+      // Try up to 3 times with incrementing numbers
+      for (let i = 1; i <= 3; i++) {
+        const newPath = `${parentDir ? parentDir + '/' : ''}${filename}-${maxNumber + i}.${extension}`;
+        try {
+          const response = await octokit.rest.repos.createOrUpdateFileContents({
+            owner,
+            repo,
+            path: newPath,
+            message: `Create ${newPath} (via Pages CMS)`,
+            content: contentBase64,
+            branch,
+          });
+
+          if (response.data.content && response.data.commit) {
+            return response;
+          }
+        } catch (error: any) {
+          if (i === 3 || error.status !== 422) throw error;
+          // Continue to next attempt if 422
+        }
       }
     }
+    throw error;
   }
 };
 
@@ -320,24 +352,30 @@ export async function DELETE(
       message = interpolate(config.object.commit.message.delete, index);
     }
     
+    let schema;
+    
     switch (type) {
       case "content":
         if (!name) throw new Error(`"name" is required for content.`);
 
-        const schema = getSchemaByName(config.object, name);
-        if (!schema) throw new Error(`Schema not found for ${name}.`);
+        schema = getSchemaByName(config.object, name);
+        if (!schema) throw new Error(`Content schema not found for ${name}.`);
         
         if (!normalizedPath.startsWith(schema.path)) throw new Error(`Invalid path "${params.path}" for ${type} "${name}".`);
         
         if (getFileExtension(normalizedPath) !== schema.extension) throw new Error(`Invalid extension "${getFileExtension(normalizedPath)}" for ${type} "${name}".`);
         break;
       case "media":
-        if (!config.object.media) throw new Error(`No media configuration found for ${params.owner}/${params.repo}/${params.branch}.`);
-        if (!normalizedPath.startsWith(config.object.media.input)) throw new Error(`Invalid path "${params.path}" for media.`);
+        if (!name) throw new Error(`"name" is required for media.`);
+
+        schema = getSchemaByName(config.object, name, "media");
+        if (!schema) throw new Error(`Media schema not found for ${name}.`);
+
+        if (!normalizedPath.startsWith(schema.input)) throw new Error(`Invalid path "${params.path}" for media "${name}".`);
 
         if (
-          config.object.media.extensions?.length > 0 &&
-          !config.object.media.extensions.includes(getFileExtension(normalizedPath))
+          schema.extensions?.length > 0 &&
+          !schema.extensions.includes(getFileExtension(normalizedPath))
         ) throw new Error(`Invalid extension "${getFileExtension(normalizedPath)}" for media.`);
         break;
     }

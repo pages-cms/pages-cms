@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useConfig } from "@/contexts/config-context";
 import { useUser } from "@/contexts/user-context";
 import { cn } from "@/lib/utils";
-import { FileStack, FileText, Image as ImageIcon, Settings, Users } from "lucide-react";
+import { FileStack, FileText, FolderOpen, Settings, Users } from "lucide-react";
 
 const RepoNavItem = ({
   children,
@@ -56,36 +56,34 @@ const RepoNav = ({
       label: item.label || item.name,
     })) || [];
 
-    const mediaItem = configObject.media?.input && configObject.media?.output
-      ? {
-          key: "media",
-          icon: <ImageIcon className="h-5 w-5 mr-2" />,
-          href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/media`,
-          label: "Media"
-        }
-      : null;
+    const mediaItems = configObject.media?.map((item: any) => ({
+      key: item.name || "media",
+      icon: <FolderOpen className="h-5 w-5 mr-2" />,
+      href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/media/${item.name}`,
+      label: item.label || item.name || "Media"
+    })) || [];
 
     const settingsItem = configObject.settings !== false
       ? {
-          key: "settings",
-          icon: <Settings className="h-5 w-5 mr-2" />,
-          href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/settings`,
-          label: "Settings"
-        }
+        key: "settings",
+        icon: <Settings className="h-5 w-5 mr-2" />,
+        href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/settings`,
+        label: "Settings"
+      }
       : null;
 
     const collaboratorsItem = configObject && Object.keys(configObject).length !== 0 && user?.githubId
       ? {
-          key: "collaborators",
-          icon: <Users className="h-5 w-5 mr-2" />,
-          href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collaborators`,
-          label: "Collaborators"
-        }
+        key: "collaborators",
+        icon: <Users className="h-5 w-5 mr-2" />,
+        href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collaborators`,
+        label: "Collaborators"
+      }
       : null;
 
     return [
       ...contentItems,
-      mediaItem,
+      ...mediaItems,
       settingsItem,
       collaboratorsItem
     ].filter(Boolean);

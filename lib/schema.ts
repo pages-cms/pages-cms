@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Field } from "@/types/field";
 import { format } from "date-fns";
 
+// Deep map a content object to a schema
 const deepMap = (
   contentObject: Record<string, any>,
   fields: Field[],
@@ -60,7 +61,7 @@ const initializeState = (
       appliedValue = field.list
         ? (typeof field.list === "object" && field.list.default)
           ? field.list.default
-          : [getDefaultValue(field)]
+          : undefined
         : getDefaultValue(field);
     }
     return appliedValue;
@@ -79,42 +80,6 @@ const getDefaultValue = (field: Record<string, any>) => {
       ? defaultValue()
       : defaultValue || "";
   }
-};
-
-// Used to work around RHF's inability to handle flat field arrays
-// See https://react-hook-form.com/docs/usefieldarray#rules
-const nestFieldArrays = (values: any, fields: Field[]): any => {
-  const result: any = {};
-
-  fields.forEach(field => {
-    if (field.list) {
-      result[field.name] = values[field.name]?.map((item: any) => field.type === 'object' ? { value: nestFieldArrays(item, field.fields || []) } : { value: item }) || [];
-    } else if (field.type === "object" && field.fields) {
-      result[field.name] = nestFieldArrays(values[field.name] || {}, field.fields);
-    } else {
-      result[field.name] = values[field.name];
-    }
-  });
-
-  return result;
-};
-
-// Used to work around RHF's inability to handle flat field arrays
-// See https://react-hook-form.com/docs/usefieldarray#rules
-const unnestFieldArrays = (values: any, fields: Field[]): any => {
-  const result: any = {};
-
-  fields.forEach(field => {
-    if (field.list) {
-      result[field.name] = values[field.name]?.map((item: { value: any }) => field.type === 'object' ? unnestFieldArrays(item.value, field.fields || []) : item.value) || [];
-    } else if (field.type === "object" && field.fields) {
-      result[field.name] = unnestFieldArrays(values[field.name] || {}, field.fields);
-    } else {
-      result[field.name] = values[field.name];
-    }
-  });
-
-  return result;
 };
 
 // Generate a Zod schema for validation
@@ -219,11 +184,13 @@ const getSchemaByPath = (config: Record<string, any>, path: string) => {
   return schema ? JSON.parse(JSON.stringify(schema)) : null;
 };
 
-// Retrieve the matching schema for a type
-const getSchemaByName = (config: Record<string, any> | null | undefined, name: string) => {
+// Retrieve the matching schema for a media or content entry
+const getSchemaByName = (config: Record<string, any> | null | undefined, name: string, type: string = "content") => {
   if (!config || !config.content || !name) return null;
   
-  const schema = config.content.find((item: Record<string, any>) => item.name === name);
+  const schema = (type === "media")
+    ? config.media.find((item: Record<string, any>) => item.name === name)
+    : config.content.find((item: Record<string, any>) => item.name === name);
 
   // We deep clone the object to avoid mutating config if schema is modified.
   return schema ? JSON.parse(JSON.stringify(schema)) : null;
@@ -326,8 +293,6 @@ export {
   getPrimaryField,
   generateFilename,
   getDateFromFilename,
-  nestFieldArrays,
-  unnestFieldArrays,
   generateZodSchema,
   safeAccess,
   interpolate
