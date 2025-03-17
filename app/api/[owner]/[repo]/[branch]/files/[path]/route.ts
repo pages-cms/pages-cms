@@ -3,7 +3,7 @@ import { createOctokitInstance } from "@/lib/utils/octokit";
 import { writeFns } from "@/fields/registry";
 import { configVersion, parseConfig, normalizeConfig } from "@/lib/config";
 import { stringify } from "@/lib/serialization";
-import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeObject, generateFromPattern } from "@/lib/schema";
+import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeObject, interpolate } from "@/lib/schema";
 import { getConfig, updateConfig } from "@/lib/utils/config";
 import { getFileExtension, getFileName, normalizePath, serializedTypes } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
@@ -57,13 +57,13 @@ export async function POST(
       message = `Update ${normalizedPath} (via Pages CMS)`;
 
       if (config.object?.commit?.message?.update) {
-        message = generateFromPattern(config.object.commit.message.update, index);
+        message = interpolate(config.object.commit.message.update, index);
       }
     } else {
       message = `Create ${normalizedPath} (via Pages CMS)`;
 
       if (config.object?.commit?.message?.create) {
-        message = generateFromPattern(config.object.commit.message.create, index);
+        message = interpolate(config.object.commit.message.create, index);
       }
     }
     
@@ -229,7 +229,7 @@ const githubSaveFile = async (
   path: string,
   contentBase64: string,
   sha?: string,
-  message?: string
+  message: string
 ) => {
   const generateUniqueFilename = (path: string, attempt: number) => {
     const [filename, extension] = path.split(".");
@@ -317,7 +317,7 @@ export async function DELETE(
         }
       }
 
-      message = generateFromPattern(config.object.commit.message.delete, index);
+      message = interpolate(config.object.commit.message.delete, index);
     }
     
     switch (type) {

@@ -274,17 +274,6 @@ const getPrimaryField = (schema: Record<string, any>) => {
       : schema?.fields?.[0]?.name;
 }
 
-// Generate a new string from a pattern and a schema
-const generateFromPattern = (pattern: string, data: Record<string, any>) => {
-  return pattern.replace(/\{([^}]+)\}/g, (_, fieldName) => {
-    const value = safeAccess(data, fieldName);
-    return value ? String(value) : "";
-  });
-}
-
-export {
-  generateFromPattern
-};
 const generateFilename = (
   pattern: string,
   schema: Record<string, any>,

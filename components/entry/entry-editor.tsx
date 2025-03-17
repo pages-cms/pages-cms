@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo, use } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useConfig } from "@/contexts/config-context";
 import { parseAndValidateConfig } from "@/lib/config";
-import { generateFilename, generateFromPattern, getPrimaryField, getSchemaByName } from "@/lib/schema";
+import { generateFilename, getPrimaryField, getSchemaByName } from "@/lib/schema";
 import {
   getFileExtension,
   getFileName,
@@ -21,7 +21,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, EllipsisVertical, History } from "lucide-react";
-import { useUser } from "@/contexts/user-context";
 
 export function EntryEditor({
   name = "",
@@ -47,7 +46,6 @@ export function EntryEditor({
   const [refetchTrigger, setRefetchTrigger] = useState<number>(0);
 
   const router = useRouter();
-  const { user } = useUser();
 
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
@@ -318,6 +316,7 @@ export function EntryEditor({
       </div>
     </div>
   ), [displayTitle, navigateBack, path]);
+
 
   if (error) {
     // TODO: should we use a custom error class with code?
