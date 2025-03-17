@@ -57,13 +57,13 @@ export async function POST(
     if (data.sha) {
       message = `Update ${normalizedPath} (via Pages CMS)`;
 
-      if (config.object?.commit?.message?.update) {
+      if (config?.object?.commit?.message?.update) {
         message = interpolate(config.object.commit.message.update, index);
       }
     } else {
       message = `Create ${normalizedPath} (via Pages CMS)`;
 
-      if (config.object?.commit?.message?.create) {
+      if (config?.object?.commit?.message?.create) {
         message = interpolate(config.object.commit.message.create, index);
       }
     }
@@ -165,7 +165,7 @@ export async function POST(
         throw new Error(`Invalid type "${data.type}".`);
     }
     
-    const response = await githubSaveFile(token, params.owner, params.repo, params.branch, normalizedPath, contentBase64, data.sha, message);
+    const response = await githubSaveFile(token, params.owner, params.repo, params.branch, normalizedPath, contentBase64, message, data.sha);
   
     const savedPath = response?.data.content?.path;
 
@@ -234,8 +234,8 @@ const githubSaveFile = async (
   branch: string,
   path: string,
   contentBase64: string,
+  message: string,
   sha?: string,
-  message: string
 ) => {
   const octokit = createOctokitInstance(token);
 
@@ -334,7 +334,7 @@ export async function DELETE(
 
     let message = `File "${normalizedPath}" deleted successfully.`;
 
-    if (config.object?.commit?.message?.delete) {
+    if (config?.object?.commit?.message?.delete) {
       const index = {
         filename: getFileName(normalizedPath),
         path: normalizedPath,
