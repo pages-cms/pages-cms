@@ -56,7 +56,7 @@ import {
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
-import { Blocker } from "../navigation-block";
+import { Blocker } from "@/components/navigation-block";
 
 const SortableItem = ({
   id,

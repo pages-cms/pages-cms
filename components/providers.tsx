@@ -8,7 +8,6 @@ import { NavigationBlockerProvider, BlockBrowserNavigation } from "./navigation-
 
 export function Providers({ children, user }: { children: React.ReactNode, user: User | null }) {
   return (
-    <NavigationBlockerProvider>
       <ThemeProvider
         attribute="class"
         defaultTheme="system"
@@ -17,12 +16,11 @@ export function Providers({ children, user }: { children: React.ReactNode, user:
       >
         <UserProvider user={user}>
           <TooltipProvider>
-            {children}
+            <NavigationBlockerProvider>
+              {children}
+            </NavigationBlockerProvider>
           </TooltipProvider>
         </UserProvider>
       </ThemeProvider>
-
-      <BlockBrowserNavigation />
-    </NavigationBlockerProvider>
   );
 }
