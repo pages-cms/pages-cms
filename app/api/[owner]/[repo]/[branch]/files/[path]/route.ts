@@ -54,19 +54,13 @@ export async function POST(
       }
     }
 
-    if (data.sha) {
-      message = `Update ${normalizedPath} (via Pages CMS)`;
-
-      if (config?.object?.commit?.message?.update) {
-        message = interpolate(config.object.commit.message.update, index);
-      }
-    } else {
-      message = `Create ${normalizedPath} (via Pages CMS)`;
-
-      if (config?.object?.commit?.message?.create) {
-        message = interpolate(config.object.commit.message.create, index);
-      }
-    }
+    message = data.sha
+      ? config?.object?.commit?.message?.update
+        ? interpolate(config.object.commit.message.update, index)
+        : `Update ${normalizedPath} (via Pages CMS)`
+      : config?.object?.commit?.message?.create
+        ? interpolate(config.object.commit.message.create, index)
+        : `Create ${normalizedPath} (via Pages CMS)`;
     
     switch (data.type) {
       case "content":
@@ -332,24 +326,22 @@ export async function DELETE(
 
     const normalizedPath = normalizePath(params.path);
 
-    let message = `File "${normalizedPath}" deleted successfully.`;
-
-    if (config?.object?.commit?.message?.delete) {
-      const index = {
-        filename: getFileName(normalizedPath),
-        path: normalizedPath,
-        collection: {
-          name: name,
-        },
-        user: {
-          name: user.githubName,
-          username: user.githubUsername,
-          email: user.githubEmail || user.email
-        }
+    const index = {
+      filename: getFileName(normalizedPath),
+      path: normalizedPath,
+      collection: {
+        name: name,
+      },
+      user: {
+        name: user.githubName,
+        username: user.githubUsername,
+        email: user.githubEmail || user.email
       }
-
-      message = interpolate(config.object.commit.message.delete, index);
     }
+
+    const message = config?.object?.commit?.message?.delete
+      ? interpolate(config.object.commit.message.delete, index)
+      : `Delete ${normalizedPath} (via Pages CMS)`;
     
     let schema;
     
