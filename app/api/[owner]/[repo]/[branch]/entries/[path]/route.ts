@@ -1,5 +1,4 @@
 import { type NextRequest } from "next/server";
-import { createOctokitInstance } from "@/lib/utils/octokit";
 import { readFns } from "@/fields/registry";
 import { deepMap, getSchemaByName } from "@/lib/schema";
 import { parse } from "@/lib/serialization";
@@ -7,7 +6,7 @@ import { getConfig } from "@/lib/utils/config";
 import { getFileExtension, normalizePath } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
 import { getToken } from "@/lib/token";
-import { getEntry } from "@/lib/entry";
+import { getEntry } from "@/lib/utils/entry";
 
 /**
  * Fetches and parses individual file contents from GitHub repositories
@@ -52,9 +51,9 @@ export async function GET(
     return Response.json({
       status: "success",
       data: {
-        sha: response.data.sha,
-        name: response.data.name,
-        path: response.data.path,
+        sha: response.sha,
+        name: response.name,
+        path: response.path,
         contentObject: response.contentObject
       }
     });

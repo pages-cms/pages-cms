@@ -1,13 +1,13 @@
 import { User } from "@/types/user";
-import { getFileExtension, normalizePath } from "./file";
-import { createOctokitInstance } from "./octokit";
-import { getToken } from "../token";
-import { getConfig } from "./config";
-import { deepMap, getSchemaByName } from "../schema";
+import { getFileExtension, normalizePath } from "@/lib/utils/file";
+import { createOctokitInstance } from "@/lib/utils/octokit";
+import { getToken } from "@/lib/token";
+import { getConfig } from "@/lib/utils/config";
+import { deepMap, getSchemaByName } from "@/lib/schema";
 import { parse } from "@/lib/serialization";
 import { readFns } from "@/fields/registry";
 
-export const getEntry = async (user: User, owner: string, repo: string, branch: string, path: string, name?: string) => {
+export const getEntry = async (user: User, owner: string, repo: string, branch: string, path: string, name: string | null) => {
   const token = await getToken(user, owner, repo);
   if (!token) throw new Error("Token not found");
 
