@@ -61,6 +61,7 @@ import {
 import { toast } from "sonner";
 import { getSchemaByName } from "@/lib/schema";
 import { extensionCategories, normalizePath } from "@/lib/utils/file";
+import CustomImage from "@/fields/core/rich-text/custom-image/image";
 
 const EditComponent = forwardRef((props: any, ref) => {
   const { config } = useConfig();
@@ -137,10 +138,11 @@ const EditComponent = forwardRef((props: any, ref) => {
       StarterKit.configure({
         dropcursor: { width: 2 }
       }),
-      Image.extend({
+      CustomImage.extend({
         addAttributes() {
           return {
             ...this.parent?.(),
+            alt: { default: null },
             class: { default: null },
             style: { default: null },
             width: { default: null },
