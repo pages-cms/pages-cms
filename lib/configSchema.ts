@@ -177,9 +177,9 @@ const ContentObjectSchema = z.object({
   }).strict().optional().nullable(),
   format: z.enum([
     "yaml-frontmatter", "json-frontmatter", "toml-frontmatter",
-    "yaml", "json", "toml", "datagrid", "code", "raw"
+    "yaml", "json", "toml", "datagrid", "csv", "code", "raw"
   ], {
-    message: "'format' must be 'yaml-frontmatter', 'json-frontmatter', 'tom-frontmatter', 'yaml', 'json', 'toml', 'datagrid', 'code' or 'raw'."
+    message: "'format' must be 'yaml-frontmatter', 'json-frontmatter', 'tom-frontmatter', 'yaml', 'json', 'toml', 'datagrid', 'csv', 'code' or 'raw'."
   }).optional().nullable(),
   delimiters: z.union([
     z.array(z.string({
