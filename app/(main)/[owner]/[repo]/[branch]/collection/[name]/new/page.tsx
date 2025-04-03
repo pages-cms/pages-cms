@@ -2,18 +2,9 @@
 
 import { useSearchParams } from "next/navigation";
 import { EntryEditor } from "@/components/entry/entry-editor";
+import { PageWithPath } from "@/types/page";
 
-export default function Page({
-  params
-}: {
-  params: {
-    owner: string;
-    repo: string;
-    branch: string;
-    name: string;
-    path: string;
-  }
-}) {
+export default function Page({ params }: PageWithPath) {
   const searchParams = useSearchParams();
   const parent = searchParams.get("parent") || undefined;
 
