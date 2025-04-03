@@ -1,3 +1,9 @@
+/**
+ * @FIX
+ *
+ * This layout has been disabled as it prevents navigation to child routes.
+ */
+
 import type { Metadata, ResolvingMetadata } from "next";
 import Default from "./page";
 import { type Page } from "@/types/page";

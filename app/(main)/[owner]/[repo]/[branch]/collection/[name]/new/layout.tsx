@@ -7,7 +7,7 @@ export async function generateMetadata(
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   return {
-    title: params.name,
+    title: `Creating ${params.name}`,
   };
 }
 
