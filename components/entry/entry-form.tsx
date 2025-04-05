@@ -201,6 +201,7 @@ const ListField = ({
                       {collapsible && (
                           <div className="mt-1 pl-1">
                             <p className="text-base font-medium text-gray-900 dark:text-gray-100">
+                              {/* TODO: Make stateful - update as user types, and after save (without reload) */}
                               {typeof collapsible === 'object' ? generateFieldLabel(collapsible.label ?? `Item ${index + 1}`, arrayField) : `Item ${index + 1}`}
                             </p>
                           </div>
