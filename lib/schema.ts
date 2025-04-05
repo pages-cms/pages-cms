@@ -267,6 +267,19 @@ const generateFilename = (
   });
 };
 
+// TODO: Make generic and merge with generateFilename
+// Generate a collapsible field label
+const generateFieldLabel = (
+  pattern: string,
+  state: Record<string, any>
+) => {
+  // Replace field placeholders
+  return pattern.replace(/\{([^}]+)\}/g, (_, fieldName) => {
+    const value = safeAccess(state, fieldName);
+    return value ? String(value) : "";
+  });
+};
+
 // Extract a date from a filename when possible
 function getDateFromFilename(filename: string) {
   const pattern = /^(\d{4})-(\d{2})-(\d{2})-/;
@@ -293,6 +306,7 @@ export {
   getFieldByPath,
   getPrimaryField,
   generateFilename,
+  generateFieldLabel,
   getDateFromFilename,
   generateZodSchema,
   safeAccess,

@@ -85,6 +85,19 @@ const FieldObjectSchema: z.ZodType<any> = z.lazy(() => z.object({
       message: "'list' must be either a boolean or an object with 'min' and 'max' properties."
     }).strict()
   ]).optional(),
+  collapsible: z.union([
+    z.boolean(),
+    z.object({
+      expanded: z.boolean({
+        message: "'expanded' must be a boolean."
+      }).optional(),
+      label: z.string({
+        message: "'label' must be a valid string."
+      }).optional(),
+    }, {
+      message: "'collapsible' must be either a boolean or an object with 'expanded' and 'label' properties."
+    }).strict()
+  ]).optional(),
   hidden: z.boolean({
     message: "'hidden' must be a boolean."
   }).optional().nullable(),

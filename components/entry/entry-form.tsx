@@ -15,7 +15,8 @@ import {
   initializeState,
   getDefaultValue,
   generateZodSchema,
-  sanitizeObject
+  sanitizeObject,
+  generateFieldLabel
 } from "@/lib/schema";
 import { Field } from "@/types/field";
 import { EntryHistoryBlock, EntryHistoryDropdown } from "./entry-history";
@@ -55,7 +56,7 @@ import {
   restrictToParentElement
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, GripVertical, Loader, Plus, Trash2, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 
 const SortableItem = ({
   id,
@@ -81,7 +82,7 @@ const SortableItem = ({
   };
 
   return (
-    <div ref={setNodeRef} className={cn("bg-background flex gap-x-1 rounded-lg border items-center", type === "object" ? "px-2 py-4" : "px-1 py-2", isDragging ? "z-50" : "z-10")} style={style}>
+    <div ref={setNodeRef} className={cn("bg-background flex gap-x-1 rounded-lg border items-start", type === "object" ? "px-2 py-4" : "px-1 py-2", isDragging ? "z-50" : "z-10")} style={style}>
       <Button type="button" variant="ghost" size="icon-sm" className="h-8 cursor-move" {...attributes} {...listeners}>
         <GripVertical className="h-4 w-4" />
       </Button>
@@ -95,11 +96,13 @@ const ListField = ({
   field,
   fieldName,
   renderFields,
+  collapsible,
 }: {
   control: Control;
   field: Field;
   fieldName: string;
   renderFields: (fields: Field[], parentName?: string) => React.ReactNode;
+  collapsible: Field["collapsible"];
 }) => {
   const { fields: arrayFields, append, remove, move } = useFieldArray({
     control,
@@ -107,7 +110,18 @@ const ListField = ({
   });
   // TODO: why is this not used?
   const { errors } = useFormState({ control });
-
+  
+  const [ expandedFields, setExpandedFields ] = useState<string[]>(
+    typeof collapsible === 'object' ? (collapsible.expanded ? arrayFields.map(field => field.id) : []) : []
+  ); // Stores arrayFields ID
+  function toggleCollapse(id: string) {
+    if(expandedFields.includes(id)) {
+      setExpandedFields(expandedFields.filter(i => i !== id));
+    } else {
+      setExpandedFields([...expandedFields, id]);
+    }
+  }
+  
   const { setValue, watch } = useFormContext();
   const fieldValues = watch(fieldName);
 
@@ -167,10 +181,35 @@ const ListField = ({
               <SortableContext items={arrayFields.map(item => item.id)} strategy={verticalListSortingStrategy}>
                 {arrayFields.map((arrayField, index) => (
                   <SortableItem key={arrayField.id} id={arrayField.id} type={field.type}>
-                    <div className="grid gap-6 flex-1">
-                      {field.type === "object" && field.fields
-                        ? renderFields(field.fields, `${fieldName}.${index}`)
-                        : renderSingleField(field, `${fieldName}.${index}`, control, false)}
+                    {collapsible && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button type="button" variant="ghost" size="icon-sm" className="h-8" onClick={() => toggleCollapse(arrayField.id)}>
+                            {expandedFields.includes(arrayField.id) ? (
+                              <ChevronsDownUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronsUpDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {expandedFields.includes(arrayField.id) ? 'Collapse' : 'Expand'}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                    <div className="grid gap-3 flex-1">
+                      {collapsible && (
+                          <div className="mt-1 pl-1">
+                            <p className="text-base font-medium text-gray-900 dark:text-gray-100">
+                              {typeof collapsible === 'object' ? generateFieldLabel(collapsible.label ?? `Item ${index + 1}`, arrayField) : `Item ${index + 1}`}
+                            </p>
+                          </div>
+                      )}
+                      <div className={`${expandedFields.includes(arrayField.id) ? 'block' : 'hidden'}`}>
+                        {field.type === "object" && field.fields
+                          ? renderFields(field.fields, `${fieldName}.${index}`)
+                          : renderSingleField(field, `${fieldName}.${index}`, control, false)}
+                      </div>
                     </div>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -193,10 +232,12 @@ const ListField = ({
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    append(field.type === "object"
+                    // TODO: Fix, ID isnt available
+                    const newField = field.type === "object"
                       ? initializeState(field.fields, {})
-                      : getDefaultValue(field)
-                    );
+                      : getDefaultValue(field);
+                    append(newField);
+                    setExpandedFields((prev) => [...prev, newField.id]);
                   }}
                   className="gap-x-2"
                 >
@@ -289,7 +330,7 @@ const EntryForm = ({
       const fieldName = parentName ? `${parentName}.${field.name}` : field.name;
 
       if (field.type === "object" && field.list && !supportsList[field.type]) {
-        return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
+        return <ListField collapsible={field.collapsible} key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
       } else if (field.type === "object") {
         return (
           <fieldset key={fieldName} className="grid gap-6 rounded-lg border p-4">
@@ -303,7 +344,7 @@ const EntryForm = ({
           </fieldset>
         );
       } else if (field.list && !supportsList[field.type]) {
-        return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
+        return <ListField collapsible={field.collapsible} key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
       }
 
       return renderSingleField(field, fieldName, form.control);
