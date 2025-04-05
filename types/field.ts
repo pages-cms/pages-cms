@@ -5,6 +5,7 @@ export type Field = {
   type: "boolean" | "code" | "date" | "image" | "number" | "object" | "rich-text" | "select" | "string" | "text" | "uuid" | string;
   default?: any;
   list?: boolean | { min?: number; max?: number; default?: any };
+  collapsible?: boolean | { expanded?: boolean, label?: string };
   hidden?: boolean | null;
   required?: boolean | null;
   pattern?: string | { regex: string; message?: string };
