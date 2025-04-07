@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useImperativeHandle, useRef, useState } from "react";
+import { useCallback, useImperativeHandle, useRef, useState, forwardRef } from "react";
 import { useConfig } from "@/contexts/config-context";
 import { MediaView } from "@/components/media/media-view";
 import { Button } from "@/components/ui/button";
@@ -85,7 +85,7 @@ const MediaDialog = forwardRef(({
       </DialogContent>
     </Dialog>
   );
-};
+});
 
 MediaDialog.displayName = "MediaDialog";
 
