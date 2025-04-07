@@ -21,28 +21,23 @@ export interface MediaDialogHandle {
   close: () => void;
 }
 
-const MediaDialog = (
-  {
-    ref,
-    media,
-    selected,
-    onSubmit,
-    maxSelected,
-    initialPath,
-    children,
-    extensions
-  }: {
-    selected: string[],
-    onSubmit: (images: string[]) => void,
-    selected?: string[],
-    maxSelected?: number,
-    initialPath?: string,
-    children?: React.ReactNode,
-    extensions?: string[]
-  } & {
-    ref: React.RefObject<unknown>;
-  }
-) => {
+const MediaDialog = forwardRef(({
+  media,
+  selected,
+  onSubmit,
+  maxSelected,
+  initialPath,
+  children,
+  extensions
+}: {
+  media?: string,
+  onSubmit: (images: string[]) => void,
+  selected?: string[],
+  maxSelected?: number,
+  initialPath?: string,
+  children?: React.ReactNode,
+  extensions?: string[]
+}, ref) => {
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
 

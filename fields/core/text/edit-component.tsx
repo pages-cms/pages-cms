@@ -14,6 +14,7 @@ const EditComponent = (
 
   const adjustHeight = (el: HTMLTextAreaElement | null) => {
     if (field.options?.autoresize === false) return;
+    if (field.options?.autoresize === false) return;
     if (!el) return;
     el.style.height = "auto";
     const totalBorderWidth = 2;

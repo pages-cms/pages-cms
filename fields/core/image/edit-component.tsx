@@ -333,7 +333,7 @@ const EditComponent = (
       </MediaUpload.DropZone>
     </MediaUpload>
   );
-};
+});
 
 EditComponent.displayName = "EditComponent";
 
