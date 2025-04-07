@@ -7,8 +7,22 @@ import { User } from "@/components/user";
 import { RepoDropdown } from "@/components/repo/repo-dropdown";
 import { RepoNav } from "@/components/repo/repo-nav";
 import { About } from "@/components/about";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 const RepoSidebar = ({
   onClick
@@ -21,24 +35,26 @@ const RepoSidebar = ({
   const account = user?.accounts?.find((account) => account.login === repo.owner);
 
   return (
-    <>
-      <header className="border-b flex items-center px-3 py-2">
-        <Link className={buttonVariants({ variant: "ghost", size: "xs" })} href="/" prefetch={true}>
-          <ArrowLeft className="h-4 w-4 mr-1.5" />
-          All projects
-        </Link>
-      </header>
-      <div className="px-3 pt-1">
+    <Sidebar>
+      <SidebarContent>
         <RepoDropdown onClick={onClick} />
-      </div>
-      <nav className="px-3 flex flex-col gap-y-1 overflow-auto">
-        <RepoNav onClick={onClick}/>
-      </nav>
-      <footer className="flex items-center gap-x-2 border-t px-3 py-2 mt-auto">
-        <User className="mr-auto" onClick={onClick}/>
-        <About onClick={onClick}/>
-      </footer>
-    </>
+
+        <SidebarGroup className="flex-1 overflow-auto">
+          <SidebarMenu>
+            <nav className="flex flex-col gap-y-1">
+              <RepoNav onClick={onClick} />
+            </nav>
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarFooter>
+          <footer>
+            <User onClick={onClick} />
+            {/* <About onClick={onClick} /> */}
+          </footer>
+        </SidebarFooter>
+      </SidebarContent>
+    </Sidebar>
   );
 }
 

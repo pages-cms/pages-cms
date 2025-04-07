@@ -7,7 +7,7 @@ import { useConfig } from "@/contexts/config-context";
 import { useUser } from "@/contexts/user-context";
 import { cn } from "@/lib/utils";
 import { FileStack, FileText, FolderOpen, Settings, Users } from "lucide-react";
-
+import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 const RepoNavItem = ({
   children,
   href,
@@ -21,18 +21,22 @@ const RepoNavItem = ({
   active: boolean;
   onClick?: () => void;
 }) => (
-  <Link
-    className={cn(
-      active ? "bg-accent" : "hover:bg-accent",
-      "flex items-center rounded-lg px-3 py-2 font-medium focus:bg-accent outline-hidden"
-    )}
-    href={href}
-    onClick={onClick}
-    prefetch={true}
-  >
-    {icon}
-    <span className="truncate">{children}</span>
-  </Link>
+  <SidebarMenuItem>
+    <SidebarMenuButton asChild>
+      <Link
+        className={cn(
+          active ? "bg-accent" : "hover:bg-accent",
+          "flex items-center rounded-lg px-3 py-2 font-medium focus:bg-accent outline-hidden"
+        )}
+        href={href}
+        onClick={onClick}
+        prefetch={true}
+      >
+        {icon}
+        <span className="truncate">{children}</span>
+      </Link>
+    </SidebarMenuButton>
+  </SidebarMenuItem>
 );
 
 const RepoNav = ({

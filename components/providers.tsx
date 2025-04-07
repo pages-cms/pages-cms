@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { UserProvider } from "@/contexts/user-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { User } from "@/types/user";
-
+import { SidebarProvider } from "@/components/ui/sidebar";
 export function Providers({ children, user }: { children: React.ReactNode, user: User | null }) {
   return (
     <ThemeProvider
@@ -14,9 +14,11 @@ export function Providers({ children, user }: { children: React.ReactNode, user:
       disableTransitionOnChange
     >
       <UserProvider user={user}>
-        <TooltipProvider>
-          {children}
-        </TooltipProvider>
+        <SidebarProvider>
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
+        </SidebarProvider>
       </UserProvider>
     </ThemeProvider>
   );
