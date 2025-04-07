@@ -17,10 +17,12 @@ import { emailLoginTokenTable, userTable } from "@/db/schema";
  * Requires email login token.
  */
 
-export async function GET(request: Request, props: { params: Promise<{ token: string }> }) {
-    const params = await props.params;
-    const { session } = await getAuth();
-    if (session) return redirect("/");
+export async function GET(
+	request: Request,
+	{ params }: { params: { token: string } }
+) {
+	const { session } = await getAuth();
+  if (session) return redirect("/");
 
     const verificationToken = params.token;
 

@@ -34,12 +34,13 @@ export async function GET(request: Request): Promise<Response> {
     const token = await github.validateAuthorizationCode(code);
 		const githubUserResponse = await fetch("https://api.github.com/user", {
 			headers: {
-				Authorization: `Bearer ${token.accessToken}`
+				Authorization: `Bearer ${token.accessToken()}`
 			}
 		});
 		const githubUser: GitHubUser = await githubUserResponse.json();
+		const accessToken: string = token.accessToken();
     
-    const { ciphertext, iv } = await encrypt(token.accessToken);
+    const { ciphertext, iv } = await encrypt(accessToken);
 
 		const existingUser = await db.query.userTable.findFirst({
 			where: eq(userTable.githubId, Number(githubUser.id))

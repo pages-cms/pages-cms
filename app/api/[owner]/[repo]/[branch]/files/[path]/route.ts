@@ -158,10 +158,10 @@ export async function POST(
       await updateConfig(newConfig);
     }
     
-    if (response?.data.content && response?.data.commit && data.type !== "media") {
+    if (response?.data.content && response?.data.commit) {
       // If the file is successfully saved, update the cache
-      // TODO: add media caching (requires split between listing and displaying media)
       await updateFileCache(
+        data.type === 'content' ? 'collection' : 'media',
         params.owner,
         params.repo,
         params.branch,
@@ -169,7 +169,13 @@ export async function POST(
           type: data.sha ? 'modify' : 'add',
           path: response.data.content.path!,
           sha: response.data.content.sha!,
-          content: Buffer.from(contentBase64, 'base64').toString('utf-8')
+          content: Buffer.from(contentBase64, 'base64').toString('utf-8'),
+          size: response.data.content.size,
+          downloadUrl: response.data.content.download_url,
+          commit: {
+            sha: response.data.commit.sha!,
+            timestamp: new Date(response.data.commit.committer?.date ?? new Date().toISOString()).getTime()
+          }
         }
       );
     }
@@ -212,7 +218,7 @@ const githubSaveFile = async (
   const octokit = createOctokitInstance(token);
 
   try {
-    // First attempt - try with original path
+    // First attempt: try with original path
     const response = await octokit.rest.repos.createOrUpdateFileContents({
       owner,
       repo,
@@ -269,7 +275,7 @@ const githubSaveFile = async (
           }
         } catch (error: any) {
           if (i === 3 || error.status !== 422) throw error;
-          // Continue to next attempt if 422
+          // Continue to next attempt if 422 (file already exists)
         }
       }
     }
@@ -344,6 +350,7 @@ export async function DELETE(
 
     // Update cache after successful deletion
     await updateFileCache(
+      'collection',
       params.owner,
       params.repo,
       params.branch,

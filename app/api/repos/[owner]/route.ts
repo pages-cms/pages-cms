@@ -17,9 +17,12 @@ export const dynamic = "force-dynamic";
  * Requires authentication.
  */
 
-export async function GET(request: NextRequest, props: { params: Promise<{ owner: string }> }) {
-  const params = await props.params;
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { owner: string } }
+) {
   try {
+    const { owner } = await params;
     const { user, session } = await getAuth();
     if (!session) return new Response(null, { status: 401 });
 
@@ -37,8 +40,8 @@ export async function GET(request: NextRequest, props: { params: Promise<{ owner
       if (repositorySelection === "selected") {  
         // Only some repos are selected
         // TODO: investigate why it's slow
-        const installations = await getInstallations(token, [params.owner]);
-        if (installations.length !== 1) throw new Error(`"${params.owner}" is not part of your GitHub App installations`);
+        const installations = await getInstallations(token, [owner]);
+        if (installations.length !== 1) throw new Error(`"${owner}" is not part of your GitHub App installations`);
 
         repos =  await getInstallationRepos(token, installations[0].id);
       } else {
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ owner
         const keyword = searchParams.get("keyword");
         
         const octokit = createOctokitInstance(token);
-        const query = `${keyword} in:name ${type}:${params.owner} fork:true`;
+        const query = `${keyword} in:name ${type}:${owner} fork:true`;
         const response = await octokit.rest.search.repos({
           q: query,
           sort: "updated",
@@ -67,7 +70,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ owner
       repos = await db.query.collaboratorTable.findMany({
         where: and(
           eq(collaboratorTable.email, user.email),
-          eq(collaboratorTable.owner, params.owner)
+          eq(collaboratorTable.owner, owner)
         )
       });
     }

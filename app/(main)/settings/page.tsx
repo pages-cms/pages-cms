@@ -24,15 +24,15 @@ import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default async function Page() {
-	const { user } = await getAuth();
-	if (!user) throw new Error("User not found");
+  const { user } = await getAuth();
+  if (!user) throw new Error("User not found");
 
   const displayName = user.githubId ? user.githubName || user.githubUsername : user.email;
 
   return (
     <MainRootLayout>
-      <div className="max-w-(--breakpoint-sm) mx-auto p-4 md:p-6 space-y-6">
-        <Link className={cn(buttonVariants({ variant: "outline", size: "xs" }), "inline-flex")} href="/">
+      <div className="max-w-screen-sm mx-auto p-4 md:p-6 space-y-6">
+        <Link className={cn(buttonVariants({ variant: "outline", size: "xs" }), "inline-flex")} href="/" prefetch={true}>
           <ArrowLeft className="h-4 w-4 mr-1.5" />
           Go home
         </Link>
@@ -53,7 +53,7 @@ export default async function Page() {
                       Name
                     </Label>
                     <div className="col-span-3">
-                      <Input name="name" disabled defaultValue={displayName}/>
+                      <Input name="name" disabled defaultValue={displayName} />
                     </div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
@@ -85,7 +85,7 @@ export default async function Page() {
               <Button size="sm" className="ml-auto" disabled>Save profile</Button>
             </CardFooter>
           </Card>
-          
+
           {user.githubId &&
             <Card>
               <CardHeader>
@@ -93,7 +93,7 @@ export default async function Page() {
                 <CardDescription>Manage the accounts the Github application is installed on.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Installations/>
+                <Installations />
               </CardContent>
             </Card>
           }

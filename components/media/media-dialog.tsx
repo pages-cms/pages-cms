@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
+import { useCallback, useImperativeHandle, useRef, useState } from "react";
 import { useConfig } from "@/contexts/config-context";
 import { MediaView } from "@/components/media/media-view";
 import { Button } from "@/components/ui/button";
@@ -21,26 +21,33 @@ export interface MediaDialogHandle {
   close: () => void;
 }
 
-const MediaDialog = forwardRef(({
-  name,
-  selected,
-  onSubmit,
-  maxSelected,
-  initialPath,
-  children
-}: {
-  name?: string,
-  onSubmit: (images: string[]) => void,
-  selected?: string[],
-  maxSelected?: number,
-  initialPath?: string,
-  children?: React.ReactNode
-}, ref) => {
+const MediaDialog = (
+  {
+    ref,
+    media,
+    selected,
+    onSubmit,
+    maxSelected,
+    initialPath,
+    children,
+    extensions
+  }: {
+    selected: string[],
+    onSubmit: (images: string[]) => void,
+    selected?: string[],
+    maxSelected?: number,
+    initialPath?: string,
+    children?: React.ReactNode,
+    extensions?: string[]
+  } & {
+    ref: React.RefObject<unknown>;
+  }
+) => {
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
 
-  const configMedia = name
-    ? getSchemaByName(config.object, name, "media")
+  const configMedia = media
+    ? getSchemaByName(config.object, media, "media")
     : config.object.media[0];
 
   const selectedImagesRef = useRef(selected || []);
@@ -61,7 +68,7 @@ const MediaDialog = forwardRef(({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {children && 
+      {children &&
         <DialogTrigger asChild>
           {children}
         </DialogTrigger>
@@ -71,9 +78,9 @@ const MediaDialog = forwardRef(({
           <DialogTitle>Select images</DialogTitle>
           <DialogDescription></DialogDescription>
         </DialogHeader>
-        
-        <MediaView name={configMedia.name} initialSelected={selected || []} onSelect={handleSelect} maxSelected={maxSelected} initialPath={initialPath || ""}/>
-        {config.object.media?.input &&
+
+        <MediaView media={configMedia.name} extensions={extensions} initialSelected={selected || []} onSelect={handleSelect} maxSelected={maxSelected} initialPath={initialPath || ""} />
+        {configMedia.input &&
           <DialogFooter>
             <DialogClose asChild>
               <Button type="submit" onClick={handleSubmit}>Select</Button>
@@ -83,7 +90,7 @@ const MediaDialog = forwardRef(({
       </DialogContent>
     </Dialog>
   );
-});
+};
 
 MediaDialog.displayName = "MediaDialog";
 
