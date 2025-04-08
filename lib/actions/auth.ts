@@ -68,9 +68,9 @@ const handleEmailSignIn = async (prevState: any, formData: FormData) => {
 // Redirect to the GitHub sign in page.
 const handleGithubSignIn = async () => {
   const state = generateState();
-	const url = await github.createAuthorizationURL(state, { scopes: ["repo", "user:email"] });
+	const url = await github.createAuthorizationURL(state, ["repo", "user:email"]);
 
-	cookies().set("github_oauth_state", state, {
+	(await cookies()).set("github_oauth_state", state, {
 		path: "/",
 		secure: process.env.NODE_ENV === "production",
 		httpOnly: true,
@@ -89,7 +89,7 @@ const handleSignOut = async () => {
 	await lucia.invalidateSession(session.id);
 	
 	const sessionCookie = lucia.createBlankSessionCookie();
-	cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+	(await cookies()).set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 	
 	return redirect("/");
 };

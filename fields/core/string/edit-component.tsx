@@ -1,10 +1,13 @@
-"use client";
-
-import { forwardRef } from "react";
+"use client";;
 import { Input } from "@/components/ui/input";
 
-const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLTextAreaElement>) => {
+const EditComponent = (
+  {
+    ref,
+    ...props
+  }
+) => {
   return <Input {...props} ref={ref} className="text-base" />;
-});
+};
 
 export { EditComponent };

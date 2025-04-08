@@ -87,7 +87,7 @@ const SortableItem = ({
     transform: CSS.Translate.toString(transform),
     transition
   };
-  
+
   return (
 
     <div ref={setNodeRef} className={cn("flex gap-x-2 items-center", isDragging ? "opacity-50 z-50" : "z-10")} style={style}>
@@ -157,7 +157,7 @@ const ListField = ({
       setValue(fieldName, updatedValues);
     }
   };
-  
+
   // We don't render <FormMessage/> in ListField, because it's already rendered in the individual fields
   return (
     <FormField
@@ -200,20 +200,20 @@ const ListField = ({
             {typeof field.list === 'object' && field.list?.max && arrayFields.length >= field.list.max
               ? null
               : <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    append(field.type === 'object'
-                      ? initializeState(field.fields, {})
-                      : getDefaultValue(field)
-                    );
-                  }}
-                  className="gap-x-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add an entry
-                </Button>
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  append(field.type === 'object'
+                    ? initializeState(field.fields, {})
+                    : getDefaultValue(field)
+                  );
+                }}
+                className="gap-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add an entry
+              </Button>
             }
             <FormMessage />
           </div>
@@ -229,7 +229,7 @@ const MixedTypeField = forwardRef((props: any, ref) => {
   const selectedType = value?.type || null;
 
   const handleTypeSelect = (newType: string) => {
-    const fieldForResolution: Field = { 
+    const fieldForResolution: Field = {
       ...field,
       type: newType,
       list: false,
@@ -259,18 +259,18 @@ const MixedTypeField = forwardRef((props: any, ref) => {
     if (eventOrValue && eventOrValue.target && typeof eventOrValue.target.value !== 'undefined') {
       newInnerValue = eventOrValue.target.value;
     } else if (eventOrValue && eventOrValue.target && typeof eventOrValue.target.checked !== 'undefined') {
-       newInnerValue = eventOrValue.target.checked;
+      newInnerValue = eventOrValue.target.checked;
     } else {
       newInnerValue = eventOrValue;
     }
-    
+
     if (selectedType && JSON.stringify(newInnerValue) !== JSON.stringify(value?.value)) {
-       onChange({ type: selectedType, value: newInnerValue });
+      onChange({ type: selectedType, value: newInnerValue });
     }
   };
 
   const innerValue = value?.value;
-    
+
   return (
     <div className="space-y-3" ref={ref as React.Ref<HTMLDivElement>}>
       {!selectedType ? (
@@ -330,29 +330,29 @@ const MixedTypeField = forwardRef((props: any, ref) => {
               const resolvedConfig = resolveBlocks(fieldForResolution, blocks);
 
               const FieldComponent = typeof resolvedConfig.type === 'string' && resolvedConfig.type !== 'object'
-                  ? (editComponents?.[resolvedConfig.type] || editComponents['text'])
-                  : null;
+                ? (editComponents?.[resolvedConfig.type] || editComponents['text'])
+                : null;
 
               if (resolvedConfig.type === 'object') {
-                  return (
+                return (
                   <div className="grid gap-6">
-                      {typeof renderFields === 'function' && Array.isArray(resolvedConfig.fields)
+                    {typeof renderFields === 'function' && Array.isArray(resolvedConfig.fields)
                       ? renderFields(resolvedConfig.fields, blocks, fieldName + ".value")
                       : <p className="text-muted-foreground bg-muted rounded-md px-3 py-2">Error: Cannot render object fields.</p>
                     }
                   </div>
                 );
               } else if (FieldComponent) {
-                  return (
+                return (
                   <FieldComponent
-                      value={innerValue}
-                      onChange={handleInnerChange}
-                      field={resolvedConfig}
-                      blocks={blocks}
+                    value={innerValue}
+                    onChange={handleInnerChange}
+                    field={resolvedConfig}
+                    blocks={blocks}
                   />
                 );
               } else {
-                  return selectedType && <p className="text-muted-foreground bg-muted rounded-md px-3 py-2">Error: Component not found for type &apos;{resolvedConfig.type}&apos;.</p>;
+                return selectedType && <p className="text-muted-foreground bg-muted rounded-md px-3 py-2">Error: Component not found for type &apos;{resolvedConfig.type}&apos;.</p>;
               }
             })()}
           </div>
@@ -395,8 +395,8 @@ const renderSingleField = (
       FieldComponent = editComponents['text'];
     }
   } else {
-     console.error(`Invalid resolved field type for "${fieldName}": ${resolvedConfig.type}`);
-     return (
+    console.error(`Invalid resolved field type for "${fieldName}": ${resolvedConfig.type}`);
+    return (
       <FormItem>
         <p className="text-muted-foreground bg-muted rounded-md px-3 py-2">Render Error: Invalid type.</p>
       </FormItem>
@@ -404,8 +404,8 @@ const renderSingleField = (
   }
 
   if (!FieldComponent) {
-     console.error(`No component found for resolved field type: ${resolvedConfig.type}`);
-     return <FormItem><p className="text-xs text-destructive">Render Error: Component missing.</p></FormItem>;
+    console.error(`No component found for resolved field type: ${resolvedConfig.type}`);
+    return <FormItem><p className="text-xs text-destructive">Render Error: Component missing.</p></FormItem>;
   }
 
   // Render using the final resolved config and determined component
@@ -424,10 +424,10 @@ const renderSingleField = (
           {resolvedConfig.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
           <FormControl>
             <FieldComponent
-                {...fieldProps}
-                field={resolvedConfig} // Pass resolved finalConfig
-                blocks={blocks}
-                {...(isMixedType ? { fieldName, renderFields } : {})}
+              {...fieldProps}
+              field={resolvedConfig} // Pass resolved finalConfig
+              blocks={blocks}
+              {...(isMixedType ? { fieldName, renderFields } : {})}
             />
           </FormControl>
           {resolvedConfig.description && <FormDescription>{resolvedConfig.description}</FormDescription>}
