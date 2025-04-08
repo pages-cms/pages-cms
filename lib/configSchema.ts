@@ -138,6 +138,9 @@ const ContentObjectSchema = z.object({
   filename: z.string({
     message: "'filename' must be a string."
   }).optional().nullable(),
+  merge: z.boolean({
+    message: "'merge' must be a boolean."
+  }).optional().nullable(),
   exclude: z.array(z.string({
     message: "Entries in the 'exclude' array must be strings."
   }), {
@@ -203,6 +206,12 @@ const ContentObjectSchema = z.object({
   message: "YOP"
 }).strict();
 
+const SettingsSchema = z.object({
+  merge: z.boolean({
+    message: "'merge' must be a boolean."
+  }).optional().nullable(),
+}).strict().optional().nullable();
+
 // Main schema with media and content
 const ConfigSchema = z.object({
   media: MediaSchema.optional(),
@@ -212,9 +221,7 @@ const ConfigSchema = z.object({
   blocks: z.array(FieldObjectSchema, {
     message: "'blocks' must be an array of objects with at least one entry."
   }).optional().nullable(),
-  settings: z.literal(false, {
-    errorMap: () => ({ message: "'settings' must be 'false'." })
-  }).optional(),
+  settings: SettingsSchema.optional()
 }).strict().nullable();
 
 export { ConfigSchema };

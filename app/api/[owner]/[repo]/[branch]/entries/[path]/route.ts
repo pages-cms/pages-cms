@@ -1,5 +1,4 @@
 import { type NextRequest } from "next/server";
-import { createOctokitInstance } from "@/lib/utils/octokit";
 import { readFns } from "@/fields/registry";
 import { deepMap, getSchemaByName } from "@/lib/schema";
 import { parse } from "@/lib/serialization";
@@ -7,6 +6,17 @@ import { getConfig } from "@/lib/utils/config";
 import { getFileExtension, normalizePath } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
 import { getToken } from "@/lib/token";
+import { getEntry } from "@/lib/utils/entry";
+
+/**
+ * Fetches and parses individual file contents from GitHub repositories
+ * (usually for editing).
+ * 
+ * GET /api/[owner]/[repo]/[branch]/entries/[path]?name=[schemaName]
+ * 
+ * Requires authentication. If no schema name is provided, we return the raw
+ * contents.
+ */
 
 /**
  * Fetches and parses individual file contents from GitHub repositories
@@ -36,49 +46,15 @@ export async function GET(
 
     if (!name && normalizedPath !== ".pages.yml") throw new Error("If no content entry name is provided, the path must be \".pages.yml\".");
 
-    let config;
-    let schema;
-
-    if (name) {
-      config = await getConfig(params.owner, params.repo, params.branch);
-      if (!config) throw new Error(`Configuration not found for ${params.owner}/${params.repo}/${params.branch}.`);
-
-      schema = getSchemaByName(config.object, name);
-      if (!schema) throw new Error(`Schema not found for ${name}.`);
-
-      if (!normalizedPath.startsWith(schema.path)) throw new Error(`Invalid path "${params.path}" for ${schema.type} "${name}".`);
-
-      if (getFileExtension(normalizedPath) !== schema.extension) throw new Error(`Invalid extension "${getFileExtension(normalizedPath)}" for ${schema.type} "${name}".`);
-    } else {
-      config = {};
-    }
-    
-    const octokit = createOctokitInstance(token);
-    const response = await octokit.rest.repos.getContent({
-      owner: params.owner,
-      repo: params.repo,
-      path: normalizedPath,
-      ref: params.branch
-    });
-    
-    if (Array.isArray(response.data)) {
-      throw new Error("Expected a file but found a directory");
-    } else if (response.data.type !== "file") {
-      throw new Error("Invalid response type");
-    }
-
-    const content = Buffer.from(response.data.content, "base64").toString();
-    const contentObject = name
-      ? parseContent(content, schema, config)
-      : { body: content };
+    const response = await getEntry(user, params.owner, params.repo, params.branch, params.path, name);
 
     return Response.json({
       status: "success",
       data: {
-        sha: response.data.sha,
-        name: response.data.name,
-        path: response.data.path,
-        contentObject
+        sha: response.sha,
+        name: response.name,
+        path: response.path,
+        contentObject: response.contentObject
       }
     });
   } catch (error: any) {
