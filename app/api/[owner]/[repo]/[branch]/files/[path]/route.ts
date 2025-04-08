@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { createOctokitInstance } from "@/lib/utils/octokit";
 import { writeFns } from "@/fields/registry";
-import { configVersion, parseConfig, normalizeConfig } from "@/lib/config";
+import { configVersion, parseConfig, normalizeConfig, mapBlocks } from "@/lib/config";
 import { stringify } from "@/lib/serialization";
 import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeObject } from "@/lib/schema";
 import { getConfig, updateConfig } from "@/lib/utils/config";
@@ -75,10 +75,12 @@ export async function POST(
             }
 
             // Hidden fields are stripped in the client, we add them back
-            contentObject = deepMap(contentObject, contentFields, (value, field) => field.hidden ? getDefaultValue(field) : value);
+            // contentObject = deepMap(contentObject, contentFields, (value, field) => field.hidden ? getDefaultValue(field) : value);
             // TODO: fetch the entry and merge values
             
-            const zodSchema = generateZodSchema(contentFields);
+            // Use mapBlocks to convert config blocks array to a map
+            const blocksMap = mapBlocks(config?.object);
+            const zodSchema = generateZodSchema(contentFields, blocksMap, false, config?.object);
             const zodValidation = zodSchema.safeParse(contentObject);
             
             if (zodValidation.success === false ) {
@@ -90,7 +92,14 @@ export async function POST(
               throw new Error(`Content validation failed: ${errorMessages.join(", ")}`);
             }
 
-            const validatedContentObject = deepMap(zodValidation.data, contentFields, (value, field) => writeFns[field.type] ? writeFns[field.type](value, field, config || {}) : value);
+            const validatedContentObject = deepMap(
+              zodValidation.data,
+              contentFields,
+              (value, field) => {
+                const fieldType = field.type as string;
+                return writeFns[fieldType] ? writeFns[fieldType](value, field, config || {}) : value;
+              }
+            );
 
             const sanitizedContentObject = schema.list
               ? sanitizeObject(validatedContentObject.listWrapper)
