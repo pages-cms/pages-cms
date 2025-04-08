@@ -3,7 +3,7 @@ import { createOctokitInstance } from "@/lib/utils/octokit";
 import { writeFns } from "@/fields/registry";
 import { configVersion, parseConfig, normalizeConfig, mapBlocks } from "@/lib/config";
 import { stringify } from "@/lib/serialization";
-import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeObject } from "@/lib/schema";
+import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeObject, interpolate } from "@/lib/schema";
 import { getConfig, updateConfig } from "@/lib/utils/config";
 import { getFileExtension, getFileName, normalizePath, serializedTypes, getParentPath } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
@@ -38,8 +38,30 @@ export async function POST(
     const data: any = await request.json();
 
     let contentBase64;
+    let message;
     let schema;
 
+    const index = {
+      filename: getFileName(normalizedPath),
+      path: normalizedPath,
+      collection: {
+        name: data.name,
+      },
+      user: {
+        name: user.githubName,
+        username: user.githubUsername,
+        email: user.githubEmail || user.email
+      }
+    }
+
+    message = data.sha
+      ? config?.object?.commit?.message?.update
+        ? interpolate(config.object.commit.message.update, index)
+        : `Update ${normalizedPath} (via Pages CMS)`
+      : config?.object?.commit?.message?.create
+        ? interpolate(config.object.commit.message.create, index)
+        : `Create ${normalizedPath} (via Pages CMS)`;
+    
     switch (data.type) {
       case "content":
         if (!data.name) throw new Error(`"name" is required for content.`);
@@ -146,7 +168,7 @@ export async function POST(
         throw new Error(`Invalid type "${data.type}".`);
     }
     
-    const response = await githubSaveFile(token, params.owner, params.repo, params.branch, normalizedPath, contentBase64, data.sha);
+    const response = await githubSaveFile(token, params.owner, params.repo, params.branch, normalizedPath, contentBase64, message, data.sha);
   
     const savedPath = response?.data.content?.path;
 
@@ -221,6 +243,7 @@ const githubSaveFile = async (
   branch: string,
   path: string,
   contentBase64: string,
+  message: string,
   sha?: string,
 ) => {
   const octokit = createOctokitInstance(token);
@@ -317,8 +340,26 @@ export async function DELETE(
     if (!config) throw new Error(`Configuration not found for ${params.owner}/${params.repo}/${params.branch}.`);
 
     const normalizedPath = normalizePath(params.path);
-    let schema;
 
+    const index = {
+      filename: getFileName(normalizedPath),
+      path: normalizedPath,
+      collection: {
+        name: name,
+      },
+      user: {
+        name: user.githubName,
+        username: user.githubUsername,
+        email: user.githubEmail || user.email
+      }
+    }
+
+    const message = config?.object?.commit?.message?.delete
+      ? interpolate(config.object.commit.message.delete, index)
+      : `Delete ${normalizedPath} (via Pages CMS)`;
+    
+    let schema;
+    
     switch (type) {
       case "content":
         if (!name) throw new Error(`"name" is required for content.`);
@@ -369,7 +410,7 @@ export async function DELETE(
 
     return Response.json({
       status: "success",
-      message: `File "${normalizedPath}" deleted successfully.`,
+      message,
       data: {
         sha: response?.data.commit.sha,
         name: response?.data.content?.name,
