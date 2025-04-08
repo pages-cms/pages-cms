@@ -9,6 +9,8 @@ import YAML from "yaml";
 import { getFileExtension, extensionCategories } from "@/lib/utils/file";
 import { ConfigSchema } from "@/lib/configSchema";
 import { z } from "zod";
+import { fieldTypes } from "@/fields/registry";
+import { deepMergeObjects } from "@/lib/helpers";
 
 const configVersion = "2.0";
 
@@ -29,12 +31,29 @@ const parseConfig = (content: string) => {
   return { document, errors };
 };
 
+// Creates a map of blocks definitions by name
+const mapBlocks = (configObject: any): Record<string, any> => {
+  const blocksMap: Record<string, any> = {};
+  if (configObject?.blocks && Array.isArray(configObject.blocks)) {
+    configObject.blocks.forEach((block: any) => {
+      if (block?.name) {
+        // TODO: add validation for block definition (extend to all config in normalizeConfig)
+        blocksMap[block.name] = block;
+      }
+    });
+  }
+  // TODO: extend to support content level blocks
+  return blocksMap;
+}
+
 // Normalize the config object (e.g. convert media.input to a relative path, set
 // default values for filename, extension, format, etc.)
 const normalizeConfig = (configObject: any) => {
   if (!configObject) return {};
 
   const configObjectCopy = JSON.parse(JSON.stringify(configObject));
+  
+  const blocksMap = mapBlocks(configObjectCopy);
   
   if (configObjectCopy?.media) {
     if (typeof configObjectCopy.media === "string") {
@@ -122,11 +141,51 @@ const normalizeConfig = (configObject: any) => {
           item.format = "datagrid";
         }
       }
+      
+      // Process fields to resolve block references
+      if (Array.isArray(item.fields)) {
+        item.fields = resolveBlocks(item.fields, blocksMap);
+      }
+      
       return item;
     });
   }
 
   return configObjectCopy;
+}
+
+// Helper function to resolve block references in field types
+function resolveBlocks(fields: any[], blocksMap: Record<string, any>): any[] {
+  return fields.map(field => {
+    const result = JSON.parse(JSON.stringify(field));
+    const originalFieldType = field.type;
+
+    // We leave mixed types for runtime processing
+    if (originalFieldType &&
+        !Array.isArray(originalFieldType) &&
+        !fieldTypes.has(originalFieldType) && // It's not a known field type
+        blocksMap[originalFieldType]) // And it exists as a block
+    {
+        // Deep merge block properties into resulting field
+        const block = JSON.parse(JSON.stringify(blocksMap[originalFieldType]));
+        deepMergeObjects(result, block);
+
+        // Set type to block type if it exists
+        if (block.type) {
+            result.type = block.type;
+        } else {
+            console.error("Block has no type", originalFieldType);
+            result.type = 'text';
+        }
+    }
+
+    // Process nested fields recursively
+    if (Array.isArray(result.fields)) {
+      result.fields = resolveBlocks(result.fields, blocksMap);
+    }
+
+    return result;
+  });
 }
 
 // Check if the config is valid with the the Zoc schema (lib/configSchema.ts).
@@ -172,6 +231,9 @@ const processZodError = (error: any, document: YAML.Document.Parsed, errors: any
       if (invalidUnionCount === error.unionErrors.length) {
         // If all entries in the union were invalid types, assume none of the schemas could validate the type.
         yamlNode = document.getIn(error.path, true);
+        if (!yamlNode || yamlNode?.range == null) {
+          yamlNode = document.getIn(error.path.slice(0, -1), true);
+        }
         range = yamlNode && yamlNode.range ? yamlNode.range : [0, 0];
         errors.push({
           code: error.code,
@@ -222,4 +284,4 @@ const parseAndValidateConfig = (content: string) => {
   return { document, parseErrors, validationErrors };
 };
 
-export { configVersion, parseConfig, normalizeConfig, validateConfig, parseAndValidateConfig };
+export { configVersion, parseConfig, normalizeConfig, validateConfig, parseAndValidateConfig, mapBlocks, deepMergeObjects };
