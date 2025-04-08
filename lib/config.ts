@@ -1,10 +1,20 @@
+/**
+ * Functions to parse, normalize and validate the configuration file.
+ * 
+ * Look at the `lib/utils/config.ts` file to understand how the config is
+ * retrieved, saved and updated in the DB.
+ */
+
 import YAML from "yaml";
 import { getFileExtension, extensionCategories } from "@/lib/utils/file";
 import { ConfigSchema } from "@/lib/configSchema";
 import { z } from "zod";
+import { fieldTypes } from "@/fields/registry";
+import { deepMergeObjects } from "@/lib/helpers";
 
 const configVersion = "2.0";
 
+// Parse the config file (YAML to JSON)
 const parseConfig = (content: string) => {
   const document = YAML.parseDocument(content, { strict: false, prettyErrors: false });
 
@@ -21,42 +31,75 @@ const parseConfig = (content: string) => {
   return { document, errors };
 };
 
+// Creates a map of blocks definitions by name
+const mapBlocks = (configObject: any): Record<string, any> => {
+  const blocksMap: Record<string, any> = {};
+  if (configObject?.blocks && Array.isArray(configObject.blocks)) {
+    configObject.blocks.forEach((block: any) => {
+      if (block?.name) {
+        // TODO: add validation for block definition (extend to all config in normalizeConfig)
+        blocksMap[block.name] = block;
+      }
+    });
+  }
+  // TODO: extend to support content level blocks
+  return blocksMap;
+}
+
+// Normalize the config object (e.g. convert media.input to a relative path, set
+// default values for filename, extension, format, etc.)
 const normalizeConfig = (configObject: any) => {
   if (!configObject) return {};
 
   const configObjectCopy = JSON.parse(JSON.stringify(configObject));
   
-  if (configObjectCopy?.media != null) {
+  const blocksMap = mapBlocks(configObjectCopy);
+  
+  if (configObjectCopy?.media) {
     if (typeof configObjectCopy.media === "string") {
-      // Ensure media.input is a relative path
+      // Ensure media.input is a relative path (and add name and label)
       const relativePath = configObjectCopy.media.replace(/^\/|\/$/g, "");
-      configObjectCopy.media = {
+      configObjectCopy.media = [{
+        name: "default",
+        label: "Media",
         input: relativePath,
         output: `/${relativePath}`,
-      };
-    } else {
-      if (configObjectCopy.media?.input != null && typeof configObjectCopy.media.input === "string") {
+      }];
+    } else if (typeof configObjectCopy.media === "object" && !Array.isArray(configObjectCopy.media)) {
+      // Ensure it's an array of media configurations (and add name and label)
+      configObjectCopy.media = [{
+        name: "default",
+        label: "Media",
+        ...configObjectCopy.media
+      }];
+    }
+
+    // We normalize each media configuration
+    configObjectCopy.media = configObjectCopy.media.map((mediaConfig: any) => {
+      if (mediaConfig.input != null && typeof mediaConfig.input === "string") {
         // Make sure input is relative
-        configObjectCopy.media.input = configObjectCopy.media.input.replace(/^\/|\/$/g, "");
+        mediaConfig.input = mediaConfig.input.replace(/^\/|\/$/g, "");
       }
-      if (configObjectCopy.media.output != null && configObjectCopy.media.output !== "/" && typeof configObjectCopy.media.output === "string") {
+      if (mediaConfig.output != null && mediaConfig.output !== "/" && typeof mediaConfig.output === "string") {
         // Make sure output doesn"t have a trailing slash
-        configObjectCopy.media.output = configObjectCopy.media.output.replace(/\/$/, "");
+        mediaConfig.output = mediaConfig.output.replace(/\/$/, "");
       }
-      if (configObjectCopy.media.categories != null) {
-        if (configObjectCopy.media.extensions != null) {
-          delete configObjectCopy.media.categories;
-        } else if (Array.isArray(configObjectCopy.media.categories)) {
-          configObjectCopy.media.extensions = [];
-          configObjectCopy.media.categories.map((category: string) => {
+      if (mediaConfig.categories != null) {
+        if (mediaConfig.extensions != null) {
+          delete mediaConfig.categories;
+        } else if (Array.isArray(mediaConfig.categories)) {
+          mediaConfig.extensions = [];
+          mediaConfig.categories.map((category: string) => {
             if (extensionCategories[category] != null) {
-              configObjectCopy.media.extensions = configObjectCopy.media.extensions.concat(extensionCategories[category]);
+              mediaConfig.extensions = mediaConfig.extensions.concat(extensionCategories[category]);
             }
           });
-          delete configObjectCopy.media.categories;
+          delete mediaConfig.categories;
         }
       }
-    }
+
+      return mediaConfig;
+    });
   }
 
   if (configObjectCopy.content && Array.isArray(configObjectCopy?.content) && configObjectCopy.content.length > 0) {
@@ -98,6 +141,12 @@ const normalizeConfig = (configObject: any) => {
           item.format = "datagrid";
         }
       }
+      
+      // Process fields to resolve block references
+      if (Array.isArray(item.fields)) {
+        item.fields = resolveBlocks(item.fields, blocksMap);
+      }
+      
       return item;
     });
   }
@@ -105,6 +154,42 @@ const normalizeConfig = (configObject: any) => {
   return configObjectCopy;
 }
 
+// Helper function to resolve block references in field types
+function resolveBlocks(fields: any[], blocksMap: Record<string, any>): any[] {
+  return fields.map(field => {
+    const result = JSON.parse(JSON.stringify(field));
+    const originalFieldType = field.type;
+
+    // We leave mixed types for runtime processing
+    if (originalFieldType &&
+        !Array.isArray(originalFieldType) &&
+        !fieldTypes.has(originalFieldType) && // It's not a known field type
+        blocksMap[originalFieldType]) // And it exists as a block
+    {
+        // Deep merge block properties into resulting field
+        const block = JSON.parse(JSON.stringify(blocksMap[originalFieldType]));
+        deepMergeObjects(result, block);
+
+        // Set type to block type if it exists
+        if (block.type) {
+            result.type = block.type;
+        } else {
+            console.error("Block has no type", originalFieldType);
+            result.type = 'text';
+        }
+    }
+
+    // Process nested fields recursively
+    if (Array.isArray(result.fields)) {
+      result.fields = resolveBlocks(result.fields, blocksMap);
+    }
+
+    return result;
+  });
+}
+
+// Check if the config is valid with the the Zoc schema (lib/configSchema.ts).
+// This is used in the settings editor.
 const validateConfig = (document: YAML.Document.Parsed) => {
   const content = document.toJSON();
   let errors: any[] = [];
@@ -122,6 +207,8 @@ const validateConfig = (document: YAML.Document.Parsed) => {
   return errors;
 };
 
+// Process the Zod errors from the validateConfig function. Helps us display errors
+// in the settings editor.
 const processZodError = (error: any, document: YAML.Document.Parsed, errors: any[]) => {
   let path = error.path;
   let yamlNode: any = document.getIn(path, true);
@@ -144,6 +231,9 @@ const processZodError = (error: any, document: YAML.Document.Parsed, errors: any
       if (invalidUnionCount === error.unionErrors.length) {
         // If all entries in the union were invalid types, assume none of the schemas could validate the type.
         yamlNode = document.getIn(error.path, true);
+        if (!yamlNode || yamlNode?.range == null) {
+          yamlNode = document.getIn(error.path.slice(0, -1), true);
+        }
         range = yamlNode && yamlNode.range ? yamlNode.range : [0, 0];
         errors.push({
           code: error.code,
@@ -187,10 +277,11 @@ const processZodError = (error: any, document: YAML.Document.Parsed, errors: any
   }
 };
 
+// Parse the config file and validate it (used in the settings editor).
 const parseAndValidateConfig = (content: string) => {
   const { document, errors: parseErrors } = parseConfig(content);
   const validationErrors = validateConfig(document);
   return { document, parseErrors, validationErrors };
 };
 
-export { configVersion, parseConfig, normalizeConfig, validateConfig, parseAndValidateConfig };
+export { configVersion, parseConfig, normalizeConfig, validateConfig, parseAndValidateConfig, mapBlocks, deepMergeObjects };

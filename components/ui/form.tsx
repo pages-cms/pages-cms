@@ -93,7 +93,7 @@ const FormLabel = React.forwardRef<
   return (
     <Label
       ref={ref}
-      className={cn(error && "text-destructive", className)}
+      className={cn(error && "text-red-500", className)}
       htmlFor={formItemId}
       {...props}
     />
@@ -145,26 +145,42 @@ const FormMessage = React.forwardRef<
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => {
   const { error, formMessageId } = useFormField()
-  
-  const body = error
-    ? error.root
-      ? String(error?.root?.message)
-      : String(error?.message)
-    : children
 
-  if (!body) {
-    return null
-  }
+  const messages: any[] = []
+
+  const errors = Array.isArray(error)
+    ? error
+    : [error];
+  
+  errors.forEach((err) => {
+    const body = err
+      ? err.root
+        ? err?.root?.message && String(err?.root?.message)
+        : err?.message && String(err?.message)
+      : children
+
+    if (!body) {
+      return null
+    } else {
+      messages.push(body)
+    }    
+  });
 
   return (
-    <p
-      ref={ref}
-      id={formMessageId}
-      className={cn("text-sm font-medium text-destructive", className)}
-      {...props}
-    >
-      {body}
-    </p>
+    messages.length > 0
+      ? (
+        <div
+          ref={ref}
+          id={formMessageId}
+          className={cn("text-sm font-medium text-red-500", className)}
+          {...props}
+        >
+          {messages.map((message, index) => (
+            <p key={`${formMessageId}-${index}`}>{message}</p>
+          ))}
+        </div>
+      )
+      : null
   )
 })
 FormMessage.displayName = "FormMessage"
