@@ -69,12 +69,15 @@ const FieldObjectSchema: z.ZodType<any> = z.lazy(() => z.object({
     })
   ]).optional(),
   description: z.string().optional().nullable(),
-  type: z.enum([
-    "boolean", "code", "date", "file", "image", "number", "object", "rich-text",
-    "select", "string", "text", "uuid"
-  ], {
-    message: "'type' is required and must be set to a valid field type (see documentation)."
-  }),
+  type: z.union([
+    z.array(z.string({
+      message: "'type' must be an array of strings."
+    })).min(1, "'type' must contain at least one string value."),
+    z.string({
+      required_error: "'type' is required.",
+      invalid_type_error: "'type' must be a string or an array of strings."
+    })
+  ]),
   default: z.any().nullable().optional(),
   list: z.union([
     z.boolean(),
@@ -215,7 +218,10 @@ const ConfigSchema = z.object({
   content: z.array(ContentObjectSchema, {
     message: "'content' must be an array of objects with at least one entry."
   }).optional(),
-  settings: SettingsSchema.optional(),
+  blocks: z.array(FieldObjectSchema, {
+    message: "'blocks' must be an array of objects with at least one entry."
+  }).optional().nullable(),
+  settings: SettingsSchema.optional()
 }).strict().nullable();
 
 export { ConfigSchema };

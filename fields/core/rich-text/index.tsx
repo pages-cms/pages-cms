@@ -5,6 +5,8 @@ import { ViewComponent } from "./view-component";
 import { marked } from "marked";
 import TurndownService from "turndown";
 import { tables, strikethrough } from "joplin-turndown-plugin-gfm";
+import { getSchemaByName } from "@/lib/schema";
+import { z } from "zod";
 
 const read = (value: any, field: Field, config: Record<string, any>) => {
   let html = field.options?.format === "html"
@@ -13,10 +15,15 @@ const read = (value: any, field: Field, config: Record<string, any>) => {
       ? marked(value)
       : value;
 
-  const prefixInput = field.options?.input ?? config.object.media?.input;
-  const prefixOutput = field.options?.output ?? config.object.media?.output;
+  const mediaConfig = field.options?.media === false
+    ? undefined
+    : field.options?.media && typeof field.options.media === 'string'
+      ? getSchemaByName(config.object, field.options.media, "media")
+      : config.object.media[0];
 
-  return htmlSwapPrefix(html, prefixOutput, prefixInput, true);
+  if (!mediaConfig) return html;
+
+  return htmlSwapPrefix(html, mediaConfig.output, mediaConfig.input, true);
 };
 
 const write = (value: any, field: Field, config: Record<string, any>) => {
@@ -24,10 +31,15 @@ const write = (value: any, field: Field, config: Record<string, any>) => {
 
   content = rawToRelativeUrls(config.owner, config.repo, config.branch, content);
 
-  const prefixInput = field.options?.input ?? config.object.media?.input;
-  const prefixOutput = field.options?.output ?? config.object.media?.output;
+  const mediaConfig = field.options?.media === false
+    ? undefined
+    : field.options?.media && typeof field.options.media === 'string'
+      ? getSchemaByName(config.object, field.options.media, "media")
+      : config.object.media[0];
 
-  content = htmlSwapPrefix(content, prefixInput, prefixOutput);
+  if (mediaConfig) {
+    content = htmlSwapPrefix(content, mediaConfig.input, mediaConfig.output);
+  }
 
   if (field.options?.format !== "html") {
     const turndownService = new TurndownService({
@@ -56,4 +68,23 @@ const write = (value: any, field: Field, config: Record<string, any>) => {
   return content;
 };
 
-export { EditComponent, ViewComponent, read, write };
+const schema = (field: Field, configObject?: Record<string, any>) => {
+  let zodSchema = z.string();
+  
+  if (field.required) zodSchema = zodSchema.min(1, "This field is required");
+  if (field.pattern) {
+    if (typeof field.pattern === "string") {
+      zodSchema = zodSchema.regex(new RegExp(field.pattern), "Invalid format");
+    } else {
+      zodSchema = zodSchema.regex(new RegExp(field.pattern.regex), field.pattern.message || "Invalid pattern format");
+    }
+  }
+  if (field.options?.minlength) zodSchema = zodSchema.min(field.options.minlength as number, `Minimum length is ${field.options.minlength} characters`);
+  if (field.options?.maxlength) zodSchema = zodSchema.max(field.options.maxlength as number, `Maximum length is ${field.options.maxlength} characters`);
+  
+  return zodSchema;
+};
+
+const label = "Rich Text";
+
+export { label, schema, EditComponent, ViewComponent, read, write };

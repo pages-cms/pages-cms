@@ -1,12 +1,12 @@
 "use client";
 
-import { forwardRef, useCallback, useState, useEffect } from "react";
+import { forwardRef, useCallback, useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { MediaUpload } from "@/components/media/media-upload";
 import { MediaDialog } from "@/components/media/media-dialog";
-import { Trash2, Upload, File, FileText, FileVideo, FileImage, FileAudio, FileArchive, FileCode, FileType, FileSpreadsheet, GripVertical, Folder, FolderOpen } from "lucide-react";
+import { Trash2, Upload, File, FileText, FileVideo, FileImage, FileAudio, FileArchive, FileCode, FileType, FileSpreadsheet, GripVertical, FolderOpen, ArrowUpRight } from "lucide-react";
 import { useConfig } from "@/contexts/config-context";
-import { getFileExtension, getFileName, extensionCategories, getParentPath } from "@/lib/utils/file";
+import { getFileExtension, getFileName, extensionCategories, normalizePath } from "@/lib/utils/file";
 import {
   Tooltip,
   TooltipContent,
@@ -19,12 +19,70 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { v4 as uuidv4 } from 'uuid';
 import { getSchemaByName } from "@/lib/schema";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 const generateId = () => uuidv4().slice(0, 8);
 
-const SortableItem = ({ id, file, onRemove, getFileIcon }: { 
+const FileTeaser = ({ file, config, onRemove, getFileIcon }: { 
+  file: string;
+  config: any;
+  onRemove: (file: string) => void;
+  getFileIcon: (file: string) => React.ReactNode;
+}) => {
+  return (
+    <>
+      <div className="flex items-center overflow-hidden">
+        {getFileIcon(file)}
+        <span className="ml-1 font-medium whitespace-nowrap">{getFileName(file)}</span>
+        <span className="ml-2 text-muted-foreground truncate">{file}</span>
+      </div>
+
+      <div className="flex items-center">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <a
+                href={`https://github.com/${config.owner}/${config.repo}/blob/${config.branch}/${file}`}
+                target="_blank"
+                className={cn(buttonVariants({ variant: "ghost", size: "icon-xs" }), "text-muted-foreground hover:text-foreground transition-colors")}
+              >
+                <ArrowUpRight className="h-4 w-4" />
+              </a>
+            </TooltipTrigger>
+            <TooltipContent>
+              See on GitHub
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => onRemove(file)}
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Remove
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </>
+  )
+};
+
+const SortableItem = ({ id, file, config, onRemove, getFileIcon }: { 
   id: string;
   file: string;
+  config: any;
   onRemove: (file: string) => void;
   getFileIcon: (file: string) => React.ReactNode;
 }) => {
@@ -54,32 +112,7 @@ const SortableItem = ({ id, file, onRemove, getFileIcon }: {
         >
           <GripVertical className="h-4 w-4" />
         </div>
-        <div className="flex items-center overflow-hidden">
-          {getFileIcon(file)}
-          <span className="ml-1 font-medium whitespace-nowrap">{getFileName(file)}</span>
-          <span className="ml-2 text-muted-foreground truncate">{file}</span>
-        </div>
-
-        <div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onRemove(file)}
-                  className="h-8 w-8 p-0"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Remove
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+        <FileTeaser file={file} config={config} onRemove={onRemove} getFileIcon={getFileIcon} />
       </div>
     </div>
   );
@@ -88,7 +121,7 @@ const SortableItem = ({ id, file, onRemove, getFileIcon }: {
 const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) => {
   const { value, field, onChange } = props;
   const { config } = useConfig();
-
+  
   const [files, setFiles] = useState<Array<{ id: string, path: string }>>(() => 
     value
       ? Array.isArray(value)
@@ -97,16 +130,60 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
       : []
   );
 
-  const isMultiple = field.options?.multiple !== undefined && field.options?.multiple !== false;
-  const mediaConfig = field.options?.media
-    ? getSchemaByName(config?.object, field.options?.media, "media")
-    : config?.object.media[0];
-  const rootPath = field.options?.path || mediaConfig.input;
-  const remainingSlots = field.options?.multiple
-    ? field.options.multiple.max
-      ? field.options.multiple.max - files.length
-      : Infinity
-    : 1 - files.length;
+  const mediaConfig = useMemo(() => {
+    if (!config?.object?.media?.length) {
+      return undefined;
+    }
+    return field.options?.media
+      ? getSchemaByName(config.object, field.options?.media, "media")
+      : config.object.media[0];
+  }, [field.options?.media, config?.object]);
+
+  const rootPath = useMemo(() => {
+    if (!field.options?.path) {
+      return mediaConfig?.input;
+    }
+
+    const normalizedPath = normalizePath(field.options.path);
+    const normalizedMediaPath = normalizePath(mediaConfig?.input);
+
+    if (!normalizedPath.startsWith(normalizedMediaPath)) {
+      console.warn(`"${field.options.path}" is not within media root "${mediaConfig?.input}". Defaulting to media root.`);
+      return mediaConfig?.input;
+    }
+
+    return normalizedPath;
+  }, [field.options?.path, mediaConfig?.input]);
+
+  const allowedExtensions = useMemo(() => {
+    if (!mediaConfig) return [];
+
+    const fieldExtensions = field.options?.extensions 
+      ? field.options.extensions
+      : field.options?.categories
+        ? field.options.categories.flatMap((category: string) => extensionCategories[category])
+        : [];
+
+    if (!fieldExtensions.length) return mediaConfig.extensions || [];
+
+    return mediaConfig.extensions
+      ? fieldExtensions.filter((ext: string) => mediaConfig.extensions.includes(ext))
+      : fieldExtensions;
+  }, [field.options?.extensions, field.options?.categories, mediaConfig]);
+
+  const isMultiple = useMemo(() => 
+    field.options?.multiple === true,
+    [field.options?.multiple]
+  );
+
+  const remainingSlots = useMemo(() => 
+    field.options?.multiple
+      ? field.options.multiple.max
+        ? field.options.multiple.max - files.length
+        : Infinity
+      : 1 - files.length,
+    [field.options?.multiple, files.length]
+  );
 
   useEffect(() => {
     if (isMultiple) {
@@ -138,23 +215,23 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
       if (extensions.includes(ext)) {
         switch (category) {
           case 'image':
-            return <FileImage className="h-4 w-4" />;
+            return <FileImage className="h-4 w-4 shrink-0" />;
           case 'document':
-            return <FileText className="h-4 w-4" />;
+            return <FileText className="h-4 w-4 shrink-0" />;
           case 'video':
-            return <FileVideo className="h-4 w-4" />;
+            return <FileVideo className="h-4 w-4 shrink-0" />;
           case 'audio':
-            return <FileAudio className="h-4 w-4" />;
+            return <FileAudio className="h-4 w-4 shrink-0" />;
           case 'compressed':
-            return <FileArchive className="h-4 w-4" />;
+            return <FileArchive className="h-4 w-4 shrink-0" />;
           case 'code':
-            return <FileCode className="h-4 w-4" />;
+            return <FileCode className="h-4 w-4 shrink-0" />;
           case 'font':
-            return <FileType className="h-4 w-4" />;
+            return <FileType className="h-4 w-4 shrink-0" />;
           case 'spreadsheet':
-            return <FileSpreadsheet className="h-4 w-4" />;
+            return <FileSpreadsheet className="h-4 w-4 shrink-0" />;
           default:
-            return <FileText className="h-4 w-4" />;
+            return <FileText className="h-4 w-4 shrink-0" />;
         }
       }
     }
@@ -197,61 +274,88 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
     }
   }, [isMultiple]);
 
+  if (!mediaConfig) {
+    return (
+      <p className="text-muted-foreground bg-muted rounded-md px-3 py-2">
+      No media configuration found. {' '}
+      <a 
+        href={`/${config?.owner}/${config?.repo}/${encodeURIComponent(config?.branch || "")}/settings`}
+        className="underline hover:text-foreground"
+      >
+        Check your settings
+      </a>.
+    </p>
+    );
+  }
+
   return (
-    <div className="space-y-2">
-      <div className="space-y-2">
-        <DndContext 
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext 
-            items={files.map(f => f.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {files.map((file) => (
-              <SortableItem 
-                key={file.id}
-                id={file.id}
-                file={file.path}
-                onRemove={() => handleRemove(file.id)}
-                getFileIcon={getFileIcon}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
-      </div>
-      
-      {remainingSlots > 0 && (
-        <div className="flex gap-2">
-          <MediaUpload path={rootPath} name={mediaConfig.name} onUpload={handleUpload}>
-            <Button type="button" size="sm" variant="outline" className="gap-2">
-              <Upload className="h-3.5 w-3.5"/>
-              Upload
-            </Button>
-          </MediaUpload>      
-          <TooltipProvider>
-            <Tooltip>
-              <MediaDialog
-                name={mediaConfig.name}
-                initialPath={rootPath}
-                maxSelected={remainingSlots}
-                onSubmit={handleSelected}
-              >
-                <TooltipTrigger asChild>
-                  <Button type="button" size="icon-sm" variant="outline">
-                    <FolderOpen className="h-3.5 w-3.5"/>
-                  </Button>
-                </TooltipTrigger>
-              </MediaDialog>
-              <TooltipContent>
-                Select from media
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+    <MediaUpload path={rootPath} media={mediaConfig.name} extensions={allowedExtensions} onUpload={handleUpload} multiple={isMultiple}>
+      <MediaUpload.DropZone>
+        <div className="space-y-2">
+          {files.length > 0 && (
+            isMultiple ? (
+              <div className="space-y-2">
+                <DndContext 
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext 
+                    items={files.map(f => f.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {files.map((file) => (
+                      <SortableItem 
+                        key={file.id}
+                        id={file.id}
+                        file={file.path}
+                        config={config}
+                        onRemove={() => handleRemove(file.id)}
+                        getFileIcon={getFileIcon}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              </div>
+            ) : (
+              <div className="grid grid-cols-[1fr_auto] items-center gap-2 pl-3 pr-1 bg-muted rounded-md h-10">
+                <FileTeaser file={files[0].path} config={config} onRemove={() => handleRemove(files[0].id)} getFileIcon={getFileIcon} />
+              </div>
+            )
+          )}
+          {remainingSlots > 0 && (
+            <div className="flex gap-2">
+              <MediaUpload.Trigger>
+                <Button type="button" size="sm" variant="outline" className="gap-2">
+                  <Upload className="h-3.5 w-3.5"/>
+                  Upload
+                </Button>
+              </MediaUpload.Trigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <MediaDialog
+                    media={mediaConfig.name}
+                    initialPath={rootPath}
+                    maxSelected={remainingSlots}
+                    extensions={allowedExtensions}
+                    onSubmit={handleSelected}
+                  >
+                    <TooltipTrigger asChild>
+                      <Button type="button" size="icon-sm" variant="outline">
+                        <FolderOpen className="h-3.5 w-3.5"/>
+                      </Button>
+                    </TooltipTrigger>
+                  </MediaDialog>
+                  <TooltipContent>
+                    Select from media
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </MediaUpload.DropZone>
+    </MediaUpload>
   );
 });
 

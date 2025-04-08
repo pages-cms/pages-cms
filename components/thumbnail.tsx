@@ -9,9 +9,11 @@ import { Loader } from "@/components/loader";
 import { Ban, ImageOff } from "lucide-react";
 
 export function Thumbnail({
+  name,
   path,
   className
 }: {
+  name: string,
   path: string | null;
   className?: string;
 }) {
@@ -29,18 +31,18 @@ export function Thumbnail({
         setError(null);
         setRawUrl(null);
         try {
-          const url = await getRawUrl(owner, repo, branch, path, isPrivate);
+          const url = await getRawUrl(owner, repo, branch, name, path, isPrivate);
           setRawUrl(url);
         } catch (error: any) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.warn(errorMessage);
           setError(error.message);
         }
       }
     };
 
     fetchRawUrl();
-  }, [path, owner, repo, branch, isPrivate]);
-
-  // if (!path) return null;
+  }, [path, owner, repo, branch, isPrivate, name]);
 
   return (
     <div
