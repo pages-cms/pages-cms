@@ -114,9 +114,20 @@ const ListField = ({
     control,
     name: fieldName,
   });
+  
+  const arrayFieldsRef = useRef(arrayFields);
+
+  useEffect(() => {
+    if (arrayFieldsRef.current.length < arrayFields.length) {
+      const newId = arrayFields[arrayFields.length - 1].id;
+      setExpandedFields((prev) => [...prev, newId]);
+    }
+    arrayFieldsRef.current = arrayFields;
+  }, [arrayFields]);
+
   // TODO: why is this not used?
   const { errors } = useFormState({ control });
-  
+
   const [ expandedFields, setExpandedFields ] = useState<string[]>(
     typeof collapsible === 'object' ? (collapsible.expanded ? arrayFields.map(field => field.id) : []) : []
   ); // Stores arrayFields ID
@@ -207,8 +218,7 @@ const ListField = ({
                       {collapsible && (
                           <div className="mt-1 pl-1">
                             <p className="text-base font-medium text-gray-900 dark:text-gray-100">
-                              {/* TODO: Make stateful - update as user types, and after save (without reload) */}
-                              {typeof collapsible === 'object' ? generateFieldLabel(collapsible.label ?? `Item ${index + 1}`, arrayField) : `Item ${index + 1}`}
+                              {typeof collapsible === 'object' ? generateFieldLabel(collapsible.label ?? `Item #${arrayField.id}`, control._formValues[field.name][index]) : `Item #${arrayField.id}`}
                             </p>
                           </div>
                       )}
@@ -239,12 +249,10 @@ const ListField = ({
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    // TODO: Fix, ID isnt available
-                    const newField = field.type === 'object'
+                    append(field.type === 'object'
                       ? initializeState(field.fields, {})
-                      : getDefaultValue(field);
-                    append(newField);
-                    setExpandedFields((prev) => [...prev, newField.id]);
+                      : getDefaultValue(field)
+                    );
                   }}
                   className="gap-x-2"
                 >
