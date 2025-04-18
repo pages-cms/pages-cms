@@ -3,7 +3,7 @@ import { createOctokitInstance } from "@/lib/utils/octokit";
 import { writeFns } from "@/fields/registry";
 import { configVersion, parseConfig, normalizeConfig } from "@/lib/config";
 import { stringify } from "@/lib/serialization";
-import { deepMap, getDefaultValue, generateZodSchema, getSchemaByName, sanitizeObject } from "@/lib/schema";
+import { deepMap, generateZodSchema, getSchemaByName, sanitizeObject } from "@/lib/schema";
 import { getConfig, updateConfig } from "@/lib/utils/config";
 import { getFileExtension, getFileName, normalizePath, serializedTypes, getParentPath } from "@/lib/utils/file";
 import { getAuth } from "@/lib/auth";
@@ -72,11 +72,8 @@ export async function POST(
               contentObject = data.content;
               contentFields = schema.fields;
             }
-
-            // Hidden fields are stripped in the client, we add them back
-            contentObject = deepMap(contentObject, contentFields, (value, field) => field.hidden ? getDefaultValue(field) : value);
-            // TODO: fetch the entry and merge values
             
+            // Use mapBlocks to convert config blocks array to a map
             const zodSchema = generateZodSchema(contentFields);
             const zodValidation = zodSchema.safeParse(contentObject);
             
@@ -89,7 +86,14 @@ export async function POST(
               throw new Error(`Content validation failed: ${errorMessages.join(", ")}`);
             }
 
-            const validatedContentObject = deepMap(zodValidation.data, contentFields, (value, field) => writeFns[field.type] ? writeFns[field.type](value, field, config || {}) : value);
+            const validatedContentObject = deepMap(
+              zodValidation.data,
+              contentFields,
+              (value, field) => {
+                const fieldType = field.type as string;
+                return writeFns[fieldType] ? writeFns[fieldType](value, field, config || {}) : value;
+              }
+            );
 
             const sanitizedContentObject = schema.list
               ? sanitizeObject(validatedContentObject.listWrapper)
@@ -214,8 +218,9 @@ const githubSaveFile = async (
   contentBase64: string,
   sha?: string,
 ) => {
-  const octokit = createOctokitInstance(token);
-
+  // We disable retries for 409 errors as it means the file has changed (conflict on SHA)
+  const octokit = createOctokitInstance(token, { retry: { doNotRetry: [409] } });
+  
   try {
     // First attempt: try with original path
     const response = await octokit.rest.repos.createOrUpdateFileContents({
@@ -233,6 +238,10 @@ const githubSaveFile = async (
     }
     throw new Error("Invalid response structure");
   } catch (error: any) {
+    if (error.status === 409) {
+      error.message = "File has changed since you last loaded it. Please refresh the page and try again.";
+    }
+
     // Only handle 422 errors for new files (no sha)
     if (error.status === 422 && !sha) {
       // Get directory contents to find next available name

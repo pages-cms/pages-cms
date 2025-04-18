@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useConfig } from "@/contexts/config-context";
-import { parseAndValidateConfig } from "@/lib/config"; 
+import { parseAndValidateConfig } from "@/lib/config";
 import { generateFilename, getPrimaryField, getSchemaByName } from "@/lib/schema";
 import {
   getFileExtension,
@@ -343,7 +343,7 @@ export function EntryEditor({
       );
     }
   }
-
+  console.log(config)
   return (
     isLoading
       ? loadingSkeleton

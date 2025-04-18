@@ -18,9 +18,9 @@ const deepMap = (
     const result: any = {};
 
     schema.forEach(field => {
-      const value = data[field.name];
+      const currentData = data || {};
+      const value = currentData[field.name];
       
-      // TOOD: do we want to check for undefined or null?
       if (field.list) {
         if (value === undefined) {
           result[field.name] = apply(value, field);
@@ -34,11 +34,10 @@ const deepMap = (
             : [];
         }
       } else if (field.type === "object") {
-        result[field.name] = value !== undefined
-          ? traverse(value, field.fields || [])
-          : {};
+        result[field.name] = traverse(value, field.fields || []);
       } else {
-        result[field.name] = apply(value, field);
+        const applied = apply(value, field);
+        result[field.name] = applied;
       }
     });
 
@@ -55,7 +54,10 @@ const initializeState = (
 ): Record<string, any> => {
   if (!fields) return {};
   
-  return deepMap(contentObject, fields, (value, field) => {
+  // Ensure deepMap gets a valid object even if contentObject is null/undefined
+  const sanitizedContent = contentObject || {};
+
+  return deepMap(sanitizedContent, fields, (value, field) => {
     let appliedValue = value;
     if (value === undefined) {
       appliedValue = field.list
@@ -64,67 +66,119 @@ const initializeState = (
           : undefined
         : getDefaultValue(field);
     }
+    // Handle potential null values passed from traverse if the object didn't exist
+    else if (appliedValue === null && field.type !== 'object' && !field.list) {
+       appliedValue = getDefaultValue(field);
+    }
     return appliedValue;
   });
 };
 
-// Get the defeault value for a field
+// Get the default value for a field
 const getDefaultValue = (field: Record<string, any>) => {
   if (field.default !== undefined) {
     return field.default;
   } else if (field.type === "object") {
     return initializeState(field.fields, {});
+  } else if (field.type === "block") {
+    return null;
   } else {
     const defaultValue = defaultValues?.[field.type];
     return defaultValue instanceof Function
-      ? defaultValue()
-      : defaultValue || "";
+      ? defaultValue(field)
+      : defaultValue !== undefined ? defaultValue : "";
   }
 };
 
 // Generate a Zod schema for validation
-// nestArrays allows us to nest arrays to work around RHF's inability to handle flat field arrays
-// See https://react-hook-form.com/docs/usefieldarray#rules
 const generateZodSchema = (
   fields: Field[],
-  ignoreHidden: boolean = false,
-  nestArrays: boolean = false
+  ignoreHidden: boolean = false
 ): z.ZodTypeAny => {
-  const buildSchema = (fields: Field[]): Record<string, z.ZodTypeAny> => {
-    return fields.reduce((acc: Record<string, z.ZodTypeAny>, field) => {
+  const buildSchemaObject = (currentFields: Field[]): Record<string, z.ZodTypeAny> => {
+    return currentFields.reduce((acc: Record<string, z.ZodTypeAny>, field) => {
       if (ignoreHidden && field.hidden) return acc;
 
-      let fieldSchemaFn = schemas?.[field.type] || schemas["text"];
+      let fieldSchema: z.ZodTypeAny;
+
+      if (field.type === 'object') {
+        // Object field
+        fieldSchema = z.object(buildSchemaObject(field.fields || []));
+      } else if (field.type === 'block') {
+        // Block field
+        if (!field.blocks || field.blocks.length === 0) {
+          console.warn(`Block field "${field.name}" has no 'blocks' defined. Allowing any object.`);
+          fieldSchema = z.object({}).passthrough();
+        } else {
+          const discriminator = field.blockKey || "_block";
+          const blockTypeSchemas = field.blocks.map(blockDef => {
+            if (!blockDef.name) {
+              console.warn(`Block definition within field "${field.name}" is missing a 'name'. Skipping.`);
+              return null;
+            }
+            const base = z.object({
+              [discriminator]: z.literal(blockDef.name) 
+            });
+            const blockFieldsSchema = z.object(buildSchemaObject(blockDef.fields || []));
+            return base.merge(blockFieldsSchema); 
+          }).filter(schema => schema !== null) as z.ZodObject<any>[];
+
+          if (blockTypeSchemas.length === 0) {
+            console.warn(`Block field "${field.name}" has no valid block definitions in 'blocks'. Allowing any object.`);
+            fieldSchema = z.object({}).passthrough();
+          } else if (blockTypeSchemas.length === 1) {
+            fieldSchema = blockTypeSchemas[0].optional().nullable();
+          } else {
+            fieldSchema = z.discriminatedUnion(
+              discriminator,
+              blockTypeSchemas as [z.ZodObject<any>, z.ZodObject<any>, ...z.ZodObject<any>[]]
+            ).optional().nullable();
+          }
+        }
+      } else if (field.type && schemas[field.type]) {
+        // Standard registered field type (e.g. text, number, ...)
+        const fieldSchemaFn = schemas[field.type];
+        fieldSchema = fieldSchemaFn(field);
+      } else {
+        console.warn(`Unknown or invalid type "${field.type}" for field "${field.name}". Defaulting to text validation.`);
+        fieldSchema = schemas["text"](field);
+      }
+
+      if (field.list) {
+        let arraySchema = z.array(fieldSchema);
+        if (typeof field.list === "object") {
+          if (field.list.min && typeof field.list.min === "number" && field.list.min > 0) {
+            arraySchema = arraySchema.min(field.list.min);
+          }
+          if (field.list.max && typeof field.list.max === "number" && field.list.max > 0) {
+            arraySchema = arraySchema.max(field.list.max);
+          }
+        }
+        if (field.required) {
+          arraySchema = arraySchema.min(1, { message: `Field requires at least one item.` });
+        }
+        fieldSchema = arraySchema;
+      }
       
-      let schema = field.list
-        ? z.array(field.type === "object"
-          ? nestArrays
-            ? { value: z.object(buildSchema(field.fields || [])) }
-            : z.object(buildSchema(field.fields || []))
-          : nestArrays
-            ? { value: fieldSchemaFn(field) }
-            : fieldSchemaFn(field)
-          )
-        : field.type === "object"
-          ? z.object(buildSchema(field.fields || []))
-          : fieldSchemaFn(field);
-
-      if (field.list && typeof field.list === "object") {
-        // TODO: do we check the type of min and max or do we leave that to the normalize function? Probably normalize as we'll need to also support field options schema.
-        if (field.list.min) schema = schema.min(field.list.min);
-        if (field.list.max) schema = schema.max(field.list.max);
+      if (!field.list) {
+        if (!field.required) {
+          fieldSchema = fieldSchema.optional();
+        } else {
+          if (field.type === 'block') {
+            fieldSchema = fieldSchema.refine(
+              (val) => val != null && typeof val === 'object' && Object.keys(val).length > 0,
+              { message: "Please select a block." }
+            );
+          }
+        }
       }
 
-      if (!field.required) {
-        schema = schema.optional();
-      }
-
-      acc[field.name] = schema;
+      acc[field.name] = fieldSchema;
       return acc;
     }, {});
   };
 
-  return z.object(buildSchema(fields));
+  return z.object(buildSchemaObject(fields));
 };
 
 // Traverse the object and remove all empty/null/undefined values
@@ -186,7 +240,12 @@ const getSchemaByPath = (config: Record<string, any>, path: string) => {
 
 // Retrieve the matching schema for a media or content entry
 const getSchemaByName = (config: Record<string, any> | null | undefined, name: string, type: string = "content") => {
-  if (!config || !config.content || !name) return null;
+  if (
+    !config
+    || (type === "media" && !config.media)
+    || (type === "content" && !config.content)
+    || !name
+  ) return null;
   
   const schema = (type === "media")
     ? config.media.find((item: Record<string, any>) => item.name === name)

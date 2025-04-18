@@ -22,6 +22,7 @@ import { getSchemaByName } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { Thumbnail } from "@/components/thumbnail";
+import { getAllowedExtensions } from "./index";
 
 const generateId = () => uuidv4().slice(0, 8);
 
@@ -147,28 +148,8 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
 
   const allowedExtensions = useMemo(() => {
     if (!mediaConfig) return [];
-
-    // Start with image extensions
-    let extensions = extensionCategories['image'];
-
-    // Apply field-level extensions/categories if specified
-    const fieldExtensions = field.options?.extensions 
-      ? field.options.extensions
-      : field.options?.categories
-        ? field.options.categories.flatMap((category: string) => extensionCategories[category])
-        : [];
-
-    if (fieldExtensions.length) {
-      extensions = extensions.filter(ext => fieldExtensions.includes(ext));
-    }
-
-    // Finally, filter by media config extensions if they exist
-    if (mediaConfig.extensions) {
-      extensions = extensions.filter(ext => mediaConfig.extensions.includes(ext));
-    }
-
-    return extensions;
-  }, [field.options?.extensions, field.options?.categories, mediaConfig]);
+    return getAllowedExtensions(field, mediaConfig);
+  }, [field, mediaConfig]);
 
   const isMultiple = useMemo(() => 
     field.options?.multiple === true,
@@ -188,7 +169,7 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
     if (isMultiple) {
       onChange(files.map(f => f.path));
     } else {
-      onChange(files[0]?.path || undefined);
+      onChange(files[0]?.path ?? "");
     }
   }, [files, isMultiple, onChange]);
 
@@ -246,7 +227,7 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
 
   if (!mediaConfig) {
     return (
-      <div className="text-muted-foreground bg-muted rounded-md px-3 py-2 h-10">
+      <p className="text-muted-foreground bg-muted rounded-md px-3 py-2">
       No media configuration found. {' '}
       <a 
         href={`/${config?.owner}/${config?.repo}/${encodeURIComponent(config?.branch || "")}/settings`}
@@ -254,12 +235,12 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
       >
         Check your settings
       </a>.
-    </div>
+    </p>
     );
   }
 
   return (
-    <MediaUpload path={rootPath} media={mediaConfig.name} extensions={allowedExtensions} onUpload={handleUpload} multiple={isMultiple}>
+    <MediaUpload path={rootPath} media={mediaConfig.name} extensions={allowedExtensions || undefined} onUpload={handleUpload} multiple={isMultiple}>
       <MediaUpload.DropZone>
         <div className="space-y-2">
           {files.length > 0 && (

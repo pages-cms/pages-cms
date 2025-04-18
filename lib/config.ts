@@ -9,8 +9,9 @@ import YAML from "yaml";
 import { getFileExtension, extensionCategories } from "@/lib/utils/file";
 import { ConfigSchema } from "@/lib/configSchema";
 import { z } from "zod";
+import { deepMergeObjects } from "@/lib/helpers";
 
-const configVersion = "2.0";
+const configVersion = "2.2";
 
 // Parse the config file (YAML to JSON)
 const parseConfig = (content: string) => {
@@ -35,7 +36,14 @@ const normalizeConfig = (configObject: any) => {
   if (!configObject) return {};
 
   const configObjectCopy = JSON.parse(JSON.stringify(configObject));
-  
+
+  // Resolve component references in `components`
+  if (configObjectCopy.components && typeof configObjectCopy.components === 'object') {
+    Object.keys(configObjectCopy.components).forEach((componentKey: string) => {
+      configObjectCopy.components[componentKey] = resolveComponent(configObjectCopy.components[componentKey], configObjectCopy.components);
+    });
+  }
+
   if (configObjectCopy?.media) {
     if (typeof configObjectCopy.media === "string") {
       // Ensure media.input is a relative path (and add name and label)
@@ -122,11 +130,75 @@ const normalizeConfig = (configObject: any) => {
           item.format = "datagrid";
         }
       }
+      
+      // Process content fields to resolve component references
+      if (Array.isArray(item.fields)) {
+        item.fields = item.fields.map((field: any) => {
+          return resolveComponent(field, configObjectCopy?.components);
+        });
+      }
+      
       return item;
     });
   }
-
+  
   return configObjectCopy;
+}
+
+// Helper function to resolve component references in fields
+function resolveComponent(field: any, componentsMap: Record<string, any>): any {
+  let result = JSON.parse(JSON.stringify(field));
+
+  if (result.component && typeof result.component === 'string') {
+    const componentKey = result.component;
+    const componentDef = componentsMap[componentKey];
+
+    if (componentDef) {
+      const componentCopy = JSON.parse(JSON.stringify(componentDef));
+      const originalName = result.name;
+      const componentType = componentCopy.type;
+      delete result.component;
+      result = deepMergeObjects(componentCopy, result);
+      result.name = originalName;
+      result.type = componentType;
+    } else {
+      console.error(`Component reference "${componentKey}" could not be resolved.`);
+      delete result.component; // Remove the broken reference
+    }
+  }
+
+  // Default to `type: object` if fields exist and type is missing
+  if (Array.isArray(result.fields) && result.fields.length > 0 && result.type === undefined) {
+    result.type = 'object';
+  }
+
+  // Nested fields
+  if (Array.isArray(result.fields)) {
+    result.fields = result.fields.map((nestedField: any) => {
+      return resolveComponent(nestedField, componentsMap);
+    });
+  }
+
+  // Nested blocks
+  if (Array.isArray(result.blocks)) {
+    result.blocks = result.blocks.map((block: any) => {
+      return resolveComponent(block, componentsMap);
+    });
+  }
+
+  return result;
+}
+
+// Check if the config contains unresolved component references
+function containsUnresolvedComponent(data: any): boolean {
+  if (Array.isArray(data)) return data.some(item => containsUnresolvedComponent(item));
+  if (data && typeof data === 'object') {
+    if (typeof data.component === 'string') return true; 
+    if (Array.isArray(data.fields)) {
+      if (containsUnresolvedComponent(data.fields)) return true;
+    }
+  }
+  return false;
 }
 
 // Check if the config is valid with the the Zoc schema (lib/configSchema.ts).
@@ -172,6 +244,9 @@ const processZodError = (error: any, document: YAML.Document.Parsed, errors: any
       if (invalidUnionCount === error.unionErrors.length) {
         // If all entries in the union were invalid types, assume none of the schemas could validate the type.
         yamlNode = document.getIn(error.path, true);
+        if (!yamlNode || yamlNode?.range == null) {
+          yamlNode = document.getIn(error.path.slice(0, -1), true);
+        }
         range = yamlNode && yamlNode.range ? yamlNode.range : [0, 0];
         errors.push({
           code: error.code,
