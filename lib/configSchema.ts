@@ -294,6 +294,9 @@ const SettingsSchema = z.object({
   merge: z.boolean({
     message: "'merge' must be a boolean."
   }).optional().nullable(),
+  hide: z.boolean({
+    message: "'hide' must be a boolean."
+  }).optional().nullable(),
 }).strict().optional().nullable();
 
 // Main schema with media and content
