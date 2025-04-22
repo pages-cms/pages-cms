@@ -319,10 +319,9 @@ const getPrimaryField = (schema: Record<string, any>) => {
   return schema?.view?.primary
     || schema?.fields?.find((item: any) => item.name === "title")
       ? "title"
-      : schema.fields?.[0]?.name;
+      : schema?.fields?.[0]?.name;
 }
 
-// Generate a filename for an entry
 const generateFilename = (
   pattern: string,
   schema: Record<string, any>,
