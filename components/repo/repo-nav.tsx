@@ -28,6 +28,7 @@ const RepoNavItem = ({
     )}
     href={href}
     onClick={onClick}
+    prefetch={true}
   >
     {icon}
     <span className="truncate">{children}</span>
@@ -87,7 +88,7 @@ const RepoNav = ({
       settingsItem,
       collaboratorsItem
     ].filter(Boolean);
-  }, [config]);
+  }, [config, user?.githubId]);
 
   if (!items.length) return null;
 

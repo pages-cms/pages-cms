@@ -22,25 +22,27 @@ export interface MediaDialogHandle {
 }
 
 const MediaDialog = forwardRef(({
-  name,
+  media,
   selected,
   onSubmit,
   maxSelected,
   initialPath,
-  children
+  children,
+  extensions
 }: {
-  name?: string,
+  media?: string,
   onSubmit: (images: string[]) => void,
   selected?: string[],
   maxSelected?: number,
   initialPath?: string,
-  children?: React.ReactNode
+  children?: React.ReactNode,
+  extensions?: string[]
 }, ref) => {
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
 
-  const configMedia = name
-    ? getSchemaByName(config.object, name, "media")
+  const configMedia = media
+    ? getSchemaByName(config.object, media, "media")
     : config.object.media[0];
 
   const selectedImagesRef = useRef(selected || []);
@@ -72,8 +74,8 @@ const MediaDialog = forwardRef(({
           <DialogDescription></DialogDescription>
         </DialogHeader>
         
-        <MediaView name={configMedia.name} initialSelected={selected || []} onSelect={handleSelect} maxSelected={maxSelected} initialPath={initialPath || ""}/>
-        {config.object.media?.input &&
+        <MediaView media={configMedia.name} extensions={extensions} initialSelected={selected || []} onSelect={handleSelect} maxSelected={maxSelected} initialPath={initialPath || ""}/>
+        {configMedia.input &&
           <DialogFooter>
             <DialogClose asChild>
               <Button type="submit" onClick={handleSubmit}>Select</Button>

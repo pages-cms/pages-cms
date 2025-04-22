@@ -62,11 +62,11 @@ export function CollectionView({
         // If we have a list of fields defined for the view
         schema.view.fields.forEach((path: string) => {
           const field = getFieldByPath(schema.fields, path);
-          if (field && field.type !== "object") pathAndFieldArray.push({ path: path, field: field });
+          if (field && !['object', 'block'].includes(field.type)) pathAndFieldArray.push({ path: path, field: field });
         });
       } else {
         pathAndFieldArray = schema.fields
-          .filter((field: any) => field?.type !== 'object' && !field.hidden)
+          .filter((field: any) => !['object', 'block'].includes(field.type) && !field.hidden)
           .map((field: any) => ({ path: field.name, field: field }));
       }
     } else {
@@ -78,16 +78,25 @@ export function CollectionView({
           type: "string"
         }
       });
-      if (schema.filename.startsWith("{year}-{month}-{day}")) {
-        pathAndFieldArray.push({
-          path: "date",
-          field: {
-            label: "Date",
-            name: "date",
-            type: "date"
-          }
-        });
-      }
+    }
+
+    // If the filename starts with {year}-{month}-{day} and date is listed in the
+    // view fields and is not an actual field, or if there are no fields, we add a date field
+    if (
+      schema.filename.startsWith("{year}-{month}-{day}")
+      && (
+        (schema.view?.fields &&schema.view?.fields.includes("date") && !pathAndFieldArray.find((item: any) => item.path === "date"))
+        || !schema.view?.fields
+      )
+    ) {
+      pathAndFieldArray.push({
+        path: "date",
+        field: {
+          label: "Date",
+          name: "date",
+          type: "date"
+        }
+      });
     }
 
     return pathAndFieldArray;
@@ -154,6 +163,7 @@ export function CollectionView({
               <Link
                 className="font-medium truncate"
                 href={`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/edit/${encodeURIComponent(row.original.path)}`}
+                prefetch={true}
               >
                 {CellView}
               </Link>
@@ -177,6 +187,7 @@ export function CollectionView({
           <Link
             className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8")}
             href={`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${name}/edit/${encodeURIComponent(row.original.path)}`}
+            prefetch={true}
           >
             Edit
           </Link>

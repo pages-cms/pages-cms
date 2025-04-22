@@ -151,21 +151,23 @@ const EditComponent = forwardRef((props: any, ref: any) => {
 
   const handleChange = useCallback(
     (newValue: any) => {
-      // When a new value is selected, ensure we display the value, not the label
-      const selectedValue = newValue 
-        ? field.options?.multiple 
-          ? newValue.map((item: any) => ({ value: item.value, label: item.value }))
-          : { value: newValue.value, label: newValue.value }
-        : field.options?.multiple ? [] : null;
-      
-      setSelectedOptions(selectedValue);
+      if (!field.options?.fetch) {
+        setSelectedOptions(newValue);
+      } else {
+        const selectedValue = newValue 
+          ? field.options?.multiple 
+            ? newValue.map((item: any) => ({ value: item.value, label: item.value }))
+            : { value: newValue.value, label: newValue.value }
+          : field.options?.multiple ? [] : null;
+        setSelectedOptions(selectedValue);
+      }
 
       const output = field.options?.multiple
         ? newValue ? newValue.map((item: any) => item.value) : []
         : newValue ? newValue.value : null;
       onChange(output);
     },
-    [onChange, field.options?.multiple, field]
+    [onChange, field.options?.multiple, field.options?.fetch]
   );
 
   if (!isMounted) return null;
@@ -179,10 +181,20 @@ const EditComponent = forwardRef((props: any, ref: any) => {
       : Select;
 
   const fetchConfig = field.options?.fetch as FetchConfig;
+  
+  // Determine if we should load options immediately based on minlength
+  const shouldLoadInitially = fetchConfig?.minlength === undefined || fetchConfig?.minlength === 0;
+  
+  // Use field.options.default if defined, otherwise use our automatic behavior
+  const defaultOptions = field.options?.default !== undefined 
+    ? field.options.default 
+    : shouldLoadInitially;
+
   return (
     <SelectComponent
       ref={ref}
       isMulti={field.options?.multiple}
+      isClearable={true}
       classNamePrefix="react-select"
       placeholder={field.options?.placeholder || "Select..."}
       components={{ 
@@ -197,7 +209,8 @@ const EditComponent = forwardRef((props: any, ref: any) => {
       {...(fetchConfig
         ? {
             loadOptions,
-            cacheOptions: false,
+            cacheOptions: field.options?.cache ?? true,
+            defaultOptions: defaultOptions
           }
         : { options: staticOptions })}
     />

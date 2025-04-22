@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useConfig } from "@/contexts/config-context";
-import { parseAndValidateConfig } from "@/lib/config"; 
+import { parseAndValidateConfig } from "@/lib/config";
 import { generateFilename, getPrimaryField, getSchemaByName } from "@/lib/schema";
 import {
   getFileExtension,
@@ -224,6 +224,7 @@ export function EntryEditor({
             <Link
               className={cn(buttonVariants({ variant: "outline", size: "icon-xs" }), "mr-4 shrink-0")}
               href={navigateBack}
+              prefetch={true}
             >
               <ChevronLeft className="h-4 w-4"/>
             </Link>
@@ -342,7 +343,7 @@ export function EntryEditor({
       );
     }
   }
-
+  
   return (
     isLoading
       ? loadingSkeleton

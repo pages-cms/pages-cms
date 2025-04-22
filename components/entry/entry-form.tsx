@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, forwardRef, useCallback } from "react";
 import Link from "next/link";
 import {
   useForm,
@@ -10,7 +10,7 @@ import {
   useFormContext
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { editComponents, supportsList } from "@/fields/registry";
+import { editComponents } from "@/fields/registry";
 import {
   initializeState,
   getDefaultValue,
@@ -30,6 +30,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -55,8 +61,8 @@ import {
   restrictToParentElement
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronLeft, GripVertical, Loader, Plus, Trash2 } from "lucide-react";
-
+import { ChevronLeft, GripVertical, Loader, Plus, Trash2, Ellipsis } from "lucide-react";
+import { toast } from "sonner";
 const SortableItem = ({
   id,
   type,
@@ -76,13 +82,13 @@ const SortableItem = ({
   } = useSortable({ id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition
   };
-
+  
   return (
-    <div ref={setNodeRef} className={cn("bg-background flex gap-x-1 rounded-lg border items-center", type === "object" ? "px-2 py-4" : "px-1 py-2", isDragging ? "z-50" : "z-10")} style={style}>
-      <Button type="button" variant="ghost" size="icon-sm" className="h-8 cursor-move" {...attributes} {...listeners}>
+    <div ref={setNodeRef} className={cn("flex gap-x-2 items-center", isDragging ? "opacity-50 z-50" : "z-10")} style={style}>
+      <Button type="button" variant="ghost" size="icon-sm" className="h-auto w-5 bg-muted/50 self-stretch rounded-md text-muted-foreground cursor-move" {...attributes} {...listeners}>
         <GripVertical className="h-4 w-4" />
       </Button>
       {children}
@@ -99,7 +105,7 @@ const ListField = ({
   control: Control;
   field: Field;
   fieldName: string;
-  renderFields: (fields: Field[], parentName?: string) => React.ReactNode;
+  renderFields: Function;
 }) => {
   const { fields: arrayFields, append, remove, move } = useFieldArray({
     control,
@@ -168,13 +174,13 @@ const ListField = ({
                 {arrayFields.map((arrayField, index) => (
                   <SortableItem key={arrayField.id} id={arrayField.id} type={field.type}>
                     <div className="grid gap-6 flex-1">
-                      {field.type === "object" && field.fields
+                      {field.type === 'object' && field.fields
                         ? renderFields(field.fields, `${fieldName}.${index}`)
-                        : renderSingleField(field, `${fieldName}.${index}`, control, false)}
+                        : renderSingleField(field, `${fieldName}.${index}`, control, renderFields, false)}
                     </div>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button type="button" variant="ghost" size="icon-sm" className="h-8" onClick={() => remove(index)}>
+                        <Button type="button" variant="ghost" size="icon-sm" className="bg-muted/50 text-muted-foreground self-start" onClick={() => remove(index)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
@@ -186,14 +192,14 @@ const ListField = ({
                 ))}
               </SortableContext>
             </DndContext>
-            {typeof field.list === "object" && field.list?.max && arrayFields.length >= field.list.max
+            {typeof field.list === 'object' && field.list?.max && arrayFields.length >= field.list.max
               ? null
               : <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    append(field.type === "object"
+                    append(field.type === 'object'
                       ? initializeState(field.fields, {})
                       : getDefaultValue(field)
                     );
@@ -204,6 +210,7 @@ const ListField = ({
                   Add an entry
                 </Button>
             }
+            <FormMessage />
           </div>
         </FormItem>
       )}
@@ -211,31 +218,151 @@ const ListField = ({
   );
 };
 
+const BlocksField = forwardRef((props: any, ref) => {
+  const { value, onChange } = props;
+  const { field, fieldName, renderFields, control } = props;
+
+  const { blocks = [] } = field;
+  const blockKey = field.blockKey || "_block";
+  const selectedBlockName = value?.[blockKey];
+
+  const handleBlockSelect = (blockName: string) => {
+    const selectedBlockDef = blocks.find((b: Field) => b.name === blockName);
+    if (!selectedBlockDef) return;
+    let initialState: Record<string, any> = { [blockKey]: blockName };
+    if (selectedBlockDef.fields) {
+      const choiceDefaults = initializeState(selectedBlockDef.fields, {});
+      initialState = { ...initialState, ...choiceDefaults };
+    }
+    onChange(initialState);
+  };
+
+  const handleRemoveBlock = () => {
+    onChange(null);
+  };
+
+  const selectedBlockDefinition = useMemo(() => {
+    const definition = blocks.find((b: Field) => b.name === selectedBlockName);
+    return definition;
+  }, [blocks, selectedBlockName]);
+
+  return (
+    <div className="space-y-3" ref={ref as React.Ref<HTMLDivElement>}>
+      {!selectedBlockDefinition ? (
+        <div className="rounded-lg border">
+          <header className="flex items-center gap-x-2 rounded-t-lg pl-4 pr-1 h-10 text-sm font-medium">
+            <span>Choose content block:</span>
+          </header>
+          <div className="flex flex-wrap gap-2 p-4">
+            {blocks.map((blockDef: Field) => (
+              <Button
+                key={blockDef.name}
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="gap-x-2"
+                onClick={() => handleBlockSelect(blockDef.name)}
+              >
+                {blockDef.label || blockDef.name}
+                <Plus className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-lg border">
+          <header className="flex items-center gap-x-2 rounded-t-lg pl-4 pr-1 h-10 border-b text-sm font-medium text-muted-foreground">
+            {selectedBlockDefinition.label || selectedBlockDefinition.name}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="ghost" size="icon-xs">
+                  <Ellipsis className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleRemoveBlock}>
+                  Remove block
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </header>
+          <div className="p-4 grid gap-6">
+            {selectedBlockDefinition.type === 'object' ? (
+              (() => {
+                const renderedElements = renderFields(
+                  selectedBlockDefinition.fields || [],
+                  fieldName
+                );
+                return renderedElements;
+              })()
+            ) : (
+              (() => {
+                 const renderedElement = renderSingleField(
+                    selectedBlockDefinition,
+                    fieldName,
+                    control,
+                    renderFields,
+                    false
+                 );
+                 return renderedElement;
+              })()
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
+BlocksField.displayName = 'BlocksField';
+
 const renderSingleField = (
   field: Field,
   fieldName: string,
   control: Control,
+  renderFields: Function,
   showLabel = true
 ) => {
-  const FieldComponent = editComponents?.[field.type] || editComponents["text"];
+  const fieldConfig = field;
+  let FieldComponent;
+
+  if (fieldConfig.type === 'block') {
+    FieldComponent = BlocksField;
+  } else if (fieldConfig.type === 'object') {
+    console.error(`renderSingleField should not handle 'object' type directly for: ${fieldName}`);
+    return (
+      <FormItem key={fieldName}>
+        <p className="text-muted-foreground bg-muted rounded-md px-3 py-2">Render Error: Object type misrouted.</p>
+      </FormItem>
+    );
+  } else if (typeof fieldConfig.type === 'string' && editComponents[fieldConfig.type]) {
+    FieldComponent = editComponents[fieldConfig.type];
+  } else {
+    console.warn(`No component found for field type: ${fieldConfig.type}. Defaulting to 'text'.`);
+    FieldComponent = editComponents['text'];
+  }
 
   return (
     <FormField
       name={fieldName}
       key={fieldName}
       control={control}
-      render={({ field: fieldProps }) => (
+      render={({ field: rhfFieldProps, fieldState }) => (
         <FormItem>
-          {showLabel && field.label !== false &&
+          {showLabel && fieldConfig.label !== false &&
             <FormLabel className="h-5">
-              {field.label || field.name}
+              {fieldConfig.label || fieldConfig.name}
             </FormLabel>
           }
-          {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
+          {showLabel && fieldConfig.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
           <FormControl>
-            <FieldComponent {...fieldProps} field={field} />
+            <FieldComponent
+              {...rhfFieldProps}
+              field={fieldConfig}
+              {...(fieldConfig.type === 'block' ? { fieldName, renderFields, control } : {})}
+            />
           </FormControl>
-          {field.description && <FormDescription>{field.description}</FormDescription>}
+          {fieldConfig.description && <FormDescription>{fieldConfig.description}</FormDescription>}
           <FormMessage />
         </FormItem>
       )}
@@ -248,7 +375,7 @@ const EntryForm = ({
   navigateBack,
   fields,
   contentObject,
-  onSubmit = (values) => console.log(values),
+  onSubmit = (values) => console.log("Default onSubmit:", values),
   history,
   path,
   options,
@@ -265,7 +392,7 @@ const EntryForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const zodSchema = useMemo(() => {
-    return generateZodSchema(fields, true);
+    return generateZodSchema(fields);
   }, [fields]);
 
   const defaultValues = useMemo(() => {
@@ -275,40 +402,47 @@ const EntryForm = ({
   const form = useForm({
     resolver: zodSchema && zodResolver(zodSchema),
     defaultValues,
+    reValidateMode: "onSubmit"
   });
 
-  const { isDirty } = useFormState({
+  const { isDirty, errors } = useFormState({
     control: form.control
   });
 
-  // TODO: investigate why this run on every input focus
-  const renderFields = (fields: Field[], parentName?: string) => {
+  const renderFields = useCallback((
+    fields: Field[],
+    parentName?: string
+  ): React.ReactNode[] => {
     return fields.map((field) => {
-      if (field.hidden) return null;
+      if (!field || field.hidden) return null;
+      const currentFieldName = parentName ? `${parentName}.${field.name}` : field.name;
 
-      const fieldName = parentName ? `${parentName}.${field.name}` : field.name;
+      if (field.list === true || (typeof field.list === 'object' && field.list !== null)) {
+        return <ListField key={currentFieldName} control={form.control} field={field} fieldName={currentFieldName} renderFields={renderFields} />;
+      } else if (field.type === "object" && Array.isArray(field.fields)) {
+        const objectErrors = errors?.[currentFieldName];
+        const hasNestedErrors = typeof objectErrors === 'object' && objectErrors !== null && Object.keys(objectErrors).length > 0;
 
-      if (field.type === "object" && field.list && !supportsList[field.type]) {
-        return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
-      } else if (field.type === "object") {
         return (
-          <fieldset key={fieldName} className="grid gap-6 rounded-lg border p-4">
+          <div className="rounded-lg border" key={currentFieldName}>
             {field.label !== false &&
-              <legend className="text-sm font-medium leading-none">
+              <header className={cn(
+                "flex items-center gap-x-2 rounded-t-lg pl-4 pr-1 h-10 border-b text-sm font-medium bg-muted",
+                hasNestedErrors && "text-red-500"
+              )}>
                 {field.label || field.name}
                 {field.required && <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">Required</span>}
-              </legend>
+              </header>
             }
-            {renderFields(field.fields || [], fieldName)}
-          </fieldset>
+            <div className="grid gap-6 p-4">
+              {renderFields(field.fields, currentFieldName)}
+            </div>
+          </div>
         );
-      } else if (field.list && !supportsList[field.type]) {
-        return <ListField key={fieldName} control={form.control} field={field} fieldName={fieldName} renderFields={renderFields} />;
       }
-
-      return renderSingleField(field, fieldName, form.control);
+      return renderSingleField(field, currentFieldName, form.control, renderFields, true);
     });
-  };
+  }, [form.control, errors]);
 
   const handleSubmit = async (values: any) => {
     setIsSubmitting(true);
@@ -319,9 +453,13 @@ const EntryForm = ({
     }
   };
 
+  const handleError = (errors: any) => {
+    toast.error("Please fix the errors before saving.", { duration: 5000 });
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)}>
+      <form onSubmit={form.handleSubmit(handleSubmit, handleError)}>
         <div className="max-w-screen-xl mx-auto flex w-full gap-x-8">
           <div className="flex-1 w-0">
             <header className="flex items-center mb-6">
