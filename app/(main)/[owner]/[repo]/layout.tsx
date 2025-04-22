@@ -6,13 +6,23 @@ import { RepoProvider } from "@/contexts/repo-context";
 import { Message } from "@/components/message";
 import { Repo } from "@/types/repo";
 
-export default async function Layout({
-  children,
-  params: { owner, repo }
-}: {
-  children: React.ReactNode;
-  params: { owner: string; repo: string; };
-}) {
+export default async function Layout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ owner: string; repo: string; }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    owner,
+    repo
+  } = params;
+
+  const {
+    children
+  } = props;
+
   const { session, user } = await getAuth();
   if (!session) return redirect("/sign-in");
 

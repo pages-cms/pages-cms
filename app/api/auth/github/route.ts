@@ -23,7 +23,7 @@ export async function GET(request: Request): Promise<Response> {
 	const url = new URL(request.url);
 	const code = url.searchParams.get("code");
 	const state = url.searchParams.get("state");
-	const storedState = cookies().get("github_oauth_state")?.value ?? null;
+	const storedState = (await cookies()).get("github_oauth_state")?.value ?? null;
 	if (!code || !state || !storedState || state !== storedState) {
 		return new Response(null, {
 			status: 400
@@ -34,12 +34,13 @@ export async function GET(request: Request): Promise<Response> {
     const token = await github.validateAuthorizationCode(code);
 		const githubUserResponse = await fetch("https://api.github.com/user", {
 			headers: {
-				Authorization: `Bearer ${token.accessToken}`
+				Authorization: `Bearer ${token.accessToken()}`
 			}
 		});
 		const githubUser: GitHubUser = await githubUserResponse.json();
+		const accessToken: string = token.accessToken();
     
-    const { ciphertext, iv } = await encrypt(token.accessToken);
+    const { ciphertext, iv } = await encrypt(accessToken);
 
 		const existingUser = await db.query.userTable.findFirst({
 			where: eq(userTable.githubId, Number(githubUser.id))
@@ -53,7 +54,7 @@ export async function GET(request: Request): Promise<Response> {
 			);
 			const session = await lucia.createSession(existingUser.id as string, {});
 			const sessionCookie = lucia.createSessionCookie(session.id);
-			cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+			(await cookies()).set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 			return new Response(null, {
 				status: 302,
 				headers: {
@@ -79,7 +80,7 @@ export async function GET(request: Request): Promise<Response> {
 
 		const session = await lucia.createSession(userId, {});
 		const sessionCookie = lucia.createSessionCookie(session.id);
-		cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+		(await cookies()).set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 		return new Response(null, {
 			status: 302,
 			headers: {

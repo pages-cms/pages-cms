@@ -67,7 +67,7 @@ type FetchConfig = {
 
 const EditComponent = forwardRef((props: any, ref: any) => {
   const { value, field, onChange } = props;
-  
+
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => setIsMounted(true), []);
@@ -76,10 +76,10 @@ const EditComponent = forwardRef((props: any, ref: any) => {
     () =>
       !field.options?.fetch && field.options?.values
         ? field.options.values.map((opt: any) =>
-            typeof opt === "object"
-              ? { value: opt.value, label: opt.label }
-              : { value: opt, label: opt }
-          )
+          typeof opt === "object"
+            ? { value: opt.value, label: opt.label }
+            : { value: opt, label: opt }
+        )
         : [],
     [field.options?.values, field.options?.fetch]
   );
@@ -94,7 +94,7 @@ const EditComponent = forwardRef((props: any, ref: any) => {
 
       try {
         const searchParams = new URLSearchParams();
-        
+
         // Handle params
         if (fetchConfig.params) {
           Object.entries(fetchConfig.params).forEach(([key, paramValue]) => {
@@ -112,7 +112,7 @@ const EditComponent = forwardRef((props: any, ref: any) => {
 
         const queryString = searchParams.toString();
         const url = `${fetchConfig.url}${queryString ? `?${queryString}` : ''}`;
-        
+
         const response = await fetch(url, {
           method: fetchConfig.method || "GET",
           headers: fetchConfig.headers || {},
@@ -122,13 +122,13 @@ const EditComponent = forwardRef((props: any, ref: any) => {
         const results = fetchConfig.results ? safeAccess(data, fetchConfig.results) : data;
         if (!Array.isArray(results)) return [];
         return results.map((item: any) => ({
-          value: fetchConfig.value ? 
+          value: fetchConfig.value ?
             interpolate(fetchConfig.value, item, "fields")
             : item.id,
           label: fetchConfig.label ?
             interpolate(fetchConfig.label, item, "fields")
             : item.name,
-          image: fetchConfig.image ? 
+          image: fetchConfig.image ?
             interpolate(fetchConfig.image, item, "fields")
             : undefined,
         }));
@@ -154,8 +154,8 @@ const EditComponent = forwardRef((props: any, ref: any) => {
       if (!field.options?.fetch) {
         setSelectedOptions(newValue);
       } else {
-        const selectedValue = newValue 
-          ? field.options?.multiple 
+        const selectedValue = newValue
+          ? field.options?.multiple
             ? newValue.map((item: any) => ({ value: item.value, label: item.value }))
             : { value: newValue.value, label: newValue.value }
           : field.options?.multiple ? [] : null;
@@ -181,13 +181,13 @@ const EditComponent = forwardRef((props: any, ref: any) => {
       : Select;
 
   const fetchConfig = field.options?.fetch as FetchConfig;
-  
+
   // Determine if we should load options immediately based on minlength
   const shouldLoadInitially = fetchConfig?.minlength === undefined || fetchConfig?.minlength === 0;
-  
+
   // Use field.options.default if defined, otherwise use our automatic behavior
-  const defaultOptions = field.options?.default !== undefined 
-    ? field.options.default 
+  const defaultOptions = field.options?.default !== undefined
+    ? field.options.default
     : shouldLoadInitially;
 
   return (
@@ -197,9 +197,9 @@ const EditComponent = forwardRef((props: any, ref: any) => {
       isClearable={true}
       classNamePrefix="react-select"
       placeholder={field.options?.placeholder || "Select..."}
-      components={{ 
-        DropdownIndicator, 
-        ClearIndicator, 
+      components={{
+        DropdownIndicator,
+        ClearIndicator,
         MultiValueRemove,
         Option,
         SingleValue,
@@ -208,10 +208,10 @@ const EditComponent = forwardRef((props: any, ref: any) => {
       onChange={handleChange}
       {...(fetchConfig
         ? {
-            loadOptions,
-            cacheOptions: field.options?.cache ?? true,
-            defaultOptions: defaultOptions
-          }
+          loadOptions,
+          cacheOptions: field.options?.cache ?? true,
+          defaultOptions: defaultOptions
+        }
         : { options: staticOptions })}
     />
   );

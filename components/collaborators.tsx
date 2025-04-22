@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useFormState } from "react-dom";
+import { useCallback, useEffect, useMemo, useState, useActionState } from "react";
 import { handleRemoveCollaborator, handleAddCollaborator } from "@/lib/actions/collaborator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +37,7 @@ export function Collaborators({
 }) {
   // TODO: add support for branches and accounts collaborators
   const [collaborators, setCollaborators] = useState<any[]>([]);
-  const [addCollaboratorState, addCollaboratorAction] = useFormState(handleAddCollaborator, { message: "", data: [] });
+  const [addCollaboratorState, addCollaboratorAction] = useActionState(handleAddCollaborator, { message: "", data: [] });
   const [email, setEmail] = useState<string>("");
   const [removing, setRemoving] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);

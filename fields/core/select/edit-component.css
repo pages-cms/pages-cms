@@ -1,3 +1,5 @@
+@reference "../../../app/globals.css";
+
 .react-select__control {
   @apply !min-h-10 !rounded-md !border-input !bg-background !ring-offset-background !transition-none !cursor-pointer !box-border !px-3 !py-2;
 }
