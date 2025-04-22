@@ -9,13 +9,24 @@ import { RepoLayout } from "@/components/repo/repo-layout";
 import { EmptyCreate } from "@/components/empty-create";
 import { Message } from "@/components/message";
 
-export default async function Layout({
-  children,
-  params: { owner, repo, branch },
-}: {
-  children: React.ReactNode;
-  params: { owner: string; repo: string; branch: string; };
-}) {
+export default async function Layout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ owner: string; repo: string; branch: string; }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    owner,
+    repo,
+    branch
+  } = params;
+
+  const {
+    children
+  } = props;
+
   const { session, user } = await getAuth();
   if (!session) return redirect("/sign-in");
 
@@ -32,9 +43,9 @@ export default async function Layout({
     version: "",
     object: {}
   }
-  
+
   let errorMessage = null;
-  
+
   // We try to retrieve the config file (.pages.yml)
   try {
     const octokit = createOctokitInstance(token);
