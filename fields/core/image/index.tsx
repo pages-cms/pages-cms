@@ -27,6 +27,7 @@ const read = (value: any, field: Field, config: Record<string, any>): string | s
 };
 
 const write = (value: any, field: Field, config: Record<string, any>): string | string[] | null => {
+  console.log("write", value, field, config);
   if (!value) return null;
   if (Array.isArray(value) && !value.length) return null;
 
@@ -41,7 +42,7 @@ const write = (value: any, field: Field, config: Record<string, any>): string | 
   if (Array.isArray(value)) {
     return value.map(v => write(v, field, config)) as string[];
   }
-
+  console.log("swapPrefix", swapPrefix(value, mediaConfig.input, mediaConfig.output));
   return swapPrefix(value, mediaConfig.input, mediaConfig.output);
 };
 
@@ -148,7 +149,10 @@ const schema = (field: Field, configObject?: Record<string, any>) => {
   return zodSchema;
 };
 
-const defaultValue = null;
+const defaultValue = (field: Field) => {
+  return field.options?.multiple ? [] : "";
+};
+
 const label = "Image";
 
 export { label, schema, ViewComponent, EditComponent, read, write, defaultValue, getAllowedExtensions };

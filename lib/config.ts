@@ -9,10 +9,9 @@ import YAML from "yaml";
 import { getFileExtension, extensionCategories } from "@/lib/utils/file";
 import { ConfigSchema } from "@/lib/configSchema";
 import { z } from "zod";
-import { fieldTypes } from "@/fields/registry";
 import { deepMergeObjects } from "@/lib/helpers";
 
-const configVersion = "2.0";
+const configVersion = "2.2";
 
 // Parse the config file (YAML to JSON)
 const parseConfig = (content: string) => {
@@ -31,30 +30,20 @@ const parseConfig = (content: string) => {
   return { document, errors };
 };
 
-// Creates a map of blocks definitions by name
-const mapBlocks = (configObject: any): Record<string, any> => {
-  const blocksMap: Record<string, any> = {};
-  if (configObject?.blocks && Array.isArray(configObject.blocks)) {
-    configObject.blocks.forEach((block: any) => {
-      if (block?.name) {
-        // TODO: add validation for block definition (extend to all config in normalizeConfig)
-        blocksMap[block.name] = block;
-      }
-    });
-  }
-  // TODO: extend to support content level blocks
-  return blocksMap;
-}
-
 // Normalize the config object (e.g. convert media.input to a relative path, set
 // default values for filename, extension, format, etc.)
 const normalizeConfig = (configObject: any) => {
   if (!configObject) return {};
 
   const configObjectCopy = JSON.parse(JSON.stringify(configObject));
-  
-  const blocksMap = mapBlocks(configObjectCopy);
-  
+
+  // Resolve component references in `components`
+  if (configObjectCopy.components && typeof configObjectCopy.components === 'object') {
+    Object.keys(configObjectCopy.components).forEach((componentKey: string) => {
+      configObjectCopy.components[componentKey] = resolveComponent(configObjectCopy.components[componentKey], configObjectCopy.components);
+    });
+  }
+
   if (configObjectCopy?.media) {
     if (typeof configObjectCopy.media === "string") {
       // Ensure media.input is a relative path (and add name and label)
@@ -142,50 +131,74 @@ const normalizeConfig = (configObject: any) => {
         }
       }
       
-      // Process fields to resolve block references
+      // Process content fields to resolve component references
       if (Array.isArray(item.fields)) {
-        item.fields = resolveBlocks(item.fields, blocksMap);
+        item.fields = item.fields.map((field: any) => {
+          return resolveComponent(field, configObjectCopy?.components);
+        });
       }
       
       return item;
     });
   }
-
+  
   return configObjectCopy;
 }
 
-// Helper function to resolve block references in field types
-function resolveBlocks(fields: any[], blocksMap: Record<string, any>): any[] {
-  return fields.map(field => {
-    const result = JSON.parse(JSON.stringify(field));
-    const originalFieldType = field.type;
+// Helper function to resolve component references in fields
+function resolveComponent(field: any, componentsMap: Record<string, any>): any {
+  let result = JSON.parse(JSON.stringify(field));
 
-    // We leave mixed types for runtime processing
-    if (originalFieldType &&
-        !Array.isArray(originalFieldType) &&
-        !fieldTypes.has(originalFieldType) && // It's not a known field type
-        blocksMap[originalFieldType]) // And it exists as a block
-    {
-        // Deep merge block properties into resulting field
-        const block = JSON.parse(JSON.stringify(blocksMap[originalFieldType]));
-        deepMergeObjects(result, block);
+  if (result.component && typeof result.component === 'string') {
+    const componentKey = result.component;
+    const componentDef = componentsMap[componentKey];
 
-        // Set type to block type if it exists
-        if (block.type) {
-            result.type = block.type;
-        } else {
-            console.error("Block has no type", originalFieldType);
-            result.type = 'text';
-        }
+    if (componentDef) {
+      const componentCopy = JSON.parse(JSON.stringify(componentDef));
+      const originalName = result.name;
+      const componentType = componentCopy.type;
+      delete result.component;
+      result = deepMergeObjects(componentCopy, result);
+      result.name = originalName;
+      result.type = componentType;
+    } else {
+      console.error(`Component reference "${componentKey}" could not be resolved.`);
+      delete result.component; // Remove the broken reference
     }
+  }
 
-    // Process nested fields recursively
-    if (Array.isArray(result.fields)) {
-      result.fields = resolveBlocks(result.fields, blocksMap);
+  // Default to `type: object` if fields exist and type is missing
+  if (Array.isArray(result.fields) && result.fields.length > 0 && result.type === undefined) {
+    result.type = 'object';
+  }
+
+  // Nested fields
+  if (Array.isArray(result.fields)) {
+    result.fields = result.fields.map((nestedField: any) => {
+      return resolveComponent(nestedField, componentsMap);
+    });
+  }
+
+  // Nested blocks
+  if (Array.isArray(result.blocks)) {
+    result.blocks = result.blocks.map((block: any) => {
+      return resolveComponent(block, componentsMap);
+    });
+  }
+
+  return result;
+}
+
+// Check if the config contains unresolved component references
+function containsUnresolvedComponent(data: any): boolean {
+  if (Array.isArray(data)) return data.some(item => containsUnresolvedComponent(item));
+  if (data && typeof data === 'object') {
+    if (typeof data.component === 'string') return true; 
+    if (Array.isArray(data.fields)) {
+      if (containsUnresolvedComponent(data.fields)) return true;
     }
-
-    return result;
-  });
+  }
+  return false;
 }
 
 // Check if the config is valid with the the Zoc schema (lib/configSchema.ts).
@@ -284,4 +297,4 @@ const parseAndValidateConfig = (content: string) => {
   return { document, parseErrors, validationErrors };
 };
 
-export { configVersion, parseConfig, normalizeConfig, validateConfig, parseAndValidateConfig, mapBlocks, deepMergeObjects };
+export { configVersion, parseConfig, normalizeConfig, validateConfig, parseAndValidateConfig };
