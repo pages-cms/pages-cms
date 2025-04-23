@@ -5,6 +5,7 @@ export type Field = {
   type: string;
   default?: any;
   list?: boolean | { min?: number; max?: number; default?: any };
+  collapsible?: boolean | { expanded?: boolean, label?: string };
   hidden?: boolean | null;
   required?: boolean | null;
   pattern?: string | { regex: string; message?: string };
