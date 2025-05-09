@@ -35,9 +35,11 @@ export async function GET(
 		const error = "Your sign in link is invalid.";
 		redirect(`/sign-in?error=${encodeURIComponent(error)}`);
 	} else {
-		await db.delete(emailLoginTokenTable).where(
-			eq(emailLoginTokenTable.tokenHash, tokenHash)
-		);
+		// TODO: Delete the token after it's used.
+		
+		// await db.delete(emailLoginTokenTable).where(
+		// 	eq(emailLoginTokenTable.tokenHash, tokenHash)
+		// );
 		const expiresAtDate = new Date(Number(token.expiresAt) * 1000);
 		if (!isWithinExpirationDate(expiresAtDate)) {
 			const error = "Your sign in link has expired.";
