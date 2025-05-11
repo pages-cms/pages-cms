@@ -240,10 +240,15 @@ function getFieldByPath(schema: Field[], path: string): Field | undefined {
 
 // Get the primary field for a schema
 const getPrimaryField = (schema: Record<string, any>) => {
-  return schema?.view?.primary
-    || schema?.fields?.find((item: any) => item.name === "title")
-      ? "title"
-      : schema.fields?.[0]?.name;
+  if (schema?.view?.primary) {
+    return schema.view.primary;
+  }
+
+  if (schema?.fields?.some((item: any) => item.name === "title")) {
+    return "title";
+  }
+
+  return schema?.fields?.[0]?.name;
 }
 
 // Generate a filename for an entry

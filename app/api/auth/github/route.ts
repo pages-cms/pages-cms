@@ -31,7 +31,7 @@ export async function GET(request: Request): Promise<Response> {
 	}
 
 	try {
-    const token = await github.validateAuthorizationCode(code);
+    	const token = await github.validateAuthorizationCode(code);
 		const githubUserResponse = await fetch("https://api.github.com/user", {
 			headers: {
 				Authorization: `Bearer ${token.accessToken}`
@@ -39,7 +39,7 @@ export async function GET(request: Request): Promise<Response> {
 		});
 		const githubUser: GitHubUser = await githubUserResponse.json();
     
-    const { ciphertext, iv } = await encrypt(token.accessToken);
+    	const { ciphertext, iv } = await encrypt(token.accessToken);
 
 		const existingUser = await db.query.userTable.findFirst({
 			where: eq(userTable.githubId, Number(githubUser.id))
