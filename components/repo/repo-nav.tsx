@@ -1,8 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useConfig } from "@/contexts/config-context";
+import { useUser } from "@/contexts/user-context";
 import { cn } from "@/lib/utils";
+import { FileStack, FileText, FolderOpen, Settings, Users } from "lucide-react";
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 
 const RepoNavItem = ({
@@ -48,53 +52,9 @@ const RepoNav = ({
     label: string;
   }[];
 }) => {
+  const { config } = useConfig();
+  const { user } = useUser();
   const pathname = usePathname();
-
-  const items = useMemo(() => {
-    if (!config || !config.object) return [];
-    const configObject: any = config.object;
-    const contentItems = configObject.content?.map((item: any) => ({
-      key: item.name,
-      icon: item.type === "collection"
-        ? <FileStack className="h-5 w-5 mr-2" />
-        : <FileText className="h-5 w-5 mr-2" />
-      ,
-      href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/${item.type}/${encodeURIComponent(item.name)}`,
-      label: item.label || item.name,
-    })) || [];
-
-    const mediaItems = configObject.media?.map((item: any) => ({
-      key: item.name || "media",
-      icon: <FolderOpen className="h-5 w-5 mr-2" />,
-      href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/media/${item.name}`,
-      label: item.label || item.name || "Media"
-    })) || [];
-
-    const settingsItem = !configObject.settings?.hide
-      ? {
-        key: "settings",
-        icon: <Settings className="h-5 w-5 mr-2" />,
-        href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/settings`,
-        label: "Settings"
-      }
-      : null;
-
-    const collaboratorsItem = configObject && Object.keys(configObject).length !== 0 && user?.githubId
-      ? {
-        key: "collaborators",
-        icon: <Users className="h-5 w-5 mr-2" />,
-        href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collaborators`,
-        label: "Collaborators"
-      }
-      : null;
-
-    return [
-      ...contentItems,
-      ...mediaItems,
-      settingsItem,
-      collaboratorsItem
-    ].filter(Boolean);
-  }, [config, user?.githubId]);
 
   if (!items.length) return null;
 

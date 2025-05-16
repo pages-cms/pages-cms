@@ -26,13 +26,11 @@ export function About({
 }) {
   return (
     <Dialog>
-      <DialogTrigger>
-        <SidebarMenuItem>
-          <SidebarMenuButton className="flex items-center rounded-lg px-3 py-2 font-medium focus:bg-accent outline-hidden">
-            <CircleHelp className="h-5 w-5 mr-2" />
-            About Pages CMS
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+      <DialogTrigger asChild>
+        <SidebarMenuButton className="flex items-center rounded-lg px-3 py-2 font-medium focus:bg-accent outline-hidden">
+          <CircleHelp className="h-5 w-5 mr-2" />
+          About Pages CMS
+        </SidebarMenuButton>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
