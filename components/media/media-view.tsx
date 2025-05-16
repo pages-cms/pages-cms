@@ -12,13 +12,8 @@ import {
   normalizePath
 } from "@/lib/utils/file";
 import { EmptyCreate } from "@/components/empty-create";
-<<<<<<< HEAD
 import { FolderCreate } from "@/components/folder-create";
-import { FileOptions } from "@/components/file-options";
-=======
-import { FolderCreate} from "@/components/folder-create";
 import { FileOptions } from "@/components/file/file-options";
->>>>>>> main
 import { PathBreadcrumb } from "@/components/path-breadcrumb";
 import { MediaUpload } from "./media-upload";
 import { Message } from "@/components/message";
