@@ -20,34 +20,36 @@ export async function GET(
   { params }: { params: { owner: string, repo: string, branch: string, name: string, path: string } }
 ) {
   try {
+    const { owner, repo, branch, name, path } = await params;
+
     const { user, session } = await getAuth();
     if (!session) return new Response(null, { status: 401 });
 
-    const token = await getToken(user, params.owner, params.repo);
+    const token = await getToken(user, owner, repo);
     if (!token) throw new Error("Token not found");
 
     if (user.githubId) {
-      const hasAccess = await checkRepoAccess(token, params.owner, params.repo, user.githubId);
-      if (!hasAccess) throw new Error(`No access to repository ${params.owner}/${params.repo}.`);
+      const hasAccess = await checkRepoAccess(token, owner, repo, user.githubId);
+      if (!hasAccess) throw new Error(`No access to repository ${owner}/${repo}.`);
     }
 
-    const config = await getConfig(params.owner, params.repo, params.branch);
-    if (!config) throw new Error(`Configuration not found for ${params.owner}/${params.repo}/${params.branch}.`);   
+    const config = await getConfig(owner, repo, branch);
+    if (!config) throw new Error(`Configuration not found for ${owner}/${repo}/${branch}.`);   
     
-    const mediaConfig = config.object.media.find((item: any) => item.name === params.name) || config.object.media[0];
+    const mediaConfig = config.object.media.find((item: any) => item.name === name) || config.object.media[0];
 
     if (!mediaConfig) {
-      if (params.name) throw new Error(`No media configuration named "${params.name}" found for ${params.owner}/${params.repo}/${params.branch}.`);
-      throw new Error(`No media configuration found for ${params.owner}/${params.repo}/${params.branch}.`);
+      if (name) throw new Error(`No media configuration named "${name}" found for ${owner}/${repo}/${branch}.`);
+      throw new Error(`No media configuration found for ${owner}/${repo}/${branch}.`);
     }
 
-    const normalizedPath = normalizePath(params.path);
-    if (!normalizedPath.startsWith(mediaConfig.input)) throw new Error(`Invalid path "${params.path}" for media "${params.name}".`);
+    const normalizedPath = normalizePath(path);
+    if (!normalizedPath.startsWith(mediaConfig.input)) throw new Error(`Invalid path "${path}" for media "${name}".`);
 
     const { searchParams } = new URL(request.url);
     const nocache = searchParams.get('nocache');
 
-    let results = await getMediaCache(params.owner, params.repo, params.branch, normalizedPath, token, !!nocache);
+    let results = await getMediaCache(owner, repo, branch, normalizedPath, token, !!nocache);
 
     if (mediaConfig.extensions && mediaConfig.extensions.length > 0) {
       results = results.filter((item) => {
