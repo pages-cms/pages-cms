@@ -227,6 +227,27 @@ const ContentObjectSchema = z.object({
     message: "'exclude' must be an array of strings."
   }).optional(),
   view: z.object({
+    layout: z.enum(["tree", "list"], {
+      message: "'layout' must be either 'tree' or 'list'."
+    }).optional(),
+    node: z.union([
+      z.object({
+        filename: z.string({
+          required_error: "'filename' is required.",
+          invalid_type_error: "'filename' must be a string."
+        }),
+        hideDirs: z.enum(["all", "nodes", "others"], {
+          message: "'hideDirs' must be one of 'nodes', 'others', or 'all'."
+        }).optional()
+      }, {
+        message: "'node' must contain 'filename' and optionally 'hideDirs'."
+      }),
+      z.string({
+        message: "'node' must be a string or an object with 'filename' and optionally 'hideDirs' attributes."
+      }),
+    ], {
+      message: "'node' must be a string or an object with 'filename' and 'hideDirs'."
+    }).optional(),
     fields: z.array(z.string({
       message: "Entries in the 'fields' array must be strings."
     }), {
@@ -299,9 +320,25 @@ const ConfigSchema = z.object({
     }),
     generateFieldObjectSchema(true)
   ).optional(),
-  settings: z.literal(false, {
-    errorMap: () => ({ message: "'settings' must be 'false'." })
-  }).optional(),
+  settings: z.union([
+    z.object({
+      hide: z.boolean({
+        message: "'hide' must be a boolean."
+      }).optional(),
+      content: z.object({
+        merge: z.boolean({
+          message: "'merge' must be a boolean."
+        }).optional(),
+      }, {
+        message: "'content' must be an object."
+      }).optional(),
+    }, {
+      message: "'settings' must be an object."
+    }).strict().optional(),
+    z.boolean({
+      message: "'settings' must be a boolean or an object."
+    }),
+  ]).optional(),
 }).strict().nullable();
 
 export { ConfigSchema };

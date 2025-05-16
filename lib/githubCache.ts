@@ -27,8 +27,6 @@ type FileOperation = {
   };
 };
 
-type CacheContext = 'collection' | 'media';
-
 // Helper to get all non-root ancestor paths (e.g., [a, a/b, a/b/c] for a/b/c/file.txt)
 const getAncestorPaths = (filePath: string): string[] => {
   const ancestors: string[] = [];
@@ -77,7 +75,7 @@ const updateParentFolderCachesBatch = async (
     columns: { path: true, parentPath: true, context: true }
   });
   const existingDirMap = new Map(existingDirEntries.map(dir =>
-    [dir.path, { parentPath: dir.parentPath, context: dir.context as CacheContext }]
+    [dir.path, { parentPath: dir.parentPath, context: dir.context }]
   ));
 
   // 3. Determine additions
@@ -111,7 +109,7 @@ const updateParentFolderCachesBatch = async (
   }
 
   // 4. Get parent context (only if insertions are needed)
-  const parentContextMap = new Map<string, CacheContext>();
+  const parentContextMap = new Map<string, string>();
   if (parentPathsNeedingContext.size > 0) {
     const parentPathsForQuery = Array.from(parentPathsNeedingContext);
 
@@ -134,7 +132,7 @@ const updateParentFolderCachesBatch = async (
     contextResults.forEach(result => {
       // Ensure result.context is not null before casting/setting
       if (result.context) {
-           parentContextMap.set(result.parentPath, result.context as CacheContext);
+           parentContextMap.set(result.parentPath, result.context);
       }
     });
 
@@ -240,7 +238,7 @@ const updateParentFolderCache = async (
 
       if (!existingEntry) {
         const parentDir = path.dirname(dirPath);
-        let context: CacheContext = 'collection'; // Default
+        let context = 'collection'; // Default
         if (parentDir !== '.') {
           const contextEntry = await db.query.cacheFileTable.findFirst({
             where: and(
@@ -250,7 +248,7 @@ const updateParentFolderCache = async (
             columns: { context: true }
           });
           if (contextEntry) {
-            context = contextEntry.context as CacheContext;
+            context = contextEntry.context;
           }
         }
         dirsToInsertData.set(dirPath, {
@@ -348,7 +346,7 @@ const updateMultipleFilesCache = async (
     ...addedFiles.map(f => path.dirname(f.path))
   ])).filter(p => p !== '.');
 
-  let pathContextMap = new Map<string, CacheContext>();
+  let pathContextMap = new Map<string, string>();
   if (parentPaths.length > 0) {
     // 3. Query existing contexts for parents
     const existingParentEntries = await db.query.cacheFileTable.findMany({
@@ -364,7 +362,7 @@ const updateMultipleFilesCache = async (
     // 4. Create parent path -> context map (prefer collection if mixed)
     for (const entry of existingParentEntries) {
       if (!pathContextMap.has(entry.parentPath) || entry.context === 'collection') {
-        pathContextMap.set(entry.parentPath, entry.context as CacheContext);
+        pathContextMap.set(entry.parentPath, entry.context);
       }
     }
   }
@@ -480,7 +478,7 @@ const updateMultipleFilesCache = async (
 
 // Update the cache for an individual file (add, modify, delete, rename).
 const updateFileCache = async (
-  context: CacheContext,
+  context: string,
   owner: string,
   repo: string,
   branch: string,
@@ -620,8 +618,9 @@ const getCollectionCache = async (
   owner: string,
   repo: string,
   branch: string,
-  path: string,
-  token: string
+  dirPath : string,
+  token: string,
+  nodeEntryFilename?: string
 ) => {
   // Check the cache (no context as we may invalidate media cache)
   let entries = await db.query.cacheFileTable.findMany({
@@ -629,7 +628,7 @@ const getCollectionCache = async (
       eq(cacheFileTable.owner, owner.toLowerCase()),
       eq(cacheFileTable.repo, repo.toLowerCase()),
       eq(cacheFileTable.branch, branch),
-      eq(cacheFileTable.parentPath, path)
+      eq(cacheFileTable.parentPath, dirPath)
     )
   });
 
@@ -641,6 +640,8 @@ const getCollectionCache = async (
     cacheExpired = entries[0].lastUpdated < now - ttl;
   }
 
+  
+  let octokit;
   if (entries.length === 0 || cacheExpired || (entries.length > 0 && entries[0].context === 'media')) {
     if (cacheExpired || (entries.length > 0 && entries[0].context === 'media')) {
       // Drop the cache, either because it expired or because we're replacing media
@@ -650,14 +651,14 @@ const getCollectionCache = async (
           eq(cacheFileTable.owner, owner.toLowerCase()),
           eq(cacheFileTable.repo, repo.toLowerCase()),
           eq(cacheFileTable.branch, branch),
-          eq(cacheFileTable.parentPath, path),
+          eq(cacheFileTable.parentPath, dirPath),
         )
       );
     }
 
     // Fetch from GitHub to create the collection cache
-    const octokit = createOctokitInstance(token);
-    const query = `
+    octokit = createOctokitInstance(token);
+    const queryEntries = `
       query ($owner: String!, $repo: String!, $expression: String!) {
         repository(owner: $owner, name: $repo) {
           object(expression: $expression) {
@@ -679,24 +680,23 @@ const getCollectionCache = async (
         }
       }
     `;
-    const expression = `${branch}:${path}`;
-    const response: any = await octokit.graphql(query, {
+    const responseEntries: any = await octokit.graphql(queryEntries, {
       owner: owner,
       repo: repo,
-      expression
+      expression: `${branch}:${dirPath}`
     });
 
-    let githubEntries = response.repository?.object?.entries || [];
+    let githubEntries = responseEntries.repository?.object?.entries || [];
 
     if (githubEntries.length > 0) {
       // We populate the cache
       entries = await db.insert(cacheFileTable)
         .values(githubEntries.map((entry: any) => ({
-          context: 'collection' as CacheContext,
+          context: 'collection',
           owner: owner.toLowerCase(),
           repo: repo.toLowerCase(),
           branch,
-          parentPath: path,
+          parentPath: dirPath,
           name: entry.name,
           path: entry.path,
           type: entry.type === 'blob' ? 'file' : 'dir',
@@ -710,6 +710,88 @@ const getCollectionCache = async (
           commitTimestamp: null
         })))
         .returning();
+    }
+  }
+
+  if (nodeEntryFilename) {
+    if (!octokit) octokit = createOctokitInstance(token);
+
+    const subdirs = entries.filter((entry: any) => entry.type === 'dir');
+
+    if (subdirs.length > 0) {
+      // Check the cache for node entries
+      let nodeEntries = await db.query.cacheFileTable.findMany({
+        where: and(
+          eq(cacheFileTable.owner, owner.toLowerCase()),
+          eq(cacheFileTable.repo, repo.toLowerCase()),
+          eq(cacheFileTable.branch, branch),
+          inArray(cacheFileTable.path, subdirs.map((dir: any) => `${dir.path}/${nodeEntryFilename}`))
+        )
+      });
+      
+      // Query the GitHub API for the missing node entries
+      const missingSubdirs = subdirs.filter((dir: any) => !nodeEntries.some((entry: any) => entry.path === `${dir.path}/${nodeEntryFilename}`));
+      
+      if (missingSubdirs.length > 0) {
+        const nodeEntryExpressions = missingSubdirs.map((dir: { path: string }, i: number) => ({
+          alias: `nodeFile${i}`,
+          expression: `${branch}:${dir.path}/${nodeEntryFilename}`
+        }));
+        const queryNodeEntries = `
+          query ($owner: String!, $repo: String!, ${nodeEntryExpressions.map((nodeEntryExpression: any) => `$exp${nodeEntryExpression.alias}: String!`).join(', ')}) {
+            repository(owner: $owner, name: $repo) {
+              ${nodeEntryExpressions.map(nodeEntryExpression => `
+                ${nodeEntryExpression.alias}: object(expression: $exp${nodeEntryExpression.alias}) {
+                  ... on Blob {
+                    text
+                    oid
+                    byteSize
+                  }
+                }
+              `).join('\n')}
+            }
+          }
+        `;
+        const variablesNodeEntries = {
+          owner, repo,
+          ...Object.fromEntries(nodeEntryExpressions.map(nf => [`exp${nf.alias}`, nf.expression]))
+        };
+
+        const responseNodeEntries: any = await octokit.graphql(queryNodeEntries, variablesNodeEntries);
+        
+        for (let i = 0; i < missingSubdirs.length; i++) {
+          const dir = missingSubdirs[i];
+          const alias = `nodeFile${i}`;
+          const nodeEntry = responseNodeEntries.repository?.[alias];
+      
+          if (nodeEntry) {
+            nodeEntries.push({
+              id: -1,
+              context: '',
+              owner: owner.toLowerCase(),
+              repo: repo.toLowerCase(),
+              branch,
+              parentPath: dir.path,
+              name: nodeEntryFilename,
+              path: `${dir.path}/${nodeEntryFilename}`,
+              type: 'file',
+              content: nodeEntry.text,
+              sha: nodeEntry.oid,
+              size: nodeEntry.byteSize,
+              downloadUrl: null,
+              lastUpdated: Date.now(),
+              commitSha: null,
+              commitTimestamp: null
+            });
+          }
+        }
+      }
+      if (nodeEntries.length > 0) {
+        nodeEntries.forEach((entry: any) => {
+          entry.isNode = true;
+        });
+        entries = [...entries, ...nodeEntries];
+      }
     }
   }
 
@@ -775,7 +857,7 @@ const getMediaCache = async (
     const githubEntries = response.data;
 
     const mappedEntries = githubEntries.map(entry => ({
-      context: 'media' as CacheContext,
+      context: 'media',
       owner: owner.toLowerCase(),
       repo: repo.toLowerCase(),
       branch,

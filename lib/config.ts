@@ -11,7 +11,7 @@ import { ConfigSchema } from "@/lib/configSchema";
 import { z } from "zod";
 import { deepMergeObjects } from "@/lib/helpers";
 
-const configVersion = "2.2";
+const configVersion = "2.3";
 
 // Parse the config file (YAML to JSON)
 const parseConfig = (content: string) => {
@@ -91,6 +91,7 @@ const normalizeConfig = (configObject: any) => {
     });
   }
 
+  // Normalize content
   if (configObjectCopy.content && Array.isArray(configObjectCopy?.content) && configObjectCopy.content.length > 0) {
     configObjectCopy.content = configObjectCopy.content.map((item: any) => {
       if (item.path != null) {
@@ -130,6 +131,12 @@ const normalizeConfig = (configObject: any) => {
           item.format = "datagrid";
         }
       }
+      if (item.view?.node && typeof item.view.node === "string") {
+        item.view.node = {
+          filename: item.view.node,
+          hideDirs: "nodes"
+        };
+      }
       
       // Process content fields to resolve component references
       if (Array.isArray(item.fields)) {
@@ -140,6 +147,11 @@ const normalizeConfig = (configObject: any) => {
       
       return item;
     });
+  }
+
+  // Normalize settings
+  if (configObjectCopy.settings === false) {
+    configObjectCopy.settings = { hide: true };
   }
   
   return configObjectCopy;
