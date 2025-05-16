@@ -13,12 +13,23 @@ import {
 import { viewComponents } from "@/fields/registry";
 import { getSchemaByName, getPrimaryField, getFieldByPath, safeAccess } from "@/lib/schema";
 import { EmptyCreate } from "@/components/empty-create";
-import { FileOptions } from "@/components/file-options";
+import { FileOptions } from "@/components/file/file-options";
 import { CollectionTable } from "./collection-table";
 import { FolderCreate} from "@/components/folder-create";
 import { Message } from "@/components/message";
 import { PathBreadcrumb } from "@/components/path-breadcrumb";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -26,11 +37,11 @@ import { cn } from "@/lib/utils";
 import {
   CornerLeftUp,
   Ellipsis,
-  Folder,
   FolderPlus,
   Plus,
   Search
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function CollectionView({
   name,
@@ -83,9 +94,10 @@ export function CollectionView({
     // If the filename starts with {year}-{month}-{day} and date is listed in the
     // view fields and is not an actual field, or if there are no fields, we add a date field
     if (
-      schema.filename.startsWith("{year}-{month}-{day}")
+      !pathAndFieldArray.find((item: any) => item.path === "date")
+      && schema.filename.startsWith("{year}-{month}-{day}")
       && (
-        (schema.view?.fields &&schema.view?.fields.includes("date") && !pathAndFieldArray.find((item: any) => item.path === "date"))
+        (schema.view?.fields && schema.view?.fields.includes("date"))
         || !schema.view?.fields
       )
     ) {
@@ -104,21 +116,97 @@ export function CollectionView({
 
   const primaryField = useMemo(() => getPrimaryField(schema) ?? "name", [schema]);
 
+  const fetchCollectionData = useCallback(async (fetchPath: string): Promise<Record<string, any>[] | undefined> => {
+    if (!config) return undefined;
+
+    try {
+      const apiUrl = `/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collections/${encodeURIComponent(name)}?path=${encodeURIComponent(fetchPath)}`;
+      
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        if(response.status === 404 && fetchPath === (path || schema.path)) {
+          throw new Error("Not found");
+        }
+        throw new Error(`API Error ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.status !== 'success') {
+        throw new Error(result.message || 'Fetch failed');
+      }
+
+      if (result.data.errors?.length) {
+        result.data.errors.forEach((e: any) => toast.error(e));
+      }
+
+      const unsortedData = result.data.contents || [];
+      
+      if (unsortedData.length === 0) return [];
+      return unsortedData.sort((a: any, b: any) => {
+        if (a.type === "dir" && b.type === "file") return schema.view?.foldersFirst ? -1 : 1;
+        if (a.type === "file" && b.type === "dir") return schema.view?.foldersFirst ? 1 : -1;
+        return a.name.localeCompare(b.name);
+      });
+
+    } catch (err: any) {
+      console.error(`Fetch failed for path ${fetchPath}:`, err);
+      if (fetchPath === (path || schema.path)) {
+        setError(err.message);
+      } else {
+        toast.error(`Could not load items inside ${getFileName(fetchPath)}: ${err.message}`);
+      }
+      return undefined;
+    }
+  }, [config, name, path, schema.path]);
+
   const handleDelete = useCallback((path: string) => {
     setData((prevData) => prevData?.filter((item: any) => item.path !== path));
   }, []);
 
-  // TODO: use proper type (File ?) Same for handleDelete
   const handleRename = useCallback((path: string, newPath: string) => {
     setData((prevData: any) => {
-      if (!prevData) return;
-      if (getParentPath(normalizePath(path)) === getParentPath(normalizePath(newPath))) {
-        const newData = prevData?.map((item: any) => {
-          return item.path === path ? { ...item, path: newPath, name: getFileName(newPath) } : item;
+      if (!prevData) return prevData;
+      
+      const updateNestedData = (items: any[]): any[] => {
+        return items.map((item: any) => {
+          // If this is the item being renamed
+          if (item.path === path) {
+            return { ...item, path: newPath, name: getFileName(newPath) };
+          }
+          
+          // If this item has subRows, recursively update them
+          if (item.subRows && Array.isArray(item.subRows)) {
+            const updatedSubRows = updateNestedData(item.subRows);
+            // Only create a new item reference if subRows changed
+            if (updatedSubRows !== item.subRows) {
+              return { ...item, subRows: updatedSubRows };
+            }
+          }
+          
+          // Return the original item if no changes
+          return item;
         });
-        return sortFiles(newData);
+      };
+      
+      // Check if the item is moving to a different folder
+      if (getParentPath(normalizePath(path)) !== getParentPath(normalizePath(newPath))) {
+        // For items moved to a different folder, we need to:
+        // 1. Remove the item from its original location (recursively)
+        const removeItem = (items: any[]): any[] => {
+          return items.filter(item => {
+            if (item.path === path) return false;
+            if (item.subRows && Array.isArray(item.subRows)) {
+              item.subRows = removeItem(item.subRows);
+            }
+            return true;
+          });
+        };
+        
+        return sortFiles(removeItem(prevData));
       }
-      return prevData?.filter((item: any) => item.path !== path);
+      
+      // For items renamed within the same folder, update the item
+      return sortFiles(updateNestedData(prevData));
     });
   }, []);
 
@@ -175,7 +263,7 @@ export function CollectionView({
             </div>
           );
         },
-        sortUndefined: "last"
+        sortUndefined: schema.view?.foldersFirst ? "first" : "last"
       };
     }) || [];
 
@@ -183,19 +271,72 @@ export function CollectionView({
       accessorKey: "actions",
       header: "Actions",
       cell: ({ row }: { row: any }) => (
-        <div className="flex gap-1">
-          <Link
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8")}
-            href={`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${name}/edit/${encodeURIComponent(row.original.path)}`}
-            prefetch={true}
-          >
-            Edit
-          </Link>
-          <FileOptions path={row.original.path} sha={row.original.sha} type="collection" name={name} onDelete={handleDelete} onRename={handleRename}>
-            <Button variant="outline" size="icon-sm" className="h-8">
-              <Ellipsis className="h-4 w-4" />
-            </Button>
-          </FileOptions>
+        <div className="flex gap-1 justify-end">
+          {row.original.type === 'file' &&
+            <>
+              <Link
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8")}
+                href={`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${name}/edit/${encodeURIComponent(row.original.path)}`}
+                prefetch={true}
+              >
+                Edit
+              </Link>
+              <FileOptions path={row.original.path} sha={row.original.sha} type="collection" name={name} onDelete={handleDelete} onRename={handleRename}>
+                <Button variant="outline" size="icon-sm" className="w-8 h-8">
+                  <Ellipsis className="h-4 w-4" />
+                </Button>
+              </FileOptions>
+            </>
+          }
+          {schema.view?.layout === 'tree' && (
+            row.original.type === 'file' &&
+            !row.original.isNode &&
+            !(row.depth === 0 && row.original.name === schema.view?.node?.filename)
+              ? <AlertDialog>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="icon-sm" className="w-8 h-8">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>Add children entry</TooltipContent>
+                  </Tooltip>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Rename this file first?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Before adding children to this file, you must rename it from &quot;{row.original.path}&quot; to 
+                        &quot;{row.original.path.replace(`.${schema.extension}`, `/${schema.view?.node?.filename}`)}&quot;.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleConfirmRenameNode(row.original.path, row.original.path.replace(`.${schema.extension}`, `/${schema.view?.node?.filename}`))}>Rename</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              :  <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      className={cn(buttonVariants({ variant: "outline", size: "icon-sm" }), "w-8 h-8")}
+                      href={row.original.isNode
+                        ? `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/new?parent=${encodeURIComponent(row.original.parentPath)}`
+                        : row.original.type === 'dir'
+                          ? `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/new?parent=${encodeURIComponent(row.original.path)}`
+                          : `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/new?parent=${encodeURIComponent(row.original.path)}`
+                      }
+                      prefetch={true}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Add children entry
+                  </TooltipContent>
+                </Tooltip>
+          )}
         </div>
       ),
       enableSorting: false
@@ -228,39 +369,29 @@ export function CollectionView({
     };
   }, [schema, primaryField, viewFields]);
 
-  const filesData = useMemo(() => data.filter((item: any) => item.type === "file"), [data]);
-  
-  const foldersData = useMemo(() => data.filter((item: any) => item.type === "dir"), [data]);
-
   useEffect(() => {
-    async function fetchCollection() {
-      if (config) {
-        setIsLoading(true);
-        setError(null);
-        try {
-          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collections/${encodeURIComponent(name)}?path=${encodeURIComponent(path || schema.path)}`);
-          if (!response.ok) throw new Error(`Failed to fetch collection: ${response.status} ${response.statusText}`);
+    const currentPath = schema.view?.layout === 'tree'
+      ? schema.path
+      : path || schema.path;
+    let isMounted = true;
 
-          const data: any = await response.json();
+    setIsLoading(true);
+    setError(null);
 
-          if (data.status !== "success") throw new Error(data.message);
-
-          setData(data.data.contents);
-
-          if (data.data.errors && data.data.errors.length > 0) {
-            data.data.errors.forEach((error: any) => toast.error(error));
-          }
-        } catch (error: any) {
-          console.error(error);
-          setError(error.message);
-        } finally {
+    fetchCollectionData(currentPath)
+      .then(fetchedData => {
+        if (isMounted && fetchedData) {
+          setData(fetchedData);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
           setIsLoading(false);
         }
-      }
-    }
+      });
 
-    fetchCollection();
-  }, [config, name, path, schema.path]);
+    return () => { isMounted = false };
+  }, [fetchCollectionData, path, schema.path]);
 
   const handleNavigate = (newPath: string) => {
     // setPath(newPath);
@@ -274,6 +405,70 @@ export function CollectionView({
     if (!path || path === schema.path) return;
     handleNavigate(getParentPath(path));
   }
+
+  // TODO: handle case where there is no extension?
+  const handleConfirmRenameNode = (path: string, newPath: string) => {
+    try {
+      const normalizedPath = normalizePath(path);
+      const normalizedNewPath = normalizePath(newPath);
+      
+      const renamePromise = new Promise(async (resolve, reject) => {
+        try {
+          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(normalizedPath)}/rename`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "content",
+              name,
+              newPath: normalizedNewPath,
+            }),
+          });
+          if (!response.ok) throw new Error(`Failed to rename file: ${response.status} ${response.statusText}`);
+
+          const data: any = await response.json();
+          if (data.status !== "success") throw new Error(data.message);
+
+          resolve(data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      toast.promise(renamePromise, {
+        loading: `Renaming "${path}" to "${newPath}"`,
+        success: (data: any) => {
+          router.push(`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/new?parent=${encodeURIComponent(getParentPath(normalizedNewPath))}`);
+          return data.message;
+        },
+        error: (error: any) => error.message,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  const handleExpand = useCallback(async (row: any) => {
+    if (!row) return;
+    const subRows = await fetchCollectionData(row.isNode ? row.parentPath : row.path);
+    if (subRows !== undefined) {
+      setData((currentData: any[]) => {
+        const updateNestedData = (items: any[]): any[] => {
+          return items.map((item: any) => {
+            if (item.path === row.path) return { ...item, subRows };
+            if (item.subRows && Array.isArray(item.subRows)) {
+              const updatedSubRows = updateNestedData(item.subRows);
+              if (updatedSubRows !== item.subRows) {
+                return { ...item, subRows: updatedSubRows };
+              }
+            }
+            return item;
+          });
+        };
+        
+        return updateNestedData(currentData);
+      });
+    }
+  }, [fetchCollectionData, config.owner, config.repo, config.branch, name]);
 
   const loadingSkeleton = useMemo(() => (
     <table className="w-full">
@@ -296,23 +491,28 @@ export function CollectionView({
       <tbody>
         {[...Array(5)].map((_, index) => (
           <tr className="border-b" key={index}>
-            <td className="p-3 pl-0 align-middle">
+            <td className="pr-3 pl-0 align-middle h-14">
               <Skeleton className="h-8 w-8 rounded-md" />
             </td>
-            <th className="p-3 align-middle w-full min-w-[12rem] max-w-[1px]">
+            <td className="px-3 align-middle w-full min-w-[12rem] max-w-[1px] h-14">
               <Skeleton className="w-full h-5 rounded" />
-            </th>
-            <th className="p-3 align-middle">
+            </td>
+            <td className="px-3 align-middle h-14">
               <Skeleton className="w-24 h-5 rounded" />
-            </th>
-            <th className="p-3 pr-0 align-middle">
+            </td>
+            <td className="pl-3 pr-0 align-middle h-14">
               <div className="flex gap-1">
                 <Button variant="outline" size="sm" className="h-8" disabled>Edit</Button>
-                <Button variant="outline" size="icon-sm" className="h-8" disabled>
+                <Button variant="outline" size="icon-sm" className="w-8 h-8" disabled>
                   <Ellipsis className="h-4 w-4" />
                 </Button>
+                {schema.view?.layout === 'tree' && (
+                  <Button variant="outline" size="icon-sm" className="w-8 h-8" disabled>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-            </th>
+            </td>
           </tr>
         ))}
       </tbody>
@@ -346,10 +546,14 @@ export function CollectionView({
       <div className="flex-1 flex flex-col space-y-6">
         <header className="flex items-center gap-x-2">
           <div className="sm:flex-1">
-            <PathBreadcrumb path={path || schema.path} rootPath={schema.path} handleNavigate={handleNavigate} className="hidden sm:block"/>
-            <Button onClick={handleNavigateParent} size="icon-sm" variant="outline" className="shrink-0 sm:hidden" disabled={!path || path === schema.path}>
-              <CornerLeftUp className="w-4 h-4"/>
-            </Button>
+            {schema.view?.layout !== 'tree' && (
+              <>
+                <PathBreadcrumb path={path || schema.path} rootPath={schema.path} handleNavigate={handleNavigate} className="hidden sm:block"/>
+                <Button onClick={handleNavigateParent} size="icon-sm" variant="outline" className="shrink-0 sm:hidden" disabled={!path || path === schema.path}>
+                  <CornerLeftUp className="w-4 h-4"/>
+                </Button>
+              </>
+            )}
           </div>
           <div className="relative flex-1">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none"/>
@@ -362,7 +566,7 @@ export function CollectionView({
           </FolderCreate>
           <Link
             className={cn(buttonVariants({size: "sm"}), "hidden sm:flex")}
-            href={`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/new${path && path !== schema.path ? `?parent=${encodeURIComponent(path)}` : ""}`}
+            href={`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/new${schema.view?.layout !== 'tree' && path && path !== schema.path ? `?parent=${encodeURIComponent(path)}` : ""}`}
           >
               Add an entry
           </Link>
@@ -375,30 +579,18 @@ export function CollectionView({
         </header>
         {isLoading
           ? loadingSkeleton
-          : (
-            <>
-              <CollectionTable columns={columns} data={filesData} search={search} setSearch={setSearch} initialState={initialState} />
-              {foldersData && foldersData.length > 0
-                ? <div className="space-y-4">
-                    <h2 className="font-medium text-md">Folders</h2>
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                      {foldersData.map((item, index) => 
-                        <li key={item.path}>
-                          <Link
-                            className={cn(buttonVariants({variant: "outline"}), "w-full justify-start gap-x-2")}
-                            href={`${pathname}?path=${encodeURIComponent(item.path)}`}
-                          >
-                            <Folder className="h-4 w-4 shrink-0"/>
-                            <span className="truncate">{item.name}</span>
-                          </Link>
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                : null
-              }
-            </>
-          )
+          : <CollectionTable
+              columns={columns}
+              data={data}
+              search={search}
+              setSearch={setSearch}
+              initialState={initialState}
+              onExpand={handleExpand}
+              pathname={pathname}
+              path={path || schema.path}
+              isTree={schema.view?.layout === 'tree'}
+              primaryField={primaryField}
+            />
         }
       </div>
     </>
