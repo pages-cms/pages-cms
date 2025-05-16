@@ -1,9 +1,15 @@
-import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useState, useRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const CommandsList = forwardRef(({ items, command }, ref) => {
+const CommandsList = (
+  {
+    ref,
+    items,
+    command
+  }
+) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const containerRef = useRef(null);
 
@@ -61,6 +67,6 @@ const CommandsList = forwardRef(({ items, command }, ref) => {
       )}
     </div>
   );
-});
+};
 
 export default CommandsList;

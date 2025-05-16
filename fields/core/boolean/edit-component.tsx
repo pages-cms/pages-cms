@@ -1,9 +1,12 @@
-"use client";
-
-import { forwardRef } from "react";
+"use client";;
 import { Switch } from "@/components/ui/switch";
 
-const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) => {
+const EditComponent = (
+  {
+    ref,
+    ...props
+  }
+) => {
   return (
     <div>
       <Switch
@@ -14,6 +17,6 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
       />
     </div>
   );
-});
+};
 
 export { EditComponent };

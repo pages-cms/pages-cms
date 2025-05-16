@@ -20,7 +20,7 @@ export default function Page() {
 
 	return (
     <MainRootLayout>
-			<div className="max-w-screen-sm mx-auto p-4 md:p-6 space-y-6">
+			<div className="max-w-(--breakpoint-sm) mx-auto p-4 md:p-6 space-y-6">
 				{user.accounts.length > 0
 					? <>
 							<h2 className="font-semibold text-lg md:text-2xl tracking-tight">Last visited</h2>

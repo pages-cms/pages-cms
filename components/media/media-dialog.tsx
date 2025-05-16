@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
+import { useCallback, useImperativeHandle, useRef, useState, forwardRef } from "react";
 import { useConfig } from "@/contexts/config-context";
 import { MediaView } from "@/components/media/media-view";
 import { Button } from "@/components/ui/button";
@@ -63,18 +63,18 @@ const MediaDialog = forwardRef(({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {children && 
+      {children &&
         <DialogTrigger asChild>
           {children}
         </DialogTrigger>
       }
-      <DialogContent className="w-full sm:max-w-screen-xl sm:w-[calc(100vw-6rem)] h-[calc(100vh-6rem)] grid-rows-[auto_minmax(0,1fr)_auto]">
+      <DialogContent className="w-full sm:max-w-(--breakpoint-xl) sm:w-[calc(100vw-6rem)] h-[calc(100vh-6rem)] grid-rows-[auto_minmax(0,1fr)_auto]">
         <DialogHeader>
           <DialogTitle>Select images</DialogTitle>
           <DialogDescription></DialogDescription>
         </DialogHeader>
-        
-        <MediaView media={configMedia.name} extensions={extensions} initialSelected={selected || []} onSelect={handleSelect} maxSelected={maxSelected} initialPath={initialPath || ""}/>
+
+        <MediaView media={configMedia.name} extensions={extensions} initialSelected={selected || []} onSelect={handleSelect} maxSelected={maxSelected} initialPath={initialPath || ""} />
         {configMedia.input &&
           <DialogFooter>
             <DialogClose asChild>

@@ -24,8 +24,8 @@ import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default async function Page() {
-	const { user } = await getAuth();
-	if (!user) throw new Error("User not found");
+  const { user } = await getAuth();
+  if (!user) throw new Error("User not found");
 
   const displayName = user.githubId ? user.githubName || user.githubUsername : user.email;
 
@@ -53,7 +53,7 @@ export default async function Page() {
                       Name
                     </Label>
                     <div className="col-span-3">
-                      <Input name="name" disabled defaultValue={displayName}/>
+                      <Input name="name" disabled defaultValue={displayName} />
                     </div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
@@ -85,7 +85,7 @@ export default async function Page() {
               <Button size="sm" className="ml-auto" disabled>Save profile</Button>
             </CardFooter>
           </Card>
-          
+
           {user.githubId &&
             <Card>
               <CardHeader>
@@ -93,7 +93,7 @@ export default async function Page() {
                 <CardDescription>Manage the accounts the Github application is installed on.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Installations/>
+                <Installations />
               </CardContent>
             </Card>
           }
