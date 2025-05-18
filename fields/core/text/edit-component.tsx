@@ -1,13 +1,19 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { useEffect, useImperativeHandle, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 
-const EditComponent = forwardRef((props: any, ref) => {
+const EditComponent = (
+  {
+    ref,
+    ...props
+  }
+) => {
   const { value, field, onChange } = props;
   const internalRef = useRef<HTMLTextAreaElement | null>(null);
 
   const adjustHeight = (el: HTMLTextAreaElement | null) => {
+    if (field.options?.autoresize === false) return;
     if (field.options?.autoresize === false) return;
     if (!el) return;
     el.style.height = "auto";
@@ -34,6 +40,6 @@ const EditComponent = forwardRef((props: any, ref) => {
     onInput={handleInput}
     className="text-base"
   />;
-});
+};
 
 export { EditComponent };

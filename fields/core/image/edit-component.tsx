@@ -26,7 +26,7 @@ import { getAllowedExtensions } from "./index";
 
 const generateId = () => uuidv4().slice(0, 8);
 
-const ImageTeaser = ({ file, config, media, onRemove }: { 
+const ImageTeaser = ({ file, config, media, onRemove }: {
   file: string;
   config: any;
   media: string;
@@ -75,7 +75,7 @@ const ImageTeaser = ({ file, config, media, onRemove }: {
   )
 };
 
-const SortableItem = ({ id, file, config, media, onRemove }: { 
+const SortableItem = ({ id, file, config, media, onRemove }: {
   id: string;
   file: string;
   config: any;
@@ -102,18 +102,23 @@ const SortableItem = ({ id, file, config, media, onRemove }: {
   return (
     <div ref={setNodeRef} style={style}>
       <div {...attributes} {...listeners}>
-        <Thumbnail name={media} path={file} className="rounded-md w-28 h-28"/>
+        <Thumbnail name={media} path={file} className="rounded-md w-28 h-28" />
       </div>
       <ImageTeaser file={file} config={config} onRemove={onRemove} media={media} />
     </div>
   );
 };
 
-const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) => {
+const EditComponent = (
+  {
+    ref,
+    ...props
+  }
+) => {
   const { value, field, onChange } = props;
   const { config } = useConfig();
-  
-  const [files, setFiles] = useState<Array<{ id: string, path: string }>>(() => 
+
+  const [files, setFiles] = useState<Array<{ id: string, path: string }>>(() =>
     value
       ? Array.isArray(value)
         ? value.map(path => ({ id: generateId(), path }))
@@ -151,12 +156,12 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
     return getAllowedExtensions(field, mediaConfig);
   }, [field, mediaConfig]);
 
-  const isMultiple = useMemo(() => 
+  const isMultiple = useMemo(() =>
     field.options?.multiple === true,
     [field.options?.multiple]
   );
 
-  const remainingSlots = useMemo(() => 
+  const remainingSlots = useMemo(() =>
     field.options?.multiple
       ? field.options.multiple.max
         ? field.options.multiple.max - files.length
@@ -175,9 +180,9 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
 
   const handleUpload = useCallback((fileData: any) => {
     if (!config) return;
-    
+
     const newFile = { id: generateId(), path: fileData.path };
-    
+
     if (isMultiple) {
       setFiles(prev => [...prev, newFile]);
     } else {
@@ -216,7 +221,7 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
         id: generateId(),
         path
       }));
-      
+
       if (isMultiple) {
         setFiles(prev => [...prev, ...newFiles]);
       } else {
@@ -228,14 +233,14 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
   if (!mediaConfig) {
     return (
       <p className="text-muted-foreground bg-muted rounded-md px-3 py-2">
-      No media configuration found. {' '}
-      <a 
-        href={`/${config?.owner}/${config?.repo}/${encodeURIComponent(config?.branch || "")}/settings`}
-        className="underline hover:text-foreground"
-      >
-        Check your settings
-      </a>.
-    </p>
+        No media configuration found. {' '}
+        <a
+          href={`/${config?.owner}/${config?.repo}/${encodeURIComponent(config?.branch || "")}/settings`}
+          className="underline hover:text-foreground"
+        >
+          Check your settings
+        </a>.
+      </p>
     );
   }
 
@@ -246,17 +251,17 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
           {files.length > 0 && (
             isMultiple ? (
               <div className="flex flex-wrap gap-2">
-                <DndContext 
+                <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
                 >
-                  <SortableContext 
+                  <SortableContext
                     items={files.map(f => f.id)}
                     strategy={rectSortingStrategy}
                   >
                     {files.map((file) => (
-                      <SortableItem 
+                      <SortableItem
                         key={file.id}
                         id={file.id}
                         file={file.path}
@@ -270,7 +275,7 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
               </div>
             ) : (
               <div className="aspect-square w-28 relative">
-                <Thumbnail name={mediaConfig.name} path={files[0].path} className="rounded-md w-28 h-28"/>
+                <Thumbnail name={mediaConfig.name} path={files[0].path} className="rounded-md w-28 h-28" />
                 <ImageTeaser file={files[0].path} config={config} media={mediaConfig.name} onRemove={() => handleRemove(files[0].id)} />
               </div>
             )
@@ -279,7 +284,7 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
             <div className="flex gap-2">
               <MediaUpload.Trigger>
                 <Button type="button" size="sm" variant="outline" className="gap-2">
-                  <Upload className="h-3.5 w-3.5"/>
+                  <Upload className="h-3.5 w-3.5" />
                   Upload
                 </Button>
               </MediaUpload.Trigger>
@@ -294,7 +299,7 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
                   >
                     <TooltipTrigger asChild>
                       <Button type="button" size="icon-sm" variant="outline">
-                        <FolderOpen className="h-3.5 w-3.5"/>
+                        <FolderOpen className="h-3.5 w-3.5" />
                       </Button>
                     </TooltipTrigger>
                   </MediaDialog>
@@ -309,7 +314,7 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
       </MediaUpload.DropZone>
     </MediaUpload>
   );
-});
+};
 
 EditComponent.displayName = "EditComponent";
 

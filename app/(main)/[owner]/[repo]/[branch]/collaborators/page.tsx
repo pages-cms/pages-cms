@@ -8,7 +8,7 @@ export default function Page() {
   if (!config) throw new Error(`Configuration not found.`);
 
   return (
-    <div className="max-w-screen-sm mx-auto flex-1 flex flex-col h-full">
+    <div className="max-w-(--breakpoint-sm) mx-auto flex-1 flex flex-col h-full">
       <header className="flex items-center mb-6">
         <h1 className="font-semibold text-lg md:text-2xl">Collaborators</h1>
       </header>

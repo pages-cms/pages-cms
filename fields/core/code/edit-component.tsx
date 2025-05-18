@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useMemo } from "react";
+import { useMemo } from "react";
 import CodeMirror, { EditorView } from '@uiw/react-codemirror';
 import { githubDark, githubLight } from "@uiw/codemirror-theme-github";
 import { StreamLanguage } from "@codemirror/language";
@@ -16,7 +16,12 @@ import "./edit-component.css";
 
 // TODO: implement minlength and maxlength
 
-const EditComponent = forwardRef((props: any, ref: any) => {
+const EditComponent = (
+  {
+    ref,
+    ...props
+  }
+) => {
   const { value, onChange, field } = props;
   const { resolvedTheme } = useTheme();
 
@@ -70,6 +75,6 @@ const EditComponent = forwardRef((props: any, ref: any) => {
       theme={resolvedTheme === "dark" ? githubDark : githubLight}
     />
   );
-});
+};
 
 export { EditComponent };

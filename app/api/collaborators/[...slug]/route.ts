@@ -19,6 +19,7 @@ export async function GET(
   { params }: { params: { slug: string[] } }
 ) {
   try {
+    const { slug } = await params;
     const { user, session } = await getAuth();
     if (!session) return new Response(null, { status: 401 });
 
@@ -26,10 +27,10 @@ export async function GET(
     if (!token) throw new Error("Token not found");
 
     // TODO: support for branches and account collaborators
-    if (!params.slug || params.slug.length !== 2) throw new Error("Invalid slug: owner and repo are mandatory");
+    if (!slug || slug.length !== 2) throw new Error("Invalid slug: owner and repo are mandatory");
 
-    const owner = params.slug[0];
-		const repo = params.slug[1];
+    const owner = slug[0];
+		const repo = slug[1];
 
     const installations = await getInstallations(token, [owner]);
 		if (installations.length !== 1) throw new Error(`"${owner}" is not part of your GitHub App installations`);

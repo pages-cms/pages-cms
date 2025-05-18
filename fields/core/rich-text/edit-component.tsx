@@ -62,7 +62,12 @@ import { toast } from "sonner";
 import { getSchemaByName } from "@/lib/schema";
 import { extensionCategories, normalizePath } from "@/lib/utils/file";
 
-const EditComponent = forwardRef((props: any, ref) => {
+const EditComponent = (
+  {
+    ref,
+    ...props
+  }
+) => {
   const { config } = useConfig();
   const { isPrivate } = useRepo();
 
@@ -84,7 +89,7 @@ const EditComponent = forwardRef((props: any, ref) => {
 
     let extensions = extensionCategories['image'];
 
-    const fieldExtensions = field.options?.extensions 
+    const fieldExtensions = field.options?.extensions
       ? field.options.extensions
       : field.options?.categories
         ? field.options.categories.flatMap((category: string) => extensionCategories[category])
@@ -226,7 +231,7 @@ const EditComponent = forwardRef((props: any, ref) => {
       <Skeleton className={cn("rounded-md h-[8.5rem]", isContentReady ? "hidden" : "")} />
       <div className={!isContentReady ? "hidden" : ""}>
         {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 25, animation: "scale", maxWidth: "370px" }}>
-          <div className="p-1 rounded-md bg-popover border flex gap-x-[1px] items-center focus-visible:outline-none shadow-md" ref={bubbleMenuRef}>
+          <div className="p-1 rounded-md bg-popover border flex gap-x-[1px] items-center focus-visible:outline-hidden shadow-md" ref={bubbleMenuRef}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -479,17 +484,17 @@ const EditComponent = forwardRef((props: any, ref) => {
           </div>
         </BubbleMenu>}
         <EditorContent editor={editor} />
-        <MediaDialog 
-          ref={mediaDialogRef} 
+        <MediaDialog
+          ref={mediaDialogRef}
           media={mediaConfig?.name}
           initialPath={rootPath}
           extensions={allowedExtensions}
-          selected={[]} 
-          onSubmit={handleMediaDialogSubmit} 
+          selected={[]}
+          onSubmit={handleMediaDialogSubmit}
         />
       </div>
     </>
   )
-});
+};
 
 export { EditComponent };

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useFormState } from "react-dom";
+import { useEffect, useRef, useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import { handleEmailSignIn, handleGithubSignIn } from "@/lib/actions/auth";
 import { SubmitButton } from "@/components/submit-button";
@@ -10,7 +9,7 @@ import { toast } from "sonner";
 import{ Github } from "lucide-react";
 
 export function SignIn() {
-  const [emailSignInState, emailSignInAction] = useFormState(handleEmailSignIn, { message: ""});
+  const [emailSignInState, emailSignInAction] = useActionState(handleEmailSignIn, { message: ""});
   const emailInputRef = useRef<HTMLInputElement>(null);
 
   const searchParams = useSearchParams();

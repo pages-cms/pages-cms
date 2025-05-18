@@ -97,7 +97,7 @@ const SortableItem = ({
     transform: CSS.Translate.toString(transform),
     transition
   };
-  
+
   return (
     <div ref={setNodeRef} className={cn("flex gap-x-2 items-center", isDragging ? "opacity-50 z-50" : "z-10")} style={style}>
       <Button type="button" variant="ghost" size="icon-sm" className="h-auto w-5 bg-muted/50 self-stretch rounded-md text-muted-foreground cursor-move" {...attributes} {...listeners}>
@@ -164,7 +164,7 @@ const ListField = ({
       setValue(fieldName, updatedValues);
     }
   };
-  
+
   // We don't render <FormMessage/> in ListField, because it's already rendered in the individual fields
   return (
     <FormField
@@ -207,20 +207,20 @@ const ListField = ({
             {typeof field.list === 'object' && field.list?.max && arrayFields.length >= field.list.max
               ? null
               : <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    append(field.type === 'object'
-                      ? initializeState(field.fields, {})
-                      : getDefaultValue(field)
-                    );
-                  }}
-                  className="gap-x-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add an entry
-                </Button>
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  append(field.type === 'object'
+                    ? initializeState(field.fields, {})
+                    : getDefaultValue(field)
+                  );
+                }}
+                className="gap-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add an entry
+              </Button>
             }
             <FormMessage />
           </div>
@@ -309,14 +309,14 @@ const BlocksField = forwardRef((props: any, ref) => {
               })()
             ) : (
               (() => {
-                 const renderedElement = renderSingleField(
-                    selectedBlockDefinition,
-                    fieldName,
-                    control,
-                    renderFields,
-                    false
-                 );
-                 return renderedElement;
+                const renderedElement = renderSingleField(
+                  selectedBlockDefinition,
+                  fieldName,
+                  control,
+                  renderFields,
+                  false
+                );
+                return renderedElement;
               })()
             )}
           </div>

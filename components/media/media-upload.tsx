@@ -37,7 +37,7 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
 
-  const configMedia = useMemo(() => 
+  const configMedia = useMemo(() =>
     media
       ? getSchemaByName(config.object, media, "media")
       : config.object.media[0],
@@ -46,8 +46,8 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
 
   const accept = useMemo(() => {
     if (!configMedia?.extensions && !extensions) return undefined;
-    
-    const allowedExtensions = extensions 
+
+    const allowedExtensions = extensions
       ? configMedia?.extensions
         ? extensions.filter(ext => configMedia.extensions.includes(ext))
         : extensions
@@ -84,7 +84,7 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
 
               const data = await response.json();
               if (data.status !== "success") throw new Error(data.message);
-              
+
               resolve(data);
             } catch (error) {
               reject(error);
@@ -125,7 +125,7 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
 function MediaUploadTrigger({ children }: MediaUploadTriggerProps) {
   const context = useContext(MediaUploadContext);
   if (!context) throw new Error("MediaUploadTrigger must be used within a MediaUpload component");
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = useCallback(() => {
@@ -176,7 +176,7 @@ function MediaUploadTrigger({ children }: MediaUploadTriggerProps) {
 function MediaUploadDropZone({ children, className }: MediaUploadDropZoneProps) {
   const context = useContext(MediaUploadContext);
   if (!context) throw new Error("MediaUploadDropZone must be used within a MediaUpload component");
-  
+
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -192,7 +192,7 @@ function MediaUploadDropZone({ children, className }: MediaUploadDropZoneProps) 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = e.dataTransfer.files;
     if (!files || files.length === 0) return;
 

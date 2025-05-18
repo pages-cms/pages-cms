@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useFormState } from "react-dom";
+import { useCallback, useEffect, useRef, useState, useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/user-context";
 import { handleCopyTemplate } from "@/lib/actions/template";
@@ -28,13 +27,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ChevronsUpDown, ArrowUpRight } from "lucide-react";
-  
+
 export function RepoTemplates({ defaultAccount }: { defaultAccount?: any }) {
   const { user } = useUser();
   const router = useRouter();
   const dialogCloseRef = useRef<any>(null);
   
-  const [copyTemplateState, copyTemplateAction] = useFormState(handleCopyTemplate, {
+  const [copyTemplateState, copyTemplateAction] = useActionState(handleCopyTemplate, {
     message: "",
     data: {
       template: "",
@@ -106,7 +105,7 @@ export function RepoTemplates({ defaultAccount }: { defaultAccount?: any }) {
           <Dialog key={template.repository}>
             <DialogTrigger asChild>
               <button
-                className="border rounded-md overflow-hidden hover:cursor-pointer hover:bg-accent ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="border rounded-md overflow-hidden hover:cursor-pointer hover:bg-accent ring-offset-background transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <img src={template.thumbnail} alt={`Preview for ${template.name}`} className="aspect-video"/>
                 <div className="flex gap-x-2 items-center px-3 py-2 border-t border-t-accent text-sm">
@@ -125,7 +124,7 @@ export function RepoTemplates({ defaultAccount }: { defaultAccount?: any }) {
                 </DialogHeader>
                 <a
                   href={`https://github.com/${template.repository}`} target="_blank" 
-                  className="border rounded-lg transition-all hover:bg-accent focus:bg-accent outline-none flex items-center overflow-hidden relative"
+                  className="border rounded-lg transition-all hover:bg-accent focus:bg-accent outline-hidden flex items-center overflow-hidden relative"
                 >
                   <img src={template.thumbnail} alt={`Preview for ${template.name}`} className="aspect-video h-20"/>
                   <div className="flex-1 text-left flex flex-col gap-y-1 truncate px-3 py-2 h-full justify-center border-l border-l-accent">
