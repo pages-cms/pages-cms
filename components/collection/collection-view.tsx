@@ -275,7 +275,14 @@ export function CollectionView({
       
       return {
         accessorKey: path,
-        accessorFn: (originalRow: any) => safeAccess(originalRow.fields, path),
+        accessorFn: (originalRow: any) => {
+          const fieldValue = safeAccess(originalRow.fields, path);
+          if (fieldValue !== undefined) return fieldValue;
+          if (originalRow.type === "dir" && field.name === primaryField) {
+            return originalRow.name;
+          }
+          return fieldValue;
+        },
         header: field?.label ?? field.name,
         meta: { className: field.name === primaryField ? "truncate w-full min-w-[12rem] max-w-[1px]" : "" },
         cell: ({ cell, row }: { cell: any, row: any }) => {

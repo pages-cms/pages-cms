@@ -199,48 +199,50 @@ export function CollectionTable<TData extends TableData>({
               <TableRow key={row.id}>
                 {
                   row.original.type === "dir"
-                    ? <>
-                      <TableCell
-                        colSpan={columns.length - 1}
-                        className="px-3 first:pl-0 last:pr-0 border-b py-0 h-14"
-                        style={{
-                          paddingLeft: row.depth > 0
-                            ? `${row.depth * 2}rem`
-                            : undefined
-                        }}
-                      >
-                        {isTree
-                          ? <button
-                              className="flex items-center gap-x-2 font-medium"
-                              onClick={() => handleRowExpansion(row as Row<TData>)}
-                            >
-                              {loadingRows[row.id]
-                                ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                : row.getIsExpanded()
-                                  ? <FolderOpen className="h-4 w-4" />
-                                  : <Folder className="h-4 w-4" />
+                    ? row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            "px-3 first:pl-0 last:pr-0 border-b py-0 h-14",
+                            cell.column.columnDef.meta?.className,
+                          )}
+                          style={{
+                            paddingLeft: (cell.column.id === primaryField && row.depth > 0)
+                              ? `${row.depth * 2}rem`
+                              : undefined
+                          }}
+                        >
+                          {cell.column.id === primaryField ? (
+                            <div className="flex items-center gap-x-2">
+                              {row.depth > 0 && <LShapeIcon className="h-4 w-4 text-muted-foreground opacity-50"/>}
+                              {isTree
+                                ? <button
+                                    className="flex items-center gap-x-2 font-medium"
+                                    onClick={() => handleRowExpansion(row as Row<TData>)}
+                                  >
+                                    {loadingRows[row.id]
+                                      ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                      : row.getIsExpanded()
+                                        ? <FolderOpen className="h-4 w-4" />
+                                        : <Folder className="h-4 w-4" />
+                                    }
+                                    {row.original.name}
+                                  </button>
+                                : <Link
+                                    className="flex items-center gap-x-2 font-medium"
+                                    href={`${pathname}?path=${encodeURIComponent(row.original.path)}`}
+                                  >
+                                    <Folder className="h-4 w-4" />
+                                    {row.original.name}
+                                  </Link>
                               }
-                              {row.original.name}
-                            </button>
-                          : <Link
-                              className="flex items-center gap-x-2 font-medium"
-                              href={`${pathname}?path=${encodeURIComponent(row.original.path)}`}
-                            >
-                              <Folder className="h-4 w-4" />
-                              {row.original.name}
-                            </Link>
-                        }
-                      </TableCell>
-                      <TableCell className="px-3 first:pl-0 last:pr-0 border-b py-0 h-14">
-                        {
-                          (() => {
-                            const lastCell = row.getVisibleCells()[row.getVisibleCells().length - 1];
-                            return flexRender(lastCell.column.columnDef.cell, lastCell.getContext());
-                          })()
-                        }
-                      </TableCell>
-                      </>
-                    : row.getVisibleCells().map((cell, index) => (
+                            </div>
+                          ) : cell.column.id === "actions" ? (
+                            flexRender(cell.column.columnDef.cell, cell.getContext())
+                          ) : null}
+                        </TableCell>
+                      ))
+                    : row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
                         className={cn(
