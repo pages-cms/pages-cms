@@ -4,17 +4,9 @@ import { useMemo } from "react";
 import { useConfig } from "@/contexts/config-context";
 import { EntryEditor } from "@/components/entry/entry-editor";
 import { getSchemaByName } from "@/lib/schema";
+import { type Page } from "@/types/page";
 
-export default function Page({
-  params
-}: {
-  params: {
-    owner: string;
-    repo: string;
-    branch: string;
-    name: string;
-  }
-}) {
+export default function Page({ params }: Page) {
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
   
