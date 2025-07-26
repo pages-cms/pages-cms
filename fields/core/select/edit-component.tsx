@@ -140,34 +140,67 @@ const EditComponent = forwardRef((props: any, ref: any) => {
     [field.options?.fetch]
   );
 
-  const [selectedOptions, setSelectedOptions] = useState(() => {
-    if (field.options?.multiple) {
-      const values = Array.isArray(value) ? value : [];
-      return values.map((val: any) => ({ value: val, label: val }));
-    }
-    if (!value) return null;
-    return { value: value, label: value };
-  });
+  // CHANGED: The initial state logic was removed from here.
+  // REASON: The original logic incorrectly created a label from the value itself.
+  // The state is now initialized to `null` and will be populated by the new `useEffect` hook below,
+  // which can correctly fetch or find the full option object.
+  const [selectedOptions, setSelectedOptions] = useState();
 
+  // ADDED: New `useEffect` to resolve the initial `value` into a full `selectedOptions` object.
+  // REASON: This is the core of the fix. It runs when the component loads or `value` changes.
+  // It ensures that `react-select` receives the complete `{value, label}` object it needs
+  // to display the label, instead of just the raw value.
+  useEffect(() => {
+    // If there's no value, reset the selection.
+    if (!value) {
+      setSelectedOptions(field.options?.multiple ? [] : null);
+      return;
+    }
+
+    const fetchConfig = field.options?.fetch as FetchConfig;
+    // For async selects, we must fetch the initial option.
+    if (fetchConfig) {
+      // We call `loadOptions` with an empty string. This assumes your API can return
+      // all items or that the specific item will be in the initial, unfiltered list.
+      // A more robust API might allow fetching by ID, but this works for many cases.
+      loadOptions("").then(options => {
+        if (field.options?.multiple) {
+          const selected = options.filter(opt => value.includes(opt.value));
+          setSelectedOptions(selected.length > 0 ? selected : value.map((v: any) => ({ value: v, label: v })));
+        } else {
+          const selected = options.find(opt => opt.value === value);
+          // If found, use it. If not, fallback to showing the raw value to prevent data loss display.
+          setSelectedOptions(selected || { value, label: value });
+        }
+      });
+    } else {
+      // For static selects, we can find the option in `staticOptions`.
+      if (field.options?.multiple) {
+        const selected = staticOptions.filter((opt: any) => value.includes(opt.value));
+        setSelectedOptions(selected);
+      } else {
+        const selected = staticOptions.find((opt: any) => opt.value === value);
+        setSelectedOptions(selected || null);
+      }
+    }
+  }, [value, field.options?.fetch, field.options?.multiple, staticOptions, loadOptions]);
+
+  // CHANGED: The handleChange callback is simplified.
+  // REASON: The complex logic is no longer needed. `react-select` provides the full,
+  // correct option object (`newValue`) when the user makes a selection. We can
+  // trust it directly to set our state.
   const handleChange = useCallback(
     (newValue: any) => {
-      if (!field.options?.fetch) {
-        setSelectedOptions(newValue);
-      } else {
-        const selectedValue = newValue 
-          ? field.options?.multiple 
-            ? newValue.map((item: any) => ({ value: item.value, label: item.value }))
-            : { value: newValue.value, label: newValue.value }
-          : field.options?.multiple ? [] : null;
-        setSelectedOptions(selectedValue);
-      }
+      // Directly set the selected option object(s) to state.
+      setSelectedOptions(newValue);
 
+      // Extract just the raw value for the form's `onChange` handler.
       const output = field.options?.multiple
         ? newValue ? newValue.map((item: any) => item.value) : []
         : newValue ? newValue.value : null;
       onChange(output);
     },
-    [onChange, field.options?.multiple, field.options?.fetch]
+    [onChange, field.options?.multiple]
   );
 
   if (!isMounted) return null;
