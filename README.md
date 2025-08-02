@@ -89,7 +89,7 @@ Variable | Comments
 `CRYPTO_KEY` | Used to encrypt/decrypt GitHub tokens in the database. On MacOS/Linux*, you can use `openssl rand -base64 32`.
 `GITHUB_APP_ID` | GitHub App ID from your GitHub App details page.
 `GITHUB_APP_NAME` | Machine name for your GitHub App (e.g. `pages-cms`), should be the slug the URL of your GitHub App details page.
-`GITHUB_APP_PRIVATE_KEY` | PEM file you can download upong creation of the GitHub App.
+`GITHUB_APP_PRIVATE_KEY` | PEM file you can download upon creation of the GitHub App.
 `GITHUB_APP_WEBHOOK_SECRET` | The secret you picked for your webhook. This is used to ensure the request is coming from GitHub.
 `GITHUB_APP_CLIENT_ID` | GitHub App Client ID from your GitHub App details page.
 `GITHUB_APP_CLIENT_SECRET` | GitHub App Client Secret you generate on theGitHub App details page.
