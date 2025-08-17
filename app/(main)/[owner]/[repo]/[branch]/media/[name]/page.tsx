@@ -3,14 +3,9 @@
 import { useSearchParams } from "next/navigation";
 import { useConfig } from "@/contexts/config-context";
 import { MediaView} from "@/components/media/media-view";
+import { PageNameOnly } from "@/types/page";
 
-export default function Page({
-  params
-}: {
-  params: {
-    name: string;
-  }
-}) {
+export default function Page({ params }: PageNameOnly) {
   const searchParams = useSearchParams();
   const path = searchParams.get("path") || "";
 
