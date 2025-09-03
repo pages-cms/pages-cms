@@ -15,7 +15,7 @@ export function FilePath({
   onRename
 }: {
   path: string;
-  sha: string;
+  sha?: string;
   type: "collection" | "file" | "media" | "settings";
   name?: string;
   onRename?: (path: string, newPath: string) => void;

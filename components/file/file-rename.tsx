@@ -30,7 +30,7 @@ export function FileRename({
   onOpenChange: (open: boolean) => void;
   path: string;
   type: "collection" | "file" | "media" | "settings";
-  sha: string;
+  sha?: string;
   name?: string;
   onRename?: (path: string, newPath: string) => void;
 }) {

@@ -356,16 +356,16 @@ export function EntryEditor({
         onSubmit={onSubmit}
         path={path}
         history={history}
-        // filePath={(path && schema?.type === 'collection')
-        //   ? <FilePath
-        //       path={path}
-        //       sha={sha}
-        //       type={schema.type}
-        //       name={name}
-        //       onRename={handleRename}
-        //     />
-        //   : undefined
-        // }
+        filePath={(path && schema?.type === 'collection')
+          ? <FilePath
+              path={path}
+              sha={sha}
+              type={schema.type}
+              name={name}
+              onRename={handleRename}
+            />
+          : undefined
+        }
         options={path && sha &&
           <FileOptions
             path={path}
