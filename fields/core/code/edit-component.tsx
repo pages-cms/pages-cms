@@ -48,7 +48,7 @@ const EditComponent = forwardRef((props: any, ref: any) => {
         break;
     }
 
-    if (field.options.lintFn) {
+    if (field.options?.lintFn) {
       exts.push(linter(field.options.lintFn));
     }
 
