@@ -6,7 +6,7 @@ import {
   useForm,
   useFieldArray,
   useFormState,
-  useFormContext
+  useFormContext,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { editComponents } from "@/fields/registry";
@@ -602,6 +602,12 @@ const EntryForm = ({
     defaultValues,
     reValidateMode: "onSubmit"
   });
+
+  useEffect(() => {
+    // keeps dirty values in case modifications are made
+    // during a submit. this only happens if requests are slow
+    form.reset(defaultValues, {keepDirtyValues: true});
+  }, [defaultValues]);
 
   const { isDirty } = useFormState({
     control: form.control

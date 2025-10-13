@@ -101,6 +101,23 @@ export function EntryEditor({
     [schema, config.owner, config.repo, config.branch, path]
   );
 
+  const fetchData = async (
+    owner: string, 
+    repo: string, 
+    branch: string, 
+    path: string, 
+    name: string
+  ) => {
+      const response = await fetch(`/api/${owner}/${repo}/${encodeURIComponent(branch)}/entries/${encodeURIComponent(path)}?name=${encodeURIComponent(name)}`);
+      if (!response.ok) throw new Error(`Failed to fetch entry: ${response.status} ${response.statusText}`);
+
+      const data: any = await response.json();
+      
+      if (data.status !== "success") throw new Error(data.message);
+
+      return data;
+  };
+
   useEffect(() => {
     const fetchEntry = async () => {
       if (path) {
@@ -108,12 +125,7 @@ export function EntryEditor({
         setError(null);
 
         try {
-          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/entries/${encodeURIComponent(path)}?name=${encodeURIComponent(name)}`);
-          if (!response.ok) throw new Error(`Failed to fetch entry: ${response.status} ${response.statusText}`);
-
-          const data: any = await response.json();
-          
-          if (data.status !== "success") throw new Error(data.message);
+          const data: any = await fetchData(config.owner, config.repo, config.branch, path, name);
           
           setEntry(data.data);
           setSha(data.data.sha);
@@ -177,7 +189,10 @@ export function EntryEditor({
       
         if (data.status !== "success") throw new Error(data.message);
         
-        if (data.data.sha !== sha) setSha(data.data.sha);
+        let remoteData = await fetchData(config.owner, config.repo, config.branch, savePath, name);
+
+        setEntry(remoteData.data);
+        setSha(remoteData.data.sha);
 
         if (!path && schema.type === "collection") router.push(`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/edit/${encodeURIComponent(data.data.path)}`);
 
