@@ -2,7 +2,7 @@
  * Define file types and provide Helper functions (get file info, get parent path, normalize paths...)
  */
 
-const serializedTypes = ["yaml-frontmatter", "json-frontmatter", "toml-frontmatter", "yaml", "json", "toml"];
+const serializedTypes = ["yaml-frontmatter", "json-frontmatter", "toml-frontmatter", "yaml", "json", "toml", "datagrid", "csv"];
 
 const extensionCategories: Record<string, string[]> = {
   image: ["jpg", "jpeg", "apng", "png", "gif", "svg", "ico", "avif", "bmp", "tif", "tiff", "webp"],
