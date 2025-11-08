@@ -120,7 +120,7 @@ const rawToRelativeUrls = (
     const quote = match[1] ? "\"" : "'";
 
     if (src.startsWith("https://raw.githubusercontent.com/")) {
-      let relativePath = src.replace(new RegExp(`https://raw\\.githubusercontent\\.com/${owner}/${repo}/${encodeURIComponent(branch)}/`, "gi"), "");
+      let relativePath = src.replace(new RegExp(`https://raw\\.githubusercontent\\.com/${owner}/${repo}/${encodePath(branch)}/`, "gi"), "");
       relativePath = relativePath.split("?")[0];
 
       if (!encode) relativePath = decodeURIComponent(relativePath);
