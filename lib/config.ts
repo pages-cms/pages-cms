@@ -138,6 +138,22 @@ const normalizeConfig = (configObject: any) => {
         };
       }
       
+      // Normalize preview config
+      if (item.preview) {
+        // Ensure preview URL doesn't have trailing slash
+        if (item.preview.url && typeof item.preview.url === "string") {
+          item.preview.url = item.preview.url.replace(/\/$/, "");
+        }
+        // Set default enabled to true if not specified
+        if (item.preview.enabled === undefined) {
+          item.preview.enabled = true;
+        }
+        // Set default selector if not provided
+        if (!item.preview.selector) {
+          item.preview.selector = "main"; // Default to main, fallback to article if main doesn't exist
+        }
+      }
+      
       // Process content fields to resolve component references
       if (Array.isArray(item.fields)) {
         item.fields = item.fields.map((field: any) => {

@@ -7,6 +7,7 @@ import { defaultValues, schemas } from "@/fields/registry";
 import { z } from "zod";
 import { Field } from "@/types/field";
 import { format } from "date-fns";
+import { swapPrefix } from "@/lib/githubImage";
 
 // Deep map a content object to a schema
 const deepMap = (
@@ -366,6 +367,39 @@ function getDateFromFilename(filename: string) {
   return undefined;
 }
 
+// Map a file path to a preview URL for Astro content collections
+// Uses schema.path as input and "" as output (removes collection folder from URL)
+function mapFilePathToPreviewUrl(
+  filePath: string,
+  schema: Record<string, any>,
+  previewUrl: string
+): string {
+  // Remove leading/trailing slashes and normalize
+  let normalizedPath = filePath.replace(/^\/|\/$/g, "");
+  
+  // Remove file extension
+  const extension = schema.extension || "";
+  if (extension && normalizedPath.endsWith(`.${extension}`)) {
+    normalizedPath = normalizedPath.slice(0, -(`.${extension}`.length));
+  }
+  
+  // Use schema.path as input and "" as output (removes collection folder from URL)
+  if (schema.path) {
+    normalizedPath = swapPrefix(normalizedPath, schema.path, "", false);
+  }
+  
+  // Ensure path starts with / for URL
+  if (normalizedPath && !normalizedPath.startsWith("/")) {
+    normalizedPath = `/${normalizedPath}`;
+  }
+  
+  // Combine with preview base URL
+  const baseUrl = previewUrl.replace(/\/$/, ""); // Remove trailing slash from base URL
+  const urlPath = normalizedPath || "";
+  
+  return `${baseUrl}${urlPath}`;
+}
+
 export {
   deepMap,
   initializeState,
@@ -379,5 +413,6 @@ export {
   getDateFromFilename,
   generateZodSchema,
   safeAccess,
-  interpolate
+  interpolate,
+  mapFilePathToPreviewUrl
 };

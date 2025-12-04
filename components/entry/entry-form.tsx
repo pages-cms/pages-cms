@@ -70,9 +70,14 @@ import {
   Ellipsis,
   ChevronRight,
   Dot,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { interpolate } from "@/lib/schema";
+import { EntryPreview } from "./entry-preview";
+import { useConfig } from "@/contexts/config-context";
+import { getSchemaByName } from "@/lib/schema";
 
 const SortableItem = ({
   id,
@@ -576,6 +581,7 @@ const EntryForm = ({
   path,
   filePath,
   options,
+  schemaName,
 }: {
   title: string;
   navigateBack?: string;
@@ -586,8 +592,22 @@ const EntryForm = ({
   path?: string;
   filePath?: React.ReactNode;
   options: React.ReactNode;
+  schemaName?: string;
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const { config } = useConfig();
+
+  // Check if preview should be enabled by default (for Astro sites)
+  useEffect(() => {
+    if (schemaName && config) {
+      const schema = getSchemaByName(config.object, schemaName);
+      if (schema?.preview?.enabled !== false && schema?.preview?.url) {
+        // Enable preview by default if configured
+        setIsPreviewOpen(true);
+      }
+    }
+  }, [schemaName, config]);
 
   const zodSchema = useMemo(() => {
     return generateZodSchema(fields);
@@ -635,11 +655,19 @@ const EntryForm = ({
     toast.error("Please fix the errors before saving.", { duration: 5000 });
   };
 
+  const formValues = form.watch();
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit, handleError)}>
-        <div className="max-w-screen-xl mx-auto flex w-full gap-x-8">
-          <div className="flex-1 w-0">
+        <div className={cn(
+          "max-w-screen-xl mx-auto flex w-full gap-x-8",
+          isPreviewOpen && "max-w-full"
+        )}>
+          <div className={cn(
+            "flex-1 w-0",
+            isPreviewOpen && "lg:w-1/2"
+          )}>
             <header className="flex items-center mb-6">
               {navigateBack &&
                 <Link
@@ -651,6 +679,31 @@ const EntryForm = ({
               }
 
               <h1 className="font-semibold text-lg md:text-2xl truncate">{title}</h1>
+              
+              {schemaName && config && (() => {
+                const schema = getSchemaByName(config.object, schemaName);
+                // Show preview button if schema exists (even if preview not configured, so user knows the feature exists)
+                if (schema) {
+                  return (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="ml-auto"
+                      onClick={() => setIsPreviewOpen(!isPreviewOpen)}
+                      title={isPreviewOpen ? "Hide preview" : "Show preview"}
+                      disabled={!schema?.preview?.url}
+                    >
+                      {isPreviewOpen ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  );
+                }
+                return null;
+              })()}
             </header>
             
             <div onSubmit={form.handleSubmit(handleSubmit)} className="grid items-start gap-6">
@@ -665,6 +718,18 @@ const EntryForm = ({
               {renderFields(fields)}
             </div>
           </div>
+
+          {/* Preview Panel */}
+          {isPreviewOpen && schemaName && (
+            <div className="hidden lg:block w-1/2 h-[calc(100vh-4rem)] sticky top-4">
+              <EntryPreview
+                formData={formValues}
+                filePath={path || ''}
+                schemaName={schemaName}
+                isOpen={isPreviewOpen}
+              />
+            </div>
+          )}
 
           <div className="hidden lg:block w-64">
             <div className="flex flex-col gap-y-4 sticky top-0">
