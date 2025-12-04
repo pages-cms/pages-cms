@@ -5,6 +5,11 @@ import { useDebounce } from "use-debounce";
 import { useConfig } from "@/contexts/config-context";
 import { getSchemaByName } from "@/lib/schema";
 import { Loader, AlertCircle } from "lucide-react";
+import { remark } from "remark";
+import remarkGfm from "remark-gfm";
+import remarkRehype from "remark-rehype";
+import rehypeSanitize from "rehype-sanitize";
+import rehypeStringify from "rehype-stringify";
 
 interface EntryPreviewProps {
   formData: Record<string, any>;
@@ -14,18 +19,24 @@ interface EntryPreviewProps {
 }
 
 export function EntryPreview({ formData, filePath, schemaName, isOpen }: EntryPreviewProps) {
-  const [previewHtml, setPreviewHtml] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [baseHtml, setBaseHtml] = useState<string>("");
+  const [contentSelector, setContentSelector] = useState<string>("main");
+  const [isLoadingBase, setIsLoadingBase] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const scrollPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const baseHtmlRef = useRef<string>("");
+  const renderedContentRef = useRef<string>("");
+  const iframeLoadedRef = useRef<boolean>(false);
+  const targetElementRef = useRef<Element | null>(null);
   const { config } = useConfig();
 
-  // Debounce the form data to avoid excessive API calls
-  const [debouncedData] = useDebounce(formData, 400);
+  // Debounce the form data to avoid excessive processing
+  const [debouncedData] = useDebounce(formData, 300);
 
+  // Fetch base HTML once when filePath changes
   useEffect(() => {
-    if (!isOpen || !config || !schemaName) return;
+    if (!isOpen || !config || !schemaName || !filePath) return;
 
     const schema = getSchemaByName(config.object, schemaName);
     if (!schema || !schema.preview || !schema.preview.url) {
@@ -33,67 +44,289 @@ export function EntryPreview({ formData, filePath, schemaName, isOpen }: EntryPr
       return;
     }
 
-    // Don't fetch if we don't have a file path (new file)
-    if (!filePath) {
-      setError("Save the file first to generate a preview URL.");
-      return;
-    }
-
-    // Only fetch if we have form data
-    if (!debouncedData || Object.keys(debouncedData).length === 0) {
-      return;
-    }
-
-    const fetchPreview = async () => {
-      setIsLoading(true);
+    const fetchBaseHtml = async () => {
+      setIsLoadingBase(true);
       setError(null);
 
       try {
         const response = await fetch(
-          `/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/preview`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              formData: debouncedData,
-              filePath: filePath,
-              name: schemaName,
-            }),
-          }
+          `/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/preview/base?filePath=${encodeURIComponent(filePath)}&name=${encodeURIComponent(schemaName)}`
         );
 
         const data = await response.json();
 
         if (data.status !== "success") {
-          throw new Error(data.message || "Failed to generate preview");
+          throw new Error(data.message || "Failed to fetch base preview");
         }
 
-        setPreviewHtml(data.data.html);
+        setBaseHtml(data.data.html);
+        baseHtmlRef.current = data.data.html;
+        setContentSelector(data.data.contentSelector || "main");
+        iframeLoadedRef.current = false; // Reset flag so iframe reloads with new base HTML
       } catch (err: any) {
-        console.error("Preview error:", err);
-        setError(err.message || "An error occurred while generating the preview.");
+        console.error("Preview base error:", err);
+        setError(err.message || "An error occurred while fetching the base preview.");
       } finally {
-        setIsLoading(false);
+        setIsLoadingBase(false);
       }
     };
 
-    fetchPreview();
-  }, [debouncedData, isOpen, config, schemaName, filePath]);
+    fetchBaseHtml();
+  }, [filePath, isOpen, config, schemaName]);
+
+  // Extract body field and render markdown client-side
+  useEffect(() => {
+    if (!baseHtml || !debouncedData || !config || !schemaName) {
+      renderedContentRef.current = "";
+      return;
+    }
+
+    const processContent = async () => {
+      const schema = getSchemaByName(config.object, schemaName);
+      if (!schema || !schema.fields || schema.fields.length === 0) {
+        renderedContentRef.current = "";
+        return;
+      }
+
+      // Handle list wrapper if needed
+      let contentObject = debouncedData;
+      let contentFields = schema.list 
+        ? [{ name: "listWrapper", type: "object", list: true, fields: schema.fields }]
+        : schema.fields;
+
+      // Unwrap if list
+      const unwrappedContentObject = schema.list && contentObject.listWrapper
+        ? contentObject.listWrapper
+        : contentObject;
+
+      // Find body field
+      let bodyField: any = null;
+      let bodyValue: string = '';
+
+      if (unwrappedContentObject.body !== undefined) {
+        bodyField = contentFields.find((f: any) => f.name === 'body');
+        bodyValue = unwrappedContentObject.body || '';
+      } else {
+        // Find the first markdown, rich-text, or code field
+        for (const field of contentFields) {
+          const fieldType = field.type;
+          if (fieldType === 'rich-text' || fieldType === 'code' || fieldType === 'text') {
+            const fieldValue = unwrappedContentObject[field.name];
+            if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
+              bodyField = field;
+              bodyValue = fieldValue;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!bodyField || !bodyValue) {
+        renderedContentRef.current = "";
+        return;
+      }
+
+      // Render markdown if needed
+      const fieldType = bodyField.type;
+      let renderedHtml = bodyValue;
+
+      if (fieldType === 'rich-text') {
+        // Check if it's markdown
+        const looksLikeMarkdown = bodyValue.includes('#') && 
+                                   bodyValue.includes('\n') && 
+                                   !bodyValue.trim().startsWith('<') &&
+                                   !bodyValue.includes('<p>') &&
+                                   !bodyValue.includes('<div>');
+        
+        if (looksLikeMarkdown) {
+          try {
+            const file = await remark()
+              .use(remarkGfm)
+              .use(remarkRehype, { allowDangerousHtml: false })
+              .use(rehypeSanitize, {
+                tagNames: ['p', 'br', 'strong', 'em', 'u', 's', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'div', 'span'],
+                attributes: {
+                  '*': ['class', 'id'],
+                  'a': ['href', 'title', 'target', 'rel'],
+                  'img': ['src', 'alt', 'title', 'width', 'height'],
+                  'code': ['class'],
+                  'pre': ['class'],
+                },
+              })
+              .use(rehypeStringify)
+              .process(bodyValue);
+            renderedHtml = String(file);
+          } catch (e) {
+            console.error('Error rendering markdown:', e);
+          }
+        }
+      } else if (fieldType === 'code' || fieldType === 'text') {
+        const fieldFormat = bodyField.options?.format;
+        const isMarkdown = fieldFormat === 'markdown' || 
+                          fieldFormat === 'md' ||
+                          (fieldType === 'code' && (!fieldFormat || fieldFormat === 'markdown' || fieldFormat === 'md')) ||
+                          (fieldType === 'text' && !fieldFormat);
+        
+        if (isMarkdown) {
+          try {
+            const file = await remark()
+              .use(remarkGfm)
+              .use(remarkRehype, { allowDangerousHtml: false })
+              .use(rehypeSanitize, {
+                tagNames: ['p', 'br', 'strong', 'em', 'u', 's', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'div', 'span'],
+                attributes: {
+                  '*': ['class', 'id'],
+                  'a': ['href', 'title', 'target', 'rel'],
+                  'img': ['src', 'alt', 'title', 'width', 'height'],
+                  'code': ['class'],
+                  'pre': ['class'],
+                },
+              })
+              .use(rehypeStringify)
+              .process(bodyValue);
+            renderedHtml = String(file);
+          } catch (e) {
+            console.error('Error rendering markdown:', e);
+          }
+        }
+      }
+
+      renderedContentRef.current = renderedHtml;
+      
+      // Update iframe after rendering
+      updateIframeContent(renderedHtml);
+    };
+
+    processContent();
+  }, [baseHtml, debouncedData, config, schemaName, contentSelector]);
+
+  // Load base HTML into iframe once
+  useEffect(() => {
+    if (!iframeRef.current || !baseHtml || iframeLoadedRef.current) return;
+
+    const iframe = iframeRef.current;
+    
+    const handleLoad = () => {
+      iframeLoadedRef.current = true;
+      
+      // Find and store reference to target element
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) return;
+
+        // Find content area
+        let targetElement = iframeDoc.querySelector(contentSelector);
+        
+        if (!targetElement) {
+          // Try fallback selectors
+          const fallbackSelectors = ['article', 'main', '.content', '#content', '.prose', '[class*="content"]'];
+          for (const selector of fallbackSelectors) {
+            const found = iframeDoc.querySelector(selector);
+            if (found) {
+              targetElement = found;
+              break;
+            }
+          }
+        }
+
+        if (targetElement) {
+          // Try to find a content wrapper within the selector
+          if (contentSelector === 'main' || contentSelector === 'article') {
+            const wrapper = targetElement.querySelector('.prose, .markdown, [class*="prose"], [class*="markdown"], section, [role="article"]');
+            if (wrapper) {
+              targetElementRef.current = wrapper;
+            } else {
+              targetElementRef.current = targetElement;
+            }
+          } else {
+            targetElementRef.current = targetElement;
+          }
+        }
+      } catch (e) {
+        console.error('Error finding target element:', e);
+      }
+    };
+
+    // Set base HTML
+    iframe.srcdoc = baseHtml;
+    
+    // Wait for iframe to load
+    iframe.addEventListener('load', handleLoad, { once: true });
+    
+    return () => {
+      iframe.removeEventListener('load', handleLoad);
+    };
+  }, [baseHtml, contentSelector]);
+
+  // Update iframe DOM directly when content changes (no reload!)
+  const updateIframeContent = (html: string) => {
+    if (!iframeRef.current || !html || !iframeLoadedRef.current) return;
+
+    saveScrollPosition();
+
+    const iframe = iframeRef.current;
+    
+    try {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) return;
+
+      // Use cached target element or find it again
+      let targetElement = targetElementRef.current;
+      
+      if (!targetElement) {
+        // Find content area
+        targetElement = iframeDoc.querySelector(contentSelector);
+        
+        if (!targetElement) {
+          // Try fallback selectors
+          const fallbackSelectors = ['article', 'main', '.content', '#content', '.prose', '[class*="content"]'];
+          for (const selector of fallbackSelectors) {
+            const found = iframeDoc.querySelector(selector);
+            if (found) {
+              targetElement = found;
+              break;
+            }
+          }
+        }
+
+        if (targetElement) {
+          // Try to find a content wrapper within the selector
+          if (contentSelector === 'main' || contentSelector === 'article') {
+            const wrapper = targetElement.querySelector('.prose, .markdown, [class*="prose"], [class*="markdown"], section, [role="article"]');
+            if (wrapper) {
+              targetElement = wrapper;
+            }
+          }
+          targetElementRef.current = targetElement;
+        }
+      }
+
+      if (targetElement) {
+        // Directly update innerHTML - no reload!
+        targetElement.innerHTML = html;
+        
+        // Restore scroll immediately (no delay needed since no reload)
+        requestAnimationFrame(() => {
+          restoreScrollPosition();
+        });
+      }
+    } catch (e) {
+      console.error('Error updating iframe content:', e);
+    }
+  };
 
   // Save scroll position before updating iframe content
   const saveScrollPosition = () => {
-    if (iframeRef.current?.contentWindow) {
-      try {
-        const iframe = iframeRef.current;
-        const scrollX = iframe.contentWindow.scrollX || iframe.contentWindow.pageXOffset || 0;
-        const scrollY = iframe.contentWindow.scrollY || iframe.contentWindow.pageYOffset || 0;
-        scrollPositionRef.current = { x: scrollX, y: scrollY };
-      } catch (e) {
-        // Cross-origin or other error, ignore
-        scrollPositionRef.current = null;
-      }
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+    
+    try {
+      const scrollX = iframe.contentWindow.scrollX || iframe.contentWindow.pageXOffset || 0;
+      const scrollY = iframe.contentWindow.scrollY || iframe.contentWindow.pageYOffset || 0;
+      scrollPositionRef.current = { x: scrollX, y: scrollY };
+    } catch (e) {
+      // Cross-origin or other error, ignore
+      scrollPositionRef.current = null;
     }
   };
 
@@ -115,37 +348,6 @@ export function EntryPreview({ formData, filePath, schemaName, isOpen }: EntryPr
     }
   };
 
-  // Update iframe content when preview HTML changes
-  useEffect(() => {
-    if (iframeRef.current && previewHtml) {
-      const iframe = iframeRef.current;
-      
-      // Save scroll position before updating
-      saveScrollPosition();
-      
-      // Set up load handler to restore scroll position
-      const handleLoad = () => {
-        restoreScrollPosition();
-        iframe.removeEventListener('load', handleLoad);
-      };
-      
-      iframe.addEventListener('load', handleLoad);
-      
-      // Update the iframe content
-      iframe.srcdoc = previewHtml;
-      
-      // Also try to restore after a short delay as a fallback
-      // (in case load event fires before content is fully rendered)
-      const timeoutId = setTimeout(() => {
-        restoreScrollPosition();
-      }, 100);
-      
-      return () => {
-        clearTimeout(timeoutId);
-        iframe.removeEventListener('load', handleLoad);
-      };
-    }
-  }, [previewHtml]);
 
   if (!isOpen) return null;
 
@@ -183,11 +385,11 @@ export function EntryPreview({ formData, filePath, schemaName, isOpen }: EntryPr
 
   return (
     <div className="w-full h-full flex flex-col bg-background border-l">
-      {isLoading && (
+      {isLoadingBase && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
           <div className="text-center">
             <Loader className="h-6 w-6 animate-spin mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Generating preview...</p>
+            <p className="text-sm text-muted-foreground">Loading preview...</p>
           </div>
         </div>
       )}
@@ -205,7 +407,7 @@ export function EntryPreview({ formData, filePath, schemaName, isOpen }: EntryPr
       )}
 
       <div className="flex-1 relative overflow-hidden">
-        {previewHtml ? (
+        {baseHtml ? (
           <iframe
             ref={iframeRef}
             className="w-full h-full border-0"
@@ -213,7 +415,7 @@ export function EntryPreview({ formData, filePath, schemaName, isOpen }: EntryPr
             sandbox="allow-same-origin allow-scripts"
             style={{ minHeight: "100%" }}
           />
-        ) : !isLoading && !error ? (
+        ) : !isLoadingBase && !error ? (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
             <div className="text-center">
               <p className="text-sm">Start editing to see preview</p>
