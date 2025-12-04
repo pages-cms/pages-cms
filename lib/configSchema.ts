@@ -315,6 +315,20 @@ const ContentObjectSchema = z.object({
     { message: "'fields' must be an array of field definitions." }
   ).optional(),
   list: ListSchema.optional(),
+  preview: z.object({
+    url: z.string({
+      required_error: "'url' is required for preview configuration.",
+      invalid_type_error: "'url' must be a string.",
+    }),
+    enabled: z.boolean({
+      message: "'enabled' must be a boolean."
+    }).optional().default(true),
+    selector: z.string({
+      message: "'selector' must be a string."
+    }).optional(),
+  }, {
+    message: "'preview' must be an object with 'url', 'enabled', and 'selector' attributes."
+  }).strict().optional(),
 }).strict();
 
 // Main schema with media and content
