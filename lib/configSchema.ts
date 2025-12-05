@@ -67,7 +67,7 @@ const ListSchema = z.union([
         collapsed: z.boolean().optional(),
         summary: z.string().optional(),
       }, {
-        message: "'collapsbile' must be either a boolean or an object with 'collapsed' and 'summary' properties."
+        message: "'collapsible' must be either a boolean or an object with 'collapsed' and 'summary' properties."
       }),
     ]),
   }, {
