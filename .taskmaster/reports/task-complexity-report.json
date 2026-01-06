@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2026-01-06T17:03:38.175Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 48,
+			"taskTitle": "Create Public Join Token Database Schema",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for: 1) Writing the Drizzle migration file with all fields and constraints, 2) Creating unit tests for schema validation and constraint enforcement, 3) Staging environment validation and performance testing of indexes",
+			"reasoning": "Standard database schema work with Drizzle migrations. Requires attention to field constraints and indexes but follows established patterns. Complexity is low-medium due to the number of fields and constraint types, plus the need for both local and staging testing."
+		},
+		{
+			"taskId": 49,
+			"taskTitle": "Implement Token Validation Logic",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for: 1) Implementing getTokenData function with all validation checks, 2) Adding security measures to prevent timing attacks and token enumeration, 3) Creating comprehensive tests for all validation scenarios including edge cases and error paths",
+			"reasoning": "Medium complexity due to security considerations and multiple validation conditions. Following existing patterns reduces complexity, but the timing attack prevention and comprehensive error handling require careful implementation."
+		},
+		{
+			"taskId": 50,
+			"taskTitle": "Create Public Join Page UI Component",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Create subtasks for: 1) Building the base React component with form structure, 2) Implementing responsive design and breakpoints, 3) Adding WCAG 2.1 Level AA accessibility features and ARIA attributes, 4) Setting up comprehensive testing (manual, automated accessibility, visual regression)",
+			"reasoning": "Medium-high complexity due to WCAG 2.1 Level AA compliance requirements and multiple testing strategies. The accessibility standards significantly increase implementation complexity beyond a simple form component."
+		},
+		{
+			"taskId": 51,
+			"taskTitle": "Implement Email Submission Server Action",
+			"complexityScore": 8,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Create subtasks for: 1) Implementing email validation and duplicate checking, 2) Creating IP-based rate limiting with database storage, 3) Building the transaction system for collaborator creation, 4) Integrating Resend email service with proper error handling, 5) Load testing and concurrent submission handling",
+			"reasoning": "High complexity due to multiple concerns: rate limiting, transactions, email integration, IP detection, and security. The transactional nature and multiple integration points make this one of the most complex tasks in the set."
+		},
+		{
+			"taskId": 52,
+			"taskTitle": "Integrate Collaborator Creation Flow",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for: 1) Adapting existing collaborator insertion logic for token metadata, 2) Implementing transaction rollback mechanism for email sending failures, 3) Testing integration with existing getAccounts() and access control systems",
+			"reasoning": "Medium complexity due to transactional integrity requirements and careful integration with existing systems. While reusing existing patterns helps, ensuring proper rollback and maintaining workflow consistency adds complexity."
+		},
+		{
+			"taskId": 53,
+			"taskTitle": "Implement Duplicate Email Prevention",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Create subtasks for: 1) Implementing case-insensitive email check with LOWER() function, 2) Testing with various email formats and edge cases including case variations",
+			"reasoning": "Low complexity as this is a straightforward database query and validation. The main considerations are case-insensitive matching and ensuring usageCount isn't incremented for duplicates."
+		},
+		{
+			"taskId": 54,
+			"taskTitle": "Create Token Generation SQL Template",
+			"complexityScore": 3,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for: 1) Creating the SQL template with proper placeholders and default values, 2) Writing comprehensive documentation with step-by-step instructions, 3) Manual testing and validation of generated tokens",
+			"reasoning": "Low complexity focused on documentation and SQL template creation. The task is straightforward but requires attention to detail in documentation clarity and proper default values."
+		},
+		{
+			"taskId": 55,
+			"taskTitle": "Implement Token Usage Tracking and Revocation",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for: 1) Implementing atomic usageCount increment in transaction, 2) Creating SQL documentation for token revocation, 3) Testing concurrent increments and ensuring existing collaborator access after deletion",
+			"reasoning": "Low-medium complexity focused on atomic operations and documentation. The main challenge is ensuring atomic increment and handling concurrent access properly."
+		},
+		{
+			"taskId": 56,
+			"taskTitle": "Implement Token Expiry Notifications",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Create subtasks for: 1) Setting up the scheduled job infrastructure (systemd timer or GitHub Actions), 2) Implementing the SQL query for expiring tokens, 3) Creating email notification system with token grouping per creator, 4) Testing various expiry scenarios and notification timing",
+			"reasoning": "Medium complexity due to external dependencies (scheduler, email service) and the need to handle grouping logic. Requires infrastructure setup beyond just application code."
+		},
+		{
+			"taskId": 57,
+			"taskTitle": "Implement Comprehensive Error Handling",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for: 1) Implementing form validation with accessible error messages, 2) Adding database and token validation error handling with generic messages, 3) Integrating aria-live regions and styling errors consistently with PagesCMS UI",
+			"reasoning": "Medium complexity due to the wide range of error states to handle and the accessibility requirements. Security considerations (preventing information leakage) add to the complexity."
+		}
+	]
+}

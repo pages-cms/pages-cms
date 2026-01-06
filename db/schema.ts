@@ -111,6 +111,25 @@ const cachePermissionTable = pgTable("cache_permission", {
   idx_cache_permission_githubId_owner_repo: uniqueIndex("idx_cache_permission_githubId_owner_repo").on(table.githubId, table.owner, table.repo)
 }));
 
+const publicJoinTokenTable = pgTable("public_join_token", {
+  id: serial("id").primaryKey(),
+  token: text("token").notNull().unique(),
+  owner: text("owner").notNull(),
+  repo: text("repo").notNull(),
+  installationId: integer("installation_id"),
+  ownerId: integer("owner_id"),
+  repoId: integer("repo_id"),
+  type: text("type").notNull(),
+  createdBy: text("created_by").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usageLimit: integer("usage_limit").notNull(),
+  usageCount: integer("usage_count").notNull().default(0),
+  createdAt: timestamp("created_at").notNull()
+}, table => ({
+  idx_public_join_token_token: uniqueIndex("idx_public_join_token_token").on(table.token),
+  idx_public_join_token_owner_repo: index("idx_public_join_token_owner_repo").on(table.owner, table.repo)
+}));
+
 export {
   userTable,
   sessionTable,
@@ -120,5 +139,6 @@ export {
   collaboratorTable,
   configTable,
   cacheFileTable,
-  cachePermissionTable
+  cachePermissionTable,
+  publicJoinTokenTable
 };

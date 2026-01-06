@@ -1,0 +1,476 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": "48",
+        "title": "Create Public Join Token Database Schema",
+        "description": "Implement the database migration for the public_join_token table with all required fields, indexes, and constraints.",
+        "details": "Create a Drizzle migration file to add the public_join_token table with fields: id (serial primary key), token (25-char unique string), owner, repo, installationId, ownerId, repoId, type, createdBy, expiresAt, usageLimit, usageCount (default 0), createdAt. Add unique index on token column and composite index on owner/repo. Ensure all non-null constraints are enforced at database level.",
+        "testStrategy": "Write unit tests to verify migration creates table with correct schema, indexes enforce uniqueness and performance, and constraints prevent invalid data insertion. Test locally with psql, then validate in staging environment.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Drizzle migration file for public_join_token table",
+            "description": "Write the complete Drizzle migration file with all required fields, data types, constraints, and indexes for the public_join_token table according to specifications.",
+            "dependencies": [],
+            "details": "Create migration file with fields: id (serial primary key), token (25-char unique string, NOT NULL), owner (varchar, NOT NULL), repo (varchar, NOT NULL), installationId (integer), ownerId (integer), repoId (integer), type (varchar), createdBy (varchar, NOT NULL), expiresAt (timestamp, NOT NULL), usageLimit (integer), usageCount (integer, DEFAULT 0), createdAt (timestamp, NOT NULL). Add unique index on token column and composite index on (owner, repo). Enforce all non-null constraints at database level.",
+            "status": "done",
+            "testStrategy": "Run migration locally with psql to verify table creation, check schema matches specifications, validate indexes are created correctly with \\d+ and \\di commands",
+            "parentId": "undefined",
+            "updatedAt": "2026-01-06T17:42:38.649Z"
+          },
+          {
+            "id": 2,
+            "title": "Write unit tests for schema validation and constraints",
+            "description": "Create comprehensive unit tests to verify the migration creates correct schema, enforces constraints, and validates data integrity.",
+            "dependencies": [
+              1
+            ],
+            "details": "Write tests using Jest and supertest to: 1) Verify table creation with correct field types and constraints, 2) Test unique constraint on token field prevents duplicates, 3) Test NOT NULL constraints on required fields, 4) Test default values for usageCount, 5) Test index creation and functionality, 6) Test composite index on owner/repo works correctly. Include negative test cases for constraint violations.",
+            "status": "done",
+            "testStrategy": "Use test database environment to run migration and perform schema validation tests. Verify constraint enforcement by attempting invalid insertions and checking for expected errors. Test index performance with explain analyze on queries.",
+            "parentId": "undefined",
+            "updatedAt": "2026-01-06T17:45:17.748Z"
+          },
+          {
+            "id": 3,
+            "title": "Staging environment validation and index performance testing",
+            "description": "Deploy migration to staging environment and validate schema implementation while testing index performance under realistic load conditions.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Deploy migration to staging PostgreSQL instance, run comprehensive schema validation tests, and perform index performance testing. Execute query performance tests on token lookup by unique index and owner/repo composite index with sample data. Verify constraint enforcement in staging environment. Document performance benchmarks and compare against expected thresholds.",
+            "status": "done",
+            "testStrategy": "Run migration on staging database, validate schema with psql commands, create test dataset with 10k+ records, measure query execution times for both indexes, perform load testing to ensure indexes scale properly under concurrent access",
+            "parentId": "undefined",
+            "updatedAt": "2026-01-06T17:47:38.105Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for: 1) Writing the Drizzle migration file with all fields and constraints, 2) Creating unit tests for schema validation and constraint enforcement, 3) Staging environment validation and performance testing of indexes",
+        "updatedAt": "2026-01-06T17:47:38.105Z"
+      },
+      {
+        "id": "49",
+        "title": "Implement Token Validation Logic",
+        "description": "Create server-side token validation function that checks token existence, expiry, and usage limits.",
+        "details": "Implement getTokenData function in pagescms/lib/actions/publicJoin.ts following existing pattern from auth.ts:98-109. Query public_join_token table by token string, validate token exists, check expiresAt > NOW() or null, verify usageCount < usageLimit or null. Return generic error message for all validation failures to prevent token enumeration.",
+        "testStrategy": "Test with valid/expired tokens, tokens at usage limit, non-existent tokens, and malformed tokens. Verify timing resistance to prevent attacks. Mock database responses to test error paths.",
+        "priority": "high",
+        "dependencies": [
+          "48"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Core Token Validation Function",
+            "description": "Create the getTokenData function in pagescms/lib/actions/publicJoin.ts with database query and validation logic",
+            "dependencies": [],
+            "details": "Implement getTokenData function following auth.ts:98-109 pattern. Query public_join_token table by token string, validate token exists, check expiresAt > NOW() or null, verify usageCount < usageLimit or null. Return generic error message for all validation failures.",
+            "status": "pending",
+            "testStrategy": "Unit tests with valid/expired tokens, tokens at usage limit, non-existent tokens, and malformed tokens. Mock database responses to test error paths.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Add Security Measures for Timing Attack Prevention",
+            "description": "Implement security measures to prevent timing attacks and token enumeration vulnerabilities",
+            "dependencies": [
+              1
+            ],
+            "details": "Add constant-time comparison for token validation, implement consistent response times for both valid and invalid tokens, and ensure all validation failures return identical generic error messages to prevent token enumeration attacks.",
+            "status": "pending",
+            "testStrategy": "Security testing to verify timing resistance. Measure response times for valid vs invalid tokens to ensure they're statistically indistinguishable. Test with automated timing attack simulations.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Create Comprehensive Validation Test Suite",
+            "description": "Develop comprehensive test coverage for all token validation scenarios including edge cases",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create test suite covering all validation scenarios: valid tokens with various expiry/usage combinations, edge cases (null expiry/usage limits), malformed token formats, database connection failures, and concurrent token access scenarios.",
+            "status": "pending",
+            "testStrategy": "Comprehensive unit and integration tests. Test boundary conditions (expiry exactly at current time, usageCount exactly at limit), concurrent access patterns, and database failure simulation. Verify all error paths return consistent messages.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for: 1) Implementing getTokenData function with all validation checks, 2) Adding security measures to prevent timing attacks and token enumeration, 3) Creating comprehensive tests for all validation scenarios including edge cases and error paths"
+      },
+      {
+        "id": "50",
+        "title": "Create Public Join Page UI Component",
+        "description": "Build the public join page at /join/[token] with responsive design and WCAG 2.1 Level AA compliance.",
+        "details": "Create pagescms/app/(public)/join/[token]/page.tsx with centered single-column layout (max-width 480px). Include H1 heading 'Join the [owner]/[repo] wiki', email input with proper label, submit button, and footer text. Implement responsive breakpoints for mobile/tablet/desktop, ARIA attributes for accessibility, and form validation on blur/submit.",
+        "testStrategy": "Manual testing on various screen sizes (320px to desktop), keyboard navigation testing, screen reader testing with NVDA/VoiceOver, automated accessibility testing with axe-core, and visual regression testing.",
+        "priority": "medium",
+        "dependencies": [
+          "49"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Build Base React Component with Form Structure",
+            "description": "Create the foundational React component for the public join page with form elements",
+            "dependencies": [],
+            "details": "Create pagescms/app/(public)/join/[token]/page.tsx with centered single-column layout (max-width 480px). Include H1 heading 'Join the [owner]/[repo] wiki', email input with proper label, submit button, and footer text. Implement basic form validation on blur and submit events.",
+            "status": "pending",
+            "testStrategy": "Unit tests for form validation, component rendering, and state management",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement Responsive Design and Breakpoints",
+            "description": "Add responsive breakpoints for mobile, tablet, and desktop viewports",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement responsive design using CSS-in-JS or Tailwind CSS with breakpoints for mobile (320px+), tablet (768px+), and desktop (1024px+). Ensure the single-column layout adapts properly across all screen sizes with appropriate spacing and typography scaling.",
+            "status": "pending",
+            "testStrategy": "Manual testing on various screen sizes from 320px to desktop, automated viewport testing with Cypress",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Add WCAG 2.1 Level AA Accessibility Features",
+            "description": "Implement comprehensive accessibility features including ARIA attributes and semantic HTML",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Add proper ARIA attributes to form elements, implement keyboard navigation support, ensure color contrast ratios meet WCAG 2.1 AA standards, add skip navigation links, implement proper focus management, and ensure semantic HTML structure throughout the component.",
+            "status": "pending",
+            "testStrategy": "Automated accessibility testing with axe-core, manual screen reader testing with NVDA/VoiceOver, keyboard navigation testing",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Setup Comprehensive Testing Suite",
+            "description": "Create complete testing strategy including manual, automated, and visual regression tests",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Implement unit tests for component logic and validation, integration tests for form submission flow, visual regression tests using Storybook or Percy, automated accessibility tests with axe-core integration, and manual testing documentation for cross-browser and device compatibility.",
+            "status": "pending",
+            "testStrategy": "Multi-layered testing approach: Jest for unit tests, Cypress for e2e, axe-core for accessibility, Storybook for visual testing",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Create subtasks for: 1) Building the base React component with form structure, 2) Implementing responsive design and breakpoints, 3) Adding WCAG 2.1 Level AA accessibility features and ARIA attributes, 4) Setting up comprehensive testing (manual, automated accessibility, visual regression)"
+      },
+      {
+        "id": "51",
+        "title": "Implement Email Submission Server Action",
+        "description": "Create handlePublicJoin server action to process email submissions with validation and rate limiting.",
+        "details": "Implement in pagescms/lib/actions/publicJoin.ts: validate email format with regex, check for existing collaborator, implement IP-based rate limiting (max 3/hour using database storage), create transaction for collaborator creation and usageCount increment, trigger Resend email, return appropriate success/error messages. Use X-Forwarded-For header for real IP detection.",
+        "testStrategy": "Unit tests for email validation, rate limiting boundary conditions, duplicate email detection, database transaction rollback on failure. Integration tests with Resend API mock. Load testing for concurrent submissions.",
+        "priority": "high",
+        "dependencies": [
+          "49",
+          "50"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement email validation and duplicate checking",
+            "description": "Create email validation logic using regex pattern and check for existing collaborators in the same repository",
+            "dependencies": [],
+            "details": "Implement in pagescms/lib/actions/publicJoin.ts: add regex email format validation, query collaborator table for existing email with case-insensitive match using LOWER() function, return appropriate error message with sign-in URL for duplicates",
+            "status": "pending",
+            "testStrategy": "Unit tests for various email formats, case variations, existing vs new emails, verify error messages include correct sign-in URL",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Create IP-based rate limiting with database storage",
+            "description": "Implement rate limiting mechanism to prevent spam submissions, max 3 submissions per hour per IP address",
+            "dependencies": [],
+            "details": "Create database table for tracking IP submissions, implement rate limiting logic using X-Forwarded-For header for real IP detection, store timestamp and IP address, check count within last hour before processing",
+            "status": "pending",
+            "testStrategy": "Test rate limit boundary conditions, different IP headers, verify database cleanup, mock X-Forwarded-For variations",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Build transaction system for collaborator creation",
+            "description": "Implement database transaction to ensure atomic creation of collaborator and usage count increment",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create transaction wrapping collaborator table insertion and public_join_token usageCount increment, ensure rollback on any failure, maintain data consistency between related tables",
+            "status": "pending",
+            "testStrategy": "Test successful transactions, rollback scenarios, concurrent transaction conflicts, verify data consistency",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Integrate Resend email service with error handling",
+            "description": "Connect Resend API to send notification emails and handle various email service failure scenarios",
+            "dependencies": [
+              3
+            ],
+            "details": "Configure Resend client, create email template for new collaborator notifications, implement retry logic for transient failures, handle API errors gracefully, ensure email sending doesn't affect transaction outcome",
+            "status": "pending",
+            "testStrategy": "Integration tests with Resend API mock, test API failures, retry scenarios, verify email content and recipients",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Load testing and concurrent submission handling",
+            "description": "Validate system performance and stability under concurrent submission loads and edge cases",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Create load testing scenarios for multiple simultaneous submissions, test rate limiting effectiveness under load, verify database transaction isolation, monitor performance metrics and error rates",
+            "status": "pending",
+            "testStrategy": "Load testing with various concurrent user counts, stress test rate limiting, verify database consistency under load, measure response times",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Create subtasks for: 1) Implementing email validation and duplicate checking, 2) Creating IP-based rate limiting with database storage, 3) Building the transaction system for collaborator creation, 4) Integrating Resend email service with proper error handling, 5) Load testing and concurrent submission handling"
+      },
+      {
+        "id": "52",
+        "title": "Integrate Collaborator Creation Flow",
+        "description": "Implement collaborator record creation using existing logic and token metadata.",
+        "details": "Reuse collaborator.ts:85-94 insertion logic. Insert into collaboratorTable with token metadata (type, installationId, ownerId, repoId, owner, repo), submitted email, invitedBy set to token.createdBy, userId null. Ensure transactional integrity - rollback collaborator insertion if email sending fails. Maintain existing Resend invitation email workflow.",
+        "testStrategy": "Verify collaborator records created with correct metadata, transaction rollback on email failure, access control immediately after email verification, and integration with existing getAccounts() logic.",
+        "priority": "high",
+        "dependencies": [
+          "51"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Adapt existing collaborator insertion logic for token metadata",
+            "description": "Modify the collaborator insertion logic to incorporate token metadata fields",
+            "dependencies": [],
+            "details": "Reuse collaborator.ts:85-94 insertion logic. Insert into collaboratorTable with token metadata (type, installationId, ownerId, repoId, owner, repo), submitted email, invitedBy set to token.createdBy, userId null.",
+            "status": "pending",
+            "testStrategy": "Verify collaborator records are created with correct token metadata fields and values match the source token data",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement transaction rollback for email sending failures",
+            "description": "Add transactional integrity to ensure collaborator insertion rolls back if email sending fails",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement transaction wrapper around collaborator insertion and Resend email workflow. If email sending fails, rollback the entire transaction to prevent orphaned collaborator records.",
+            "status": "pending",
+            "testStrategy": "Test scenarios where email sending fails to verify collaborator insertion is properly rolled back and no partial data remains in database",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Test integration with getAccounts() and access control systems",
+            "description": "Verify the new collaborator creation flow integrates seamlessly with existing account and access control systems",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Test collaborator access after email verification, integration with existing getAccounts() logic, and ensure proper access control permissions are applied based on the collaborator record.",
+            "status": "pending",
+            "testStrategy": "Verify access control immediately after email verification and integration with existing getAccounts() logic returns proper permissions for newly created collaborators",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for: 1) Adapting existing collaborator insertion logic for token metadata, 2) Implementing transaction rollback mechanism for email sending failures, 3) Testing integration with existing getAccounts() and access control systems"
+      },
+      {
+        "id": "53",
+        "title": "Implement Duplicate Email Prevention",
+        "description": "Add validation to prevent multiple signups with same email address for same repository.",
+        "details": "In handlePublicJoin action, before creating new collaborator, query collaboratorTable for existing email within same repository (case-insensitive match). If found, return error message with sign-in URL. Do not increment usageCount or send email for duplicates. Use exact email match with LOWER() function for case-insensitivity.",
+        "testStrategy": "Test with existing collaborator emails, case variations of same email, new valid emails. Verify error message includes correct sign-in URL and usageCount remains unchanged for duplicates.",
+        "priority": "medium",
+        "dependencies": [
+          "52"
+        ],
+        "status": "pending",
+        "subtasks": [],
+        "complexity": 3,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Create subtasks for: 1) Implementing case-insensitive email check with LOWER() function, 2) Testing with various email formats and edge cases including case variations"
+      },
+      {
+        "id": "54",
+        "title": "Create Token Generation SQL Template",
+        "description": "Document and create SQL template for owners to generate public join tokens via direct database access.",
+        "details": "Create SQL template with placeholders for GitHub metadata (owner, repo, installationId, ownerId, repoId, type, createdBy). Use generateIdFromEntropySize(25) or nanoid for 25-character token. Set default expiresAt = NOW() + INTERVAL '30 days' and usageLimit = 100. Include documentation in docs/public-join-token-management.md with step-by-step instructions for dokku postgres:connect.",
+        "testStrategy": "Manual testing of SQL template with real GitHub metadata. Verify token uniqueness, default values, and documentation clarity. Test token validation with generated tokens.",
+        "priority": "medium",
+        "dependencies": [
+          "48"
+        ],
+        "status": "pending",
+        "subtasks": [],
+        "complexity": 3,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for: 1) Creating the SQL template with proper placeholders and default values, 2) Writing comprehensive documentation with step-by-step instructions, 3) Manual testing and validation of generated tokens"
+      },
+      {
+        "id": "55",
+        "title": "Implement Token Usage Tracking and Revocation",
+        "description": "Add usage count incrementing and token deletion functionality for lifecycle management.",
+        "details": "In collaborator creation transaction, atomically increment usageCount in public_join_token table. Ensure increment only happens after successful collaborator insertion. For revocation, document SQL DELETE statement. Token deletion should not remove existing collaborators. Add usageCount visibility in database queries for monitoring.",
+        "testStrategy": "Verify usageCount increments only on successful collaborator creation, does not increment on failures, and handles concurrent increments correctly. Test token deletion does not affect existing collaborator access.",
+        "priority": "medium",
+        "dependencies": [
+          "52"
+        ],
+        "status": "pending",
+        "subtasks": [],
+        "complexity": 4,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for: 1) Implementing atomic usageCount increment in transaction, 2) Creating SQL documentation for token revocation, 3) Testing concurrent increments and ensuring existing collaborator access after deletion"
+      },
+      {
+        "id": "56",
+        "title": "Implement Token Expiry Notifications",
+        "description": "Create cron job to send email notifications 3 days before token expiry.",
+        "details": "Create scheduled job (systemd timer or GitHub Actions) running daily. Query tokens expiring within 3 days: SELECT * FROM public_join_token WHERE expires_at BETWEEN NOW() AND NOW() + INTERVAL '3 days'. Send notification via Resend to token creator with token details, expiry date, usage count. Group multiple expiring tokens into single email per creator.",
+        "testStrategy": "Test with tokens at various expiry periods, verify email content and timing, test multiple tokens for same creator are grouped, and validate no notifications after token deletion.",
+        "priority": "low",
+        "dependencies": [
+          "48",
+          "54"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Setup scheduled job infrastructure",
+            "description": "Configure systemd timer or GitHub Actions for daily execution of token expiry notifications",
+            "dependencies": [],
+            "details": "Create and configure scheduling infrastructure (systemd timer service or GitHub Actions workflow) to run daily at optimal time for checking expiring tokens",
+            "status": "pending",
+            "testStrategy": "Test scheduler triggers correctly, verify execution logs, failover scenarios",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement expiring tokens SQL query",
+            "description": "Create database query to find tokens expiring within 3 days of execution",
+            "dependencies": [],
+            "details": "Implement SELECT query for public_join_token table filtering tokens expiring in next 3 days with performance optimization and proper date handling",
+            "status": "pending",
+            "testStrategy": "Test with tokens at various expiry periods, verify query performance, edge cases",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Create email notification system with grouping",
+            "description": "Implement Resend email service to send grouped notifications per token creator",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement Resend integration, email template creation with token details and expiry info, token grouping logic per creator, email content generation with usage counts",
+            "status": "pending",
+            "testStrategy": "Test email content accuracy, verify token grouping functionality, validate multiple notifications per creator",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Test expiry scenarios and notification timing",
+            "description": "Comprehensive testing of various token expiry scenarios and notification timing",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Create comprehensive test suite covering edge cases like multiple expiring tokens, deleted tokens, boundary timing conditions, and integration testing of the complete notification pipeline",
+            "status": "pending",
+            "testStrategy": "End-to-end testing with various expiry periods, verify 3-day notification accuracy, test deleted tokens scenario",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 4,
+        "expansionPrompt": "Create subtasks for: 1) Setting up the scheduled job infrastructure (systemd timer or GitHub Actions), 2) Implementing the SQL query for expiring tokens, 3) Creating email notification system with token grouping per creator, 4) Testing various expiry scenarios and notification timing"
+      },
+      {
+        "id": "57",
+        "title": "Implement Comprehensive Error Handling",
+        "description": "Add error handling for form validation, database errors, and token validation failures.",
+        "details": "Implement form validation: required email, valid format, rate limiting errors with specific messages. Add database error handling with generic messages to prevent information leakage. Handle token validation errors (invalid, expired, usage limit) with consistent generic message. Use aria-live regions for screen reader announcements of errors. Style errors consistently with PagesCMS UI.",
+        "testStrategy": "Test all error states: invalid token format, expired tokens, usage limit reached, database connection failures, form validation errors, rate limiting. Verify error messages are accessible, non-technical, and don't expose sensitive information.",
+        "priority": "medium",
+        "dependencies": [
+          "50",
+          "51"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Form Validation with Accessible Error Messages",
+            "description": "Create form validation logic for email requirements, valid format, and rate limiting with accessible error messages.",
+            "dependencies": [],
+            "details": "Implement client-side and server-side form validation for email field (required field, valid email format using regex). Add rate limiting error handling (max 3 submissions per hour). Ensure all validation errors are announced to screen readers using appropriate ARIA attributes. Follow PagesCMS UI patterns for error display and styling.",
+            "status": "pending",
+            "testStrategy": "Test form validation with various email formats, required field validation, rate limiting boundaries, and verify screen reader compatibility with accessibility testing tools.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Add Database and Token Validation Error Handling",
+            "description": "Implement generic error handling for database failures and token validation to prevent information leakage.",
+            "dependencies": [],
+            "details": "Create error handling middleware or wrapper functions to catch database connection failures, query errors, and return generic error messages. Integrate with token validation logic to handle invalid tokens, expired tokens, and usage limit exceeded scenarios. Ensure all error responses use consistent, non-technical generic messages that don't expose sensitive system information or enable token enumeration attacks.",
+            "status": "pending",
+            "testStrategy": "Test database error scenarios (connection failures, query errors), token validation failures (invalid format, expired, usage limit), and verify all responses contain generic, non-revealing error messages.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Integrate ARIA-Live Regions and Style Errors Consistently",
+            "description": "Add aria-live regions for screen reader announcements and implement consistent error styling matching PagesCMS UI.",
+            "dependencies": [],
+            "details": "Implement aria-live regions (polite or assertive as appropriate) to announce form validation errors and other error messages to screen readers. Style error messages consistently with PagesCMS UI design system, including colors, typography, spacing, and positioning. Ensure error states are visually distinct and follow accessibility best practices for contrast and readability.",
+            "status": "pending",
+            "testStrategy": "Verify aria-live announcements work correctly with screen readers, test error styling across different themes and device sizes, and validate accessibility compliance with WCAG guidelines.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Create subtasks for: 1) Implementing form validation with accessible error messages, 2) Adding database and token validation error handling with generic messages, 3) Integrating aria-live regions and styling errors consistently with PagesCMS UI"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-01-06T17:47:38.105Z",
+      "taskCount": 10,
+      "completedCount": 1,
+      "tags": [
+        "master"
+      ]
+    }
+  }
+}
