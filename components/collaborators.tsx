@@ -45,6 +45,7 @@ export function Collaborators({
   const [collaborators, setCollaborators] = useState<any[]>([]);
   const [addCollaboratorState, addCollaboratorAction] = useFormState(handleAddCollaborator, { message: "", data: [] });
   const [email, setEmail] = useState<string>("");
+  const [nickname, setNickname] = useState<string>("");
   const [removing, setRemoving] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   // TODO: remove this, we can probably let error.tsx catch that
@@ -112,6 +113,7 @@ export function Collaborators({
       
       toast.success(addCollaboratorState.message, { duration: 10000});
       setEmail("");
+      setNickname("");
     }
   }, [addCollaboratorState, addNewCollaborator]);
 
@@ -153,7 +155,8 @@ export function Collaborators({
                     </AvatarFallback>
                   </Avatar>
                   <div className="font-medium text-left truncate">
-                    {collaborator.email}
+                    {collaborator.nickname || collaborator.email}
+                    {collaborator.nickname && <span className="text-muted-foreground font-normal ml-1">({collaborator.email})</span>}
                   </div>
                   <AlertDialog>
                     <Tooltip>
@@ -193,7 +196,7 @@ export function Collaborators({
             </div>
       }
       <form action={addCollaboratorAction} className="flex gap-x-2">
-        <div className="w-full">
+        <div className="flex-1">
           <input type="hidden" name="owner" value={owner} />
           <input type="hidden" name="repo" value={repo} />
           <Input
@@ -204,14 +207,23 @@ export function Collaborators({
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          {addCollaboratorState?.error &&
-            <div className="text-sm font-medium text-red-500 mt-2 ">{addCollaboratorState.error}</div>
-          }
+        </div>
+        <div className="flex-1">
+          <Input
+            type="text"
+            name="nickname"
+            placeholder="Nickname (optional)"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+          />
         </div>
         <SubmitButton type="submit" disabled={isEmailInList}>
-          Invite by email
+          Invite
         </SubmitButton>
       </form>
+      {addCollaboratorState?.error &&
+        <div className="text-sm font-medium text-red-500">{addCollaboratorState.error}</div>
+      }
     </div>
   )
 }

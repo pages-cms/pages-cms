@@ -10,6 +10,9 @@ import { getAuth } from "@/lib/auth";
 import { getToken } from "@/lib/token";
 import { updateFileCache } from "@/lib/githubCache";
 import mergeWith from "lodash.mergewith";
+import { db } from "@/db";
+import { collaboratorTable } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 
 /**
  * Create, update and delete individual files in a GitHub repository.
@@ -30,6 +33,19 @@ export async function POST(
 
     const token = await getToken(user, params.owner, params.repo);
     if (!token) throw new Error("Token not found");
+
+    // Look up display name for commit message attribution
+    let displayName = user?.githubUsername || user?.githubName || '';
+    if (user?.id) {
+      const collab = await db.query.collaboratorTable.findFirst({
+        where: and(
+          eq(collaboratorTable.owner, params.owner),
+          eq(collaboratorTable.repo, params.repo),
+          eq(collaboratorTable.userId, user.id)
+        )
+      });
+      if (collab?.nickname) displayName = collab.nickname;
+    }
 
     const normalizedPath = normalizePath(params.path);
 
@@ -173,7 +189,7 @@ export async function POST(
         throw new Error(`Invalid type "${data.type}".`);
     }
     
-    const response = await githubSaveFile(token, params.owner, params.repo, params.branch, normalizedPath, contentBase64, data.sha);
+    const response = await githubSaveFile(token, params.owner, params.repo, params.branch, normalizedPath, contentBase64, data.sha, displayName);
   
     const savedPath = response?.data.content?.path;
 
@@ -249,7 +265,9 @@ const githubSaveFile = async (
   path: string,
   contentBase64: string,
   sha?: string,
+  displayName?: string,
 ) => {
+  const attribution = displayName ? `${displayName} via Pages CMS` : 'via Pages CMS';
   // We disable retries for 409 errors as it means the file has changed (conflict on SHA)
   const octokit = createOctokitInstance(token, { retry: { doNotRetry: [409] } });
   
@@ -259,7 +277,7 @@ const githubSaveFile = async (
       owner,
       repo,
       path,
-      message: sha ? `Update ${path} (via Pages CMS)` : `Create ${path} (via Pages CMS)`,
+      message: sha ? `Update ${path} (${attribution})` : `Create ${path} (${attribution})`,
       content: contentBase64,
       branch,
       sha: sha || undefined,
@@ -305,7 +323,7 @@ const githubSaveFile = async (
             owner,
             repo,
             path: newPath,
-            message: `Create ${newPath} (via Pages CMS)`,
+            message: `Create ${newPath} (${attribution})`,
             content: contentBase64,
             branch,
           });
@@ -333,6 +351,20 @@ export async function DELETE(
 
     const token = await getToken(user, params.owner, params.repo);
     if (!token) throw new Error("Token not found");
+
+    // Look up display name for commit message attribution
+    let displayName = user?.githubUsername || user?.githubName || '';
+    if (user?.id) {
+      const collab = await db.query.collaboratorTable.findFirst({
+        where: and(
+          eq(collaboratorTable.owner, params.owner),
+          eq(collaboratorTable.repo, params.repo),
+          eq(collaboratorTable.userId, user.id)
+        )
+      });
+      if (collab?.nickname) displayName = collab.nickname;
+    }
+    const attribution = displayName ? `${displayName} via Pages CMS` : 'via Pages CMS';
 
     if (params.path === ".pages.yml") throw new Error(`Deleting the settings file isn't allowed.`);
 
@@ -388,7 +420,7 @@ export async function DELETE(
       branch: params.branch,
       path: params.path,
       sha: sha,
-      message: `Delete ${params.path} (via Pages CMS)`,
+      message: `Delete ${params.path} (${attribution})`,
     });
 
     // Update cache after successful deletion

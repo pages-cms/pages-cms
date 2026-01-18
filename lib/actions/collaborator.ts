@@ -35,6 +35,7 @@ const handleAddCollaborator = async (prevState: any, formData: FormData) => {
 		if (!emailValidation.success) throw new Error ("Invalid email");
 
 		const email = emailValidation.data;
+		const nickname = formData.get("nickname")?.toString().trim() || null;
 
 		const token = await getUserToken();
   	if (!token) throw new Error("Token not found");
@@ -89,6 +90,7 @@ const handleAddCollaborator = async (prevState: any, formData: FormData) => {
 			repoId: installationRepos[0].id,
 			owner: installationRepos[0].owner.login,
 			repo: installationRepos[0].name,
+			nickname,
 			email,
 			invitedBy: user.id
 		}).returning();
