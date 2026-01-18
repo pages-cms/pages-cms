@@ -59,6 +59,7 @@ const collaboratorTable = pgTable("collaborator", {
   owner: text("owner").notNull(),
   repo: text("repo").notNull(),
   branch: text("branch"),
+  nickname: text("nickname"),
   email: text("email").notNull(),
   userId: text("user_id").references(() => userTable.id),
   invitedBy: text("invited_by").notNull().references(() => userTable.id)
