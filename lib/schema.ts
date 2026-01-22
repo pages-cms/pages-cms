@@ -35,8 +35,8 @@ const deepMap = (
                   const blockDef = field.blocks?.find(b => b.name === blockName);
                   if (blockDef) {
                     const innerResult = traverse(item, blockDef.fields || []);
-                    // Merge discriminator back after processing inner fields
-                    return { [blockKey]: blockName, ...innerResult }; 
+                    // Merge discriminator AFTER innerResult so it wins over any undefined value
+                    return { ...innerResult, [blockKey]: blockName };
                   }
                   return item;
                 } else {
@@ -53,8 +53,8 @@ const deepMap = (
         const blockDef = field.blocks?.find(b => b.name === blockName);
         if (blockDef && value) {
           const innerResult = traverse(value, blockDef.fields || []);
-          // Merge discriminator back after processing inner fields
-          result[field.name] = { [blockKey]: blockName, ...innerResult };
+          // Merge discriminator AFTER innerResult so it wins over any undefined value
+          result[field.name] = { ...innerResult, [blockKey]: blockName };
         } else {
           result[field.name] = value;
         }
@@ -139,9 +139,13 @@ const generateZodSchema = (
               return null;
             }
             const base = z.object({
-              [discriminator]: z.literal(blockDef.name) 
+              [discriminator]: z.literal(blockDef.name)
             });
-            const blockFieldsSchema = z.object(buildSchemaObject(blockDef.fields || []));
+            // Filter out the discriminator field to prevent it from overwriting the literal
+            const fieldsWithoutDiscriminator = (blockDef.fields || []).filter(
+              (f: Field) => f.name !== discriminator
+            );
+            const blockFieldsSchema = z.object(buildSchemaObject(fieldsWithoutDiscriminator));
             return base.merge(blockFieldsSchema); 
           }).filter(schema => schema !== null) as z.ZodObject<any>[];
 
