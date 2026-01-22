@@ -177,6 +177,10 @@ function resolveComponent(field: any, componentsMap: Record<string, any>): any {
       });
       result.name = originalName;
       result.type = componentType;
+      // Preserve blockKey from original field (used for block type discrimination)
+      if (field.blockKey !== undefined) {
+        result.blockKey = field.blockKey;
+      }
     } else {
       console.error(`Component reference "${componentKey}" could not be resolved.`);
       delete result.component; // Remove the broken reference
