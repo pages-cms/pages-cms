@@ -356,6 +356,7 @@ export function EntryEditor({
         onSubmit={onSubmit}
         path={path}
         history={history}
+        previewUrl={config.previewUrl}
         // filePath={(path && schema?.type === 'collection')
         //   ? <FilePath
         //       path={path}

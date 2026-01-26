@@ -73,6 +73,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { interpolate } from "@/lib/schema";
+import { BlockPreview } from "./block-preview";
 
 const SortableItem = ({
   id,
@@ -576,6 +577,7 @@ const EntryForm = ({
   path,
   filePath,
   options,
+  previewUrl,
 }: {
   title: string;
   navigateBack?: string;
@@ -586,11 +588,19 @@ const EntryForm = ({
   path?: string;
   filePath?: React.ReactNode;
   options: React.ReactNode;
+  previewUrl?: string;
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewBlockIndex, setPreviewBlockIndex] = useState<number | null>(null);
 
   const zodSchema = useMemo(() => {
     return generateZodSchema(fields);
+  }, [fields]);
+
+  // Find block list fields for preview
+  const blockFieldName = useMemo(() => {
+    const blockField = fields.find(f => f.type === 'block' && f.list);
+    return blockField?.name || null;
   }, [fields]);
 
   const defaultValues = useMemo(() => {
@@ -635,6 +645,24 @@ const EntryForm = ({
     toast.error("Please fix the errors before saving.", { duration: 5000 });
   };
 
+  // Watch block values for preview
+  const blocksValue = blockFieldName ? form.watch(blockFieldName) : null;
+  const currentBlockData = useMemo(() => {
+    if (!blocksValue || !Array.isArray(blocksValue) || blocksValue.length === 0) {
+      return null;
+    }
+    // Use the selected block index, or default to first block
+    const index = previewBlockIndex !== null && previewBlockIndex < blocksValue.length
+      ? previewBlockIndex
+      : 0;
+    const block = blocksValue[index];
+    if (!block || !block._block) return null;
+    return {
+      type: block._block,
+      data: block,
+    };
+  }, [blocksValue, previewBlockIndex]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit, handleError)}>
@@ -666,8 +694,8 @@ const EntryForm = ({
             </div>
           </div>
 
-          <div className="hidden lg:block w-64">
-            <div className="flex flex-col gap-y-4 sticky top-0">
+          <div className={cn("hidden lg:block sticky top-0 self-start", previewUrl && currentBlockData ? "w-96" : "w-64")}>
+            <div className="flex flex-col gap-y-4">
               <div className="flex gap-x-2">
                 <Button type="submit" className="w-full" disabled={isSubmitting || !isDirty}>
                   Save
@@ -675,6 +703,16 @@ const EntryForm = ({
                 </Button>
                 {options ? options : null}
               </div>
+              {previewUrl && currentBlockData && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Block Preview</Label>
+                  <BlockPreview
+                    blockType={currentBlockData.type}
+                    blockData={currentBlockData.data}
+                    previewBaseUrl={previewUrl}
+                  />
+                </div>
+              )}
               {path && history && <EntryHistoryBlock history={history} path={path} />}
             </div>
           </div>
