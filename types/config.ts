@@ -4,6 +4,5 @@ export type Config = {
   branch: string;
   sha: string;
   version: string;
-  object: Record<string, any>;
-  previewUrl?: string; // Base URL for block previews (e.g., "https://tenant.pages.dev")
+  object: Record<string, any>; // Parsed .pages.yml content (includes previewUrl, collections, etc.)
 };
