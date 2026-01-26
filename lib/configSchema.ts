@@ -348,6 +348,7 @@ const ConfigSchema = z.object({
       message: "'settings' must be a boolean or an object."
     }),
   ]).optional(),
+  previewUrl: z.string().url().optional(),
 }).strict().nullable();
 
 export { ConfigSchema };

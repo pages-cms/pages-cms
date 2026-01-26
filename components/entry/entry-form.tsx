@@ -598,9 +598,13 @@ const EntryForm = ({
   }, [fields]);
 
   // Find block list fields for preview
-  const blockFieldName = useMemo(() => {
+  const blockFieldInfo = useMemo(() => {
     const blockField = fields.find(f => f.type === 'block' && f.list);
-    return blockField?.name || null;
+    if (!blockField) return null;
+    return {
+      name: blockField.name,
+      blockKey: blockField.blockKey || '_block',
+    };
   }, [fields]);
 
   const defaultValues = useMemo(() => {
@@ -646,9 +650,9 @@ const EntryForm = ({
   };
 
   // Watch block values for preview
-  const blocksValue = blockFieldName ? form.watch(blockFieldName) : null;
+  const blocksValue = blockFieldInfo ? form.watch(blockFieldInfo.name) : null;
   const currentBlockData = useMemo(() => {
-    if (!blocksValue || !Array.isArray(blocksValue) || blocksValue.length === 0) {
+    if (!blockFieldInfo || !blocksValue || !Array.isArray(blocksValue) || blocksValue.length === 0) {
       return null;
     }
     // Use the selected block index, or default to first block
@@ -656,12 +660,13 @@ const EntryForm = ({
       ? previewBlockIndex
       : 0;
     const block = blocksValue[index];
-    if (!block || !block._block) return null;
+    const blockType = block?.[blockFieldInfo.blockKey];
+    if (!block || !blockType) return null;
     return {
-      type: block._block,
+      type: blockType,
       data: block,
     };
-  }, [blocksValue, previewBlockIndex]);
+  }, [blocksValue, previewBlockIndex, blockFieldInfo]);
 
   return (
     <Form {...form}>
