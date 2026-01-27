@@ -715,6 +715,9 @@ const EntryForm = ({
                     blockType={currentBlockData.type}
                     blockData={currentBlockData.data}
                     previewBaseUrl={previewUrl}
+                    currentIndex={previewBlockIndex ?? 0}
+                    totalBlocks={blocksValue?.length ?? 0}
+                    onIndexChange={setPreviewBlockIndex}
                   />
                 </div>
               )}
