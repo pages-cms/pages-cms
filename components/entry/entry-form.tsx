@@ -74,6 +74,7 @@ import {
 import { toast } from "sonner";
 import { interpolate } from "@/lib/schema";
 import { BlockPreview } from "./block-preview";
+import { PagePreview } from "./page-preview";
 
 const SortableItem = ({
   id,
@@ -773,6 +774,13 @@ const EntryForm = ({
                     totalBlocks={blocksValue?.length ?? 0}
                     onIndexChange={setPreviewBlockIndex}
                     onBlockSelect={handleBlockSelect}
+                  />
+                )}
+                {previewUrl && blocksValue && blocksValue.length > 0 && blockFieldInfo && (
+                  <PagePreview
+                    blocks={blocksValue}
+                    blockKey={blockFieldInfo.blockKey}
+                    previewBaseUrl={previewUrl}
                   />
                 )}
               {path && history && <EntryHistoryBlock history={history} path={path} />}
