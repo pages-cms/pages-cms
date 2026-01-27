@@ -36,6 +36,7 @@ interface BlockPreviewProps {
   currentIndex?: number;
   totalBlocks?: number;
   onIndexChange?: (index: number) => void;
+  onBlockSelect?: (index: number) => void;
 }
 
 export function BlockPreview({
@@ -45,11 +46,14 @@ export function BlockPreview({
   currentIndex = 0,
   totalBlocks = 1,
   onIndexChange,
+  onBlockSelect,
 }: BlockPreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // Start collapsed - lazy load on first expand
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [hasEverOpened, setHasEverOpened] = useState(false);
   const [key, setKey] = useState(0);
   const [mounted, setMounted] = useState(false);
 
@@ -119,19 +123,87 @@ export function BlockPreview({
 
   // Navigate to previous block
   const handlePrevBlock = () => {
-    if (onIndexChange && currentIndex > 0) {
-      onIndexChange(currentIndex - 1);
+    if (currentIndex > 0) {
+      const newIndex = currentIndex - 1;
+      onIndexChange?.(newIndex);
+      onBlockSelect?.(newIndex);
     }
   };
 
   // Navigate to next block
   const handleNextBlock = () => {
-    if (onIndexChange && currentIndex < totalBlocks - 1) {
-      onIndexChange(currentIndex + 1);
+    if (currentIndex < totalBlocks - 1) {
+      const newIndex = currentIndex + 1;
+      onIndexChange?.(newIndex);
+      onBlockSelect?.(newIndex);
     }
   };
 
-  // Header controls - shared between normal and expanded views
+  // Handle collapse/expand toggle
+  const handleToggleCollapse = () => {
+    const willOpen = isCollapsed;
+    setIsCollapsed(!isCollapsed);
+    if (willOpen && !hasEverOpened) {
+      setHasEverOpened(true);
+      // Update initial data when first opening
+      initialDataRef.current = transformedData;
+      setKey((k) => k + 1);
+    }
+  };
+
+  // Toolbar controls (refresh, external link, expand) - shared between views
+  const toolbarControls = (
+    <div className="flex items-center gap-1">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleReload}
+            disabled={!isLoaded}
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Reload preview</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleOpenNewTab}
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Open in new tab</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? (
+              <Minimize2 className="h-4 w-4" />
+            ) : (
+              <Maximize2 className="h-4 w-4" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {isExpanded ? 'Minimize' : 'Expand'} preview
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+
+  // Header with block type and navigation - shared between views
   const headerControls = (
     <div className="flex items-center justify-between px-3 py-2 bg-background/80 backdrop-blur-sm border-b">
       <div className="flex items-center gap-2">
@@ -164,78 +236,12 @@ export function BlockPreview({
           </div>
         )}
       </div>
-      <div className="flex items-center gap-1">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-            >
-              {isCollapsed ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronUp className="h-4 w-4" />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {isCollapsed ? 'Show' : 'Hide'} preview
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={handleReload}
-              disabled={!isLoaded}
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Reload preview</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={handleOpenNewTab}
-            >
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Open in new tab</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              {isExpanded ? (
-                <Minimize2 className="h-4 w-4" />
-              ) : (
-                <Maximize2 className="h-4 w-4" />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {isExpanded ? 'Minimize' : 'Expand'} preview
-          </TooltipContent>
-        </Tooltip>
-      </div>
+      {toolbarControls}
     </div>
   );
 
-  // The iframe content
-  const iframeContent = (
+  // The iframe content - only render if hasEverOpened
+  const iframeContent = hasEverOpened ? (
     <div className="relative w-full h-full">
       {/* Loading state */}
       {!isLoaded && (
@@ -255,10 +261,10 @@ export function BlockPreview({
         title={`${normalizedBlockType} preview`}
       />
     </div>
-  );
+  ) : null;
 
   // Expanded view rendered in a portal for proper z-index - DESKTOP SIZE
-  if (isExpanded && mounted) {
+  if (isExpanded && mounted && hasEverOpened) {
     return (
       <>
         {/* Placeholder to maintain layout */}
@@ -284,19 +290,44 @@ export function BlockPreview({
     );
   }
 
-  // Normal view - iPhone frame (collapsible)
+  // Normal view with collapsible header
   return (
     <div className="relative">
-      {headerControls}
+      {/* Section header with collapse toggle - separate from toolbar */}
+      <div
+        className="flex items-center justify-between cursor-pointer hover:bg-muted/50 rounded-t-lg px-1 py-1 -mx-1"
+        onClick={handleToggleCollapse}
+      >
+        <span className="text-sm font-medium">Block Preview</span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleCollapse();
+          }}
+        >
+          {isCollapsed ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronUp className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+
       {!isCollapsed && (
-        <div className="mx-auto w-[375px] bg-gray-900 rounded-[2.5rem] p-2 shadow-xl mt-4">
-          {/* Screen */}
-          <div className="bg-white rounded-[2rem] overflow-hidden h-[667px] relative">
-            {/* Notch */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-2xl z-20" />
-            {/* Content */}
-            <div className="h-full pt-6 overflow-hidden">
-              {iframeContent}
+        <div className="mt-2">
+          {headerControls}
+          <div className="mx-auto w-[375px] bg-gray-900 rounded-[2.5rem] p-2 shadow-xl mt-4">
+            {/* Screen */}
+            <div className="bg-white rounded-[2rem] overflow-hidden h-[667px] relative">
+              {/* Notch */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-2xl z-20" />
+              {/* Content */}
+              <div className="h-full pt-6 overflow-hidden">
+                {iframeContent}
+              </div>
             </div>
           </div>
         </div>
