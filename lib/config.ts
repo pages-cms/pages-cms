@@ -40,7 +40,7 @@ const normalizeConfig = (configObject: any) => {
   // Resolve component references in `components`
   if (configObjectCopy.components && typeof configObjectCopy.components === 'object') {
     Object.keys(configObjectCopy.components).forEach((componentKey: string) => {
-      configObjectCopy.components[componentKey] = resolveComponent(configObjectCopy.components[componentKey], configObjectCopy.components);
+      configObjectCopy.components[componentKey] = resolveComponent(configObjectCopy.components[componentKey], configObjectCopy.components, configObjectCopy);
     });
   }
 
@@ -138,10 +138,10 @@ const normalizeConfig = (configObject: any) => {
         };
       }
       
-      // Process content fields to resolve component references
+      // Process content fields to resolve component and ref: references
       if (Array.isArray(item.fields)) {
         item.fields = item.fields.map((field: any) => {
-          return resolveComponent(field, configObjectCopy?.components);
+          return resolveComponent(field, configObjectCopy?.components, configObjectCopy);
         });
       }
       
@@ -157,8 +157,8 @@ const normalizeConfig = (configObject: any) => {
   return configObjectCopy;
 }
 
-// Helper function to resolve component references in fields
-function resolveComponent(field: any, componentsMap: Record<string, any>): any {
+// Helper function to resolve component and ref: references in fields
+function resolveComponent(field: any, componentsMap: Record<string, any>, configObject?: any): any {
   let result = JSON.parse(JSON.stringify(field));
 
   if (result.component && typeof result.component === 'string') {
@@ -192,17 +192,35 @@ function resolveComponent(field: any, componentsMap: Record<string, any>): any {
     result.type = 'object';
   }
 
+  // Resolve ref: references (e.g., blocks: ref:blockTypes)
+  if (typeof result.blocks === 'string' && result.blocks.startsWith('ref:') && configObject) {
+    const refName = result.blocks.slice(4); // Remove 'ref:' prefix
+    const refValue = configObject[refName];
+    if (Array.isArray(refValue)) {
+      // Deep clone and resolve components in each block definition
+      result.blocks = refValue.map((block: any) => {
+        return resolveComponent(JSON.parse(JSON.stringify(block)), componentsMap, configObject);
+      });
+    } else {
+      console.warn(`Reference "${refName}" not found or not an array in config.`);
+      result.blocks = [];
+    }
+  }
+
+  // NOTE: list.template references are resolved asynchronously in entry-editor.tsx
+  // when creating new entries, not here during config normalization
+
   // Nested fields
   if (Array.isArray(result.fields)) {
     result.fields = result.fields.map((nestedField: any) => {
-      return resolveComponent(nestedField, componentsMap);
+      return resolveComponent(nestedField, componentsMap, configObject);
     });
   }
 
   // Nested blocks
   if (Array.isArray(result.blocks)) {
     result.blocks = result.blocks.map((block: any) => {
-      return resolveComponent(block, componentsMap);
+      return resolveComponent(block, componentsMap, configObject);
     });
   }
 
