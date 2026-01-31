@@ -70,11 +70,18 @@ import {
   Ellipsis,
   ChevronRight,
   Dot,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { interpolate } from "@/lib/schema";
 import { BlockPreview } from "./block-preview";
 import { PagePreview } from "./page-preview";
+import {
+  transformImagePaths,
+  ExpandedPreviewModal,
+  IFrameWrapper,
+  PreviewToolbar,
+} from "./preview/shared";
 
 const SortableItem = ({
   id,
@@ -629,6 +636,10 @@ const EntryForm = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewBlockIndex, setPreviewBlockIndex] = useState<number | null>(null);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const [mobilePreviewLoaded, setMobilePreviewLoaded] = useState(false);
+  const [mobilePreviewKey, setMobilePreviewKey] = useState(0);
+  const mobilePreviewIframeRef = useRef<HTMLIFrameElement>(null);
 
   // Block list controls for preview navigation
   const blockListControlsRef = useRef<Map<string, BlockListControls>>(new Map());
@@ -724,6 +735,56 @@ const EntryForm = ({
     };
   }, [blocksValue, previewBlockIndex, blockFieldInfo]);
 
+  // Mobile preview URL and data
+  const mobilePreviewData = useMemo(() => {
+    if (!previewUrl || !blocksValue || !blockFieldInfo) return null;
+    const transformedBlocks = blocksValue.map((block: Record<string, unknown>) => transformImagePaths(block));
+    const data = { blocks: transformedBlocks, blockKey: blockFieldInfo.blockKey };
+    return {
+      url: `${previewUrl}/preview/page?data=${encodeURIComponent(JSON.stringify(data))}`,
+      blocks: transformedBlocks,
+      blockKey: blockFieldInfo.blockKey,
+    };
+  }, [previewUrl, blocksValue, blockFieldInfo]);
+
+  // Send updates to mobile preview iframe
+  useEffect(() => {
+    if (showMobilePreview && mobilePreviewLoaded && mobilePreviewIframeRef.current?.contentWindow && mobilePreviewData) {
+      mobilePreviewIframeRef.current.contentWindow.postMessage(
+        { type: 'UPDATE_PAGE_PREVIEW', blocks: mobilePreviewData.blocks, blockKey: mobilePreviewData.blockKey },
+        '*'
+      );
+    }
+  }, [showMobilePreview, mobilePreviewLoaded, mobilePreviewData]);
+
+  const handleMobilePreviewLoad = () => {
+    setMobilePreviewLoaded(true);
+    setTimeout(() => {
+      if (mobilePreviewIframeRef.current?.contentWindow && mobilePreviewData) {
+        mobilePreviewIframeRef.current.contentWindow.postMessage(
+          { type: 'UPDATE_PAGE_PREVIEW', blocks: mobilePreviewData.blocks, blockKey: mobilePreviewData.blockKey },
+          '*'
+        );
+      }
+    }, 150);
+  };
+
+  const handleCloseMobilePreview = () => {
+    setShowMobilePreview(false);
+    setMobilePreviewLoaded(false);
+  };
+
+  const handleMobilePreviewReload = () => {
+    setMobilePreviewLoaded(false);
+    setMobilePreviewKey((k) => k + 1);
+  };
+
+  const handleMobilePreviewOpenNewTab = () => {
+    if (mobilePreviewData) {
+      window.open(mobilePreviewData.url, '_blank');
+    }
+  };
+
   return (
     <BlockListControlsContext.Provider value={blockListContextValue}>
       <Form {...form}>
@@ -788,12 +849,56 @@ const EntryForm = ({
           </div>
           <div className="lg:hidden fixed top-0 right-0 h-14 flex items-center gap-x-2 z-10 pr-4 md:pr-6">
             {path && history && <EntryHistoryDropdown history={history} path={path} />}
+            {mobilePreviewData && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowMobilePreview(true)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Page preview</TooltipContent>
+              </Tooltip>
+            )}
             <Button type="submit" disabled={isSubmitting}>
               Save
               {isSubmitting && (<Loader className="ml-2 h-4 w-4 animate-spin" />)}
             </Button>
             {options ? options : null}
           </div>
+          {showMobilePreview && mobilePreviewData && (
+            <ExpandedPreviewModal
+              headerContent={
+                <div className="flex items-center justify-between px-3 py-2 bg-background/80 backdrop-blur-sm border-b">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Page Preview ({blocksValue?.length ?? 0} {blocksValue?.length === 1 ? 'block' : 'blocks'})
+                  </span>
+                  <PreviewToolbar
+                    onReload={handleMobilePreviewReload}
+                    onOpenNewTab={handleMobilePreviewOpenNewTab}
+                    onToggleExpand={handleCloseMobilePreview}
+                    isExpanded={true}
+                    isLoaded={mobilePreviewLoaded}
+                  />
+                </div>
+              }
+              iframeContent={
+                <IFrameWrapper
+                  url={mobilePreviewData.url}
+                  title="Full page preview"
+                  onLoad={handleMobilePreviewLoad}
+                  isLoaded={mobilePreviewLoaded}
+                  iframeRef={mobilePreviewIframeRef}
+                  refreshKey={mobilePreviewKey}
+                />
+              }
+              onClose={handleCloseMobilePreview}
+            />
+          )}
           </div>
         </form>
       </Form>
