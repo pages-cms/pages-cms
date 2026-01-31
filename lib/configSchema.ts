@@ -69,9 +69,10 @@ const ListSchema = z.union([
       }, {
         message: "'collapsbile' must be either a boolean or an object with 'collapsed' and 'summary' properties."
       }),
-    ]),
+    ]).optional(),
+    template: z.string().optional(),
   }, {
-    message: "'list' must be either a boolean or an object with 'min' and 'max' properties."
+    message: "'list' must be either a boolean or an object with 'min', 'max', 'collapsible', or 'template' properties."
   }).strict()
 ]);
 
@@ -146,10 +147,15 @@ const generateFieldObjectSchema = (isComponent?: boolean, isBlock?: boolean): z.
           }).strict()
         ]).optional(),
         options: z.object({}).optional().nullable(),
-        blocks: z.array(
-          z.lazy(() => generateFieldObjectSchema(false, true)),
-          { message: "'blocks' must be an array of field definitions." }
-        ).optional(),
+        blocks: z.union([
+          z.string().regex(/^ref:/, {
+            message: "'blocks' reference must start with 'ref:'."
+          }),
+          z.array(
+            z.lazy(() => generateFieldObjectSchema(false, true)),
+            { message: "'blocks' must be an array of field definitions." }
+          )
+        ]).optional(),
         blockKey: z.string({
           message: "'blockKey' must be a string."
         }).min(1, { 
@@ -349,6 +355,6 @@ const ConfigSchema = z.object({
     }),
   ]).optional(),
   previewUrl: z.string().url().optional(),
-}).strict().nullable();
+}).passthrough().nullable();
 
 export { ConfigSchema };

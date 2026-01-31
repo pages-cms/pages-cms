@@ -45,6 +45,8 @@ export function EntryEditor({
   const [error, setError] = useState<string | undefined | null>(null);
   // TODO: this feels like a bit of a hack
   const [refetchTrigger, setRefetchTrigger] = useState<number>(0);
+  // Template defaults for new entries
+  const [templateDefaults, setTemplateDefaults] = useState<Record<string, any>>({});
 
   const router = useRouter();
   
@@ -84,14 +86,70 @@ export function EntryEditor({
   }, [schema, entry, path]);
 
   let entryContentObject = useMemo(() => {
-    return path
+    const baseContent = path
       ? schema?.list === true
         ? { listWrapper: entry?.contentObject }
         : entry?.contentObject
       : schema?.list === true
         ? { listWrapper: {} }
         : {};
-  }, [schema, entry, path]);
+
+    // Merge template defaults for new entries
+    if (!path && Object.keys(templateDefaults).length > 0) {
+      return { ...baseContent, ...templateDefaults };
+    }
+    return baseContent;
+  }, [schema, entry, path, templateDefaults]);
+
+  // Fetch template defaults for new entries with list.template fields
+  useEffect(() => {
+    const fetchTemplateDefaults = async () => {
+      // Only for new entries (no path)
+      if (path) return;
+      if (!entryFields || entryFields.length === 0) return;
+
+      // Find fields with list.template
+      const fieldsWithTemplate: Array<{ name: string; template: string }> = [];
+      const findTemplateFields = (fields: any[]) => {
+        for (const field of fields) {
+          if (field.list && typeof field.list === 'object' && field.list.template) {
+            fieldsWithTemplate.push({ name: field.name, template: field.list.template });
+          }
+          if (field.fields) {
+            findTemplateFields(field.fields);
+          }
+        }
+      };
+      findTemplateFields(entryFields);
+
+      if (fieldsWithTemplate.length === 0) return;
+
+      // Fetch each template
+      const defaults: Record<string, any> = {};
+      for (const { name: fieldName, template: templateName } of fieldsWithTemplate) {
+        try {
+          const templatePath = `src/content/templates/${templateName}.yaml`;
+          const response = await fetch(
+            `/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/entries/${encodeURIComponent(templatePath)}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            if (data.status === 'success' && data.data?.contentObject?.blocks) {
+              defaults[fieldName] = data.data.contentObject.blocks;
+            }
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch template "${templateName}":`, err);
+        }
+      }
+
+      if (Object.keys(defaults).length > 0) {
+        setTemplateDefaults(defaults);
+      }
+    };
+
+    fetchTemplateDefaults();
+  }, [path, entryFields, config.owner, config.repo, config.branch]);
 
   const navigateBack = useMemo(() => {
     const parentPath = path ? getParentPath(path) : undefined;
