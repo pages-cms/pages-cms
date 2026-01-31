@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, forwardRef, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useRef, forwardRef, useCallback } from "react";
 import Link from "next/link";
 import {
   useForm,
@@ -73,6 +73,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { interpolate } from "@/lib/schema";
+import { BlockPreview } from "./block-preview";
+import { PagePreview } from "./page-preview";
 
 const SortableItem = ({
   id,
@@ -107,6 +109,16 @@ const SortableItem = ({
   );
 };
 
+// Context for block list controls (scroll/expand from preview)
+interface BlockListControls {
+  selectBlock: (index: number) => void;
+}
+
+const BlockListControlsContext = React.createContext<{
+  register: (fieldName: string, controls: BlockListControls) => void;
+  unregister: (fieldName: string) => void;
+} | null>(null);
+
 const ListField = ({
   field,
   fieldName,
@@ -117,17 +129,40 @@ const ListField = ({
   renderFields: Function;
 }) => {
   const isCollapsible = !!(field.list && !(typeof field.list === 'object' && field.list?.collapsible === false));
-  
+
   const { setValue, watch } = useFormContext();
   const { fields: arrayFields, append, remove, move } = useFieldArray({
     name: fieldName,
   });
   const fieldValues = watch(fieldName);
-  
+
   // Use an index-to-state map with a ref to survive re-renders
   const openStatesRef = useRef<boolean[]>([]);
   const [, forceUpdate] = useState({});
-  
+
+  // Refs for scrolling to blocks
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Register with parent for preview navigation (only for block fields)
+  const blockListControls = React.useContext(BlockListControlsContext);
+
+  useEffect(() => {
+    if (field.type === 'block' && blockListControls) {
+      blockListControls.register(fieldName, {
+        selectBlock: (index: number) => {
+          // Collapse all, expand selected
+          openStatesRef.current = openStatesRef.current.map((_, i) => i === index);
+          forceUpdate({});
+          // Scroll to the block after a brief delay for DOM update
+          setTimeout(() => {
+            itemRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 50);
+        }
+      });
+      return () => blockListControls.unregister(fieldName);
+    }
+  }, [field.type, fieldName, blockListControls]);
+
   useEffect(() => {
     if (openStatesRef.current.length === 0 && arrayFields.length > 0) {
       const defaultCollapsed =
@@ -136,12 +171,12 @@ const ListField = ({
         field.list.collapsible &&
         typeof field.list.collapsible === 'object' &&
         field.list.collapsible.collapsed;
-      
+
       openStatesRef.current = Array(arrayFields.length).fill(!defaultCollapsed);
       forceUpdate({});
     }
   }, [arrayFields.length, field.list]);
-  
+
   const toggleOpen = (index: number) => {
     if (index >= 0 && index < openStatesRef.current.length) {
       openStatesRef.current[index] = !openStatesRef.current[index];
@@ -243,7 +278,10 @@ const ListField = ({
               <SortableContext items={arrayFields.map(item => item.id)} strategy={verticalListSortingStrategy}>
                 {arrayFields.map((arrayField, index) => (
                   <SortableItem key={arrayField.id} id={arrayField.id} type={field.type}>
-                    <div className="grid gap-6 flex-1">
+                    <div
+                      className="grid gap-6 flex-1"
+                      ref={(el) => { itemRefs.current[index] = el; }}
+                    >
                       <SingleField
                         field={field}
                         fieldName={`${fieldName}.${index}`}
@@ -576,6 +614,7 @@ const EntryForm = ({
   path,
   filePath,
   options,
+  previewUrl,
 }: {
   title: string;
   navigateBack?: string;
@@ -586,12 +625,43 @@ const EntryForm = ({
   path?: string;
   filePath?: React.ReactNode;
   options: React.ReactNode;
+  previewUrl?: string;
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewBlockIndex, setPreviewBlockIndex] = useState<number | null>(null);
+
+  // Block list controls for preview navigation
+  const blockListControlsRef = useRef<Map<string, BlockListControls>>(new Map());
+  const blockListContextValue = useMemo(() => ({
+    register: (fieldName: string, controls: BlockListControls) => {
+      blockListControlsRef.current.set(fieldName, controls);
+    },
+    unregister: (fieldName: string) => {
+      blockListControlsRef.current.delete(fieldName);
+    }
+  }), []);
 
   const zodSchema = useMemo(() => {
     return generateZodSchema(fields);
   }, [fields]);
+
+  // Find block list fields for preview
+  const blockFieldInfo = useMemo(() => {
+    const blockField = fields.find(f => f.type === 'block' && f.list);
+    if (!blockField) return null;
+    return {
+      name: blockField.name,
+      blockKey: blockField.blockKey || '_block',
+    };
+  }, [fields]);
+
+  // Handle block selection from preview navigation
+  const handleBlockSelect = useCallback((index: number) => {
+    if (blockFieldInfo) {
+      const controls = blockListControlsRef.current.get(blockFieldInfo.name);
+      controls?.selectBlock(index);
+    }
+  }, [blockFieldInfo]);
 
   const defaultValues = useMemo(() => {
     return initializeState(fields, sanitizeObject(contentObject));
@@ -635,46 +705,84 @@ const EntryForm = ({
     toast.error("Please fix the errors before saving.", { duration: 5000 });
   };
 
+  // Watch block values for preview
+  const blocksValue = blockFieldInfo ? form.watch(blockFieldInfo.name) : null;
+  const currentBlockData = useMemo(() => {
+    if (!blockFieldInfo || !blocksValue || !Array.isArray(blocksValue) || blocksValue.length === 0) {
+      return null;
+    }
+    // Use the selected block index, or default to first block
+    const index = previewBlockIndex !== null && previewBlockIndex < blocksValue.length
+      ? previewBlockIndex
+      : 0;
+    const block = blocksValue[index];
+    const blockType = block?.[blockFieldInfo.blockKey];
+    if (!block || !blockType) return null;
+    return {
+      type: blockType,
+      data: block,
+    };
+  }, [blocksValue, previewBlockIndex, blockFieldInfo]);
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit, handleError)}>
-        <div className="max-w-screen-xl mx-auto flex w-full gap-x-8">
-          <div className="flex-1 w-0">
-            <header className="flex items-center mb-6">
-              {navigateBack &&
-                <Link
-                  className={cn(buttonVariants({ variant: "outline", size: "icon-xs" }), "mr-4 shrink-0")}
-                  href={navigateBack}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Link>
-              }
+    <BlockListControlsContext.Provider value={blockListContextValue}>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit, handleError)}>
+          <div className="max-w-screen-xl mx-auto flex w-full gap-x-8">
+            <div className="flex-1 w-0">
+              <header className="flex items-center mb-6">
+                {navigateBack &&
+                  <Link
+                    className={cn(buttonVariants({ variant: "outline", size: "icon-xs" }), "mr-4 shrink-0")}
+                    href={navigateBack}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Link>
+                }
 
-              <h1 className="font-semibold text-lg md:text-2xl truncate">{title}</h1>
-            </header>
-            
-            <div onSubmit={form.handleSubmit(handleSubmit)} className="grid items-start gap-6">
-              {filePath &&
-                <div className="space-y-2 overflow-hidden">
-                  <FormLabel>
-                    Filename
-                  </FormLabel>
-                  {filePath}
-                </div>
-              }
-              {renderFields(fields)}
-            </div>
-          </div>
+                <h1 className="font-semibold text-lg md:text-2xl truncate">{title}</h1>
+              </header>
 
-          <div className="hidden lg:block w-64">
-            <div className="flex flex-col gap-y-4 sticky top-0">
-              <div className="flex gap-x-2">
-                <Button type="submit" className="w-full" disabled={isSubmitting || !isDirty}>
-                  Save
-                  {isSubmitting && (<Loader className="ml-2 h-4 w-4 animate-spin" />)}
-                </Button>
-                {options ? options : null}
+              <div onSubmit={form.handleSubmit(handleSubmit)} className="grid items-start gap-6">
+                {filePath &&
+                  <div className="space-y-2 overflow-hidden">
+                    <FormLabel>
+                      Filename
+                    </FormLabel>
+                    {filePath}
+                  </div>
+                }
+                {renderFields(fields)}
               </div>
+            </div>
+
+            <div className={cn("hidden lg:block sticky top-0 self-start", previewUrl && currentBlockData ? "w-96" : "w-64")}>
+              <div className="flex flex-col gap-y-4">
+                <div className="flex gap-x-2">
+                  <Button type="submit" className="w-full" disabled={isSubmitting || !isDirty}>
+                    Save
+                    {isSubmitting && (<Loader className="ml-2 h-4 w-4 animate-spin" />)}
+                  </Button>
+                  {options ? options : null}
+                </div>
+                {previewUrl && currentBlockData && (
+                  <BlockPreview
+                    blockType={currentBlockData.type}
+                    blockData={currentBlockData.data}
+                    previewBaseUrl={previewUrl}
+                    currentIndex={previewBlockIndex ?? 0}
+                    totalBlocks={blocksValue?.length ?? 0}
+                    onIndexChange={setPreviewBlockIndex}
+                    onBlockSelect={handleBlockSelect}
+                  />
+                )}
+                {previewUrl && blocksValue && blocksValue.length > 0 && blockFieldInfo && (
+                  <PagePreview
+                    blocks={blocksValue}
+                    blockKey={blockFieldInfo.blockKey}
+                    previewBaseUrl={previewUrl}
+                  />
+                )}
               {path && history && <EntryHistoryBlock history={history} path={path} />}
             </div>
           </div>
@@ -686,9 +794,10 @@ const EntryForm = ({
             </Button>
             {options ? options : null}
           </div>
-        </div>
-      </form>
-    </Form>
+          </div>
+        </form>
+      </Form>
+    </BlockListControlsContext.Provider>
   );
 };
 
