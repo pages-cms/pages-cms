@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
+import Image from "next/image";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -25,15 +26,15 @@ export function RepoLatest() {
         ? (
           <ul>
             {recentVisits.map((visit, index) => (
-              <li 
-                key={index} 
+              <li
+                key={index}
                 className={cn(
                   "flex gap-x-2 items-center border border-b-0 last:border-b px-3 py-2 text-sm",
                   index === 0 && "rounded-t-md",
                   index === recentVisits.length - 1 && "rounded-b-md"
                 )}
               >
-                <img src={`https://github.com/${visit.owner}.png`} alt={visit.owner} className="h-6 w-6 rounded" />
+                <Image src={`https://github.com/${visit.owner}.png`} alt={`${visit.owner}'s avatar`} width={24} height={24} className="h-6 w-6 rounded" />
                 <div className="font-medium truncate">{visit.repo}</div>
                 <div className="text-muted-foreground truncate">{formatDistanceToNow(new Date(visit.timestamp * 1000))} ago</div>
                 <Link

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useUser } from "@/contexts/user-context";
 import { Button } from "@/components/ui/button";
 import { Ban, ArrowUpRight } from "lucide-react";
@@ -21,7 +22,7 @@ const Installations = () => {
       {user.accounts.map(account =>
         <li className="flex items-center gap-x-3 border border-b-0 last:border-b first:rounded-t-md last:rounded-b-md px-3 py-2 text-sm" key={account.login}>
           <div className="flex gap-x-2 items-center">
-            <img src={`https://github.com/${account.login}.png`} alt={`${account.login}'s avatar`} className="h-6 w-6 rounded"/>
+            <Image src={`https://github.com/${account.login}.png`} alt={`${account.login}'s avatar`} width={24} height={24} className="h-6 w-6 rounded"/>
             <span className="font-medium truncate">{account.login}</span>
           </div>
           <Button size="sm" variant="outline" className="h-8 ml-auto" asChild>

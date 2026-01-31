@@ -175,7 +175,7 @@ const ListField = ({
       openStatesRef.current = Array(arrayFields.length).fill(!defaultCollapsed);
       forceUpdate({});
     }
-  }, [arrayFields.length, field.list]);
+  }, [arrayFields.length, field.list, isCollapsible]);
 
   const toggleOpen = (index: number) => {
     if (index >= 0 && index < openStatesRef.current.length) {

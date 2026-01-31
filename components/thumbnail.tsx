@@ -52,7 +52,8 @@ export function Thumbnail({
     >
       {path
         ? rawUrl
-          ? <img
+          ? // eslint-disable-next-line @next/next/no-img-element -- dynamic raw GitHub URLs that may be proxied/signed
+            <img
               src={rawUrl}
               alt={path.split("/").pop() || "thumbnail"}
               loading="lazy"
