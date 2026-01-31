@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import {
   transformImagePaths,
   PreviewToolbar,
+  PreviewFrame,
   IFrameWrapper,
   ExpandedPreviewModal,
   CollapsiblePreviewSection,
@@ -141,7 +142,7 @@ export function PagePreview({
     return (
       <>
         {/* Placeholder to maintain layout */}
-        <div className="h-[300px] bg-muted rounded-lg" />
+        <div className="h-[500px] bg-muted rounded-lg" />
         <ExpandedPreviewModal
           headerContent={headerControls}
           iframeContent={iframeContent}
@@ -151,7 +152,7 @@ export function PagePreview({
     );
   }
 
-  // Normal view - no iPhone frame, just a simple preview area
+  // Normal view - simple preview container
   return (
     <CollapsiblePreviewSection
       title="Page Preview"
@@ -159,9 +160,9 @@ export function PagePreview({
       onToggle={handleToggleCollapse}
     >
       {headerControls}
-      <div className="border rounded-lg overflow-hidden mt-2 h-[400px]">
+      <PreviewFrame>
         {iframeContent}
-      </div>
+      </PreviewFrame>
     </CollapsiblePreviewSection>
   );
 }

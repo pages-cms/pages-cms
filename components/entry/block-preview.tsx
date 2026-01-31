@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import {
   transformImagePaths,
   PreviewToolbar,
-  IPhoneFrame,
+  PreviewFrame,
   IFrameWrapper,
   ExpandedPreviewModal,
   CollapsiblePreviewSection,
@@ -196,7 +196,7 @@ export function BlockPreview({
     return (
       <>
         {/* Placeholder to maintain layout */}
-        <div className="h-[750px] bg-muted rounded-lg" />
+        <div className="h-[500px] bg-muted rounded-lg" />
         <ExpandedPreviewModal
           headerContent={headerControls}
           iframeContent={iframeContent}
@@ -214,9 +214,9 @@ export function BlockPreview({
       onToggle={handleToggleCollapse}
     >
       {headerControls}
-      <IPhoneFrame>
+      <PreviewFrame>
         {iframeContent}
-      </IPhoneFrame>
+      </PreviewFrame>
     </CollapsiblePreviewSection>
   );
 }
