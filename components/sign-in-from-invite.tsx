@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { handleSignOutAndSignIn, handleSignInWithToken } from "@/lib/actions/auth";
 import { Button, buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
@@ -19,21 +19,21 @@ export function SignInFromInvite({
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (!githubUsername) {
-      const timer = setTimeout(handleSignIn, 300);
-      clearTimeout(timer);
-    }
-  }, []);
-
-  const handleSignIn = async () => {
+  const handleSignIn = useCallback(async () => {
     setIsLoading(true);
     try {
       await handleSignInWithToken(token, redirectTo);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token, redirectTo]);
+
+  useEffect(() => {
+    if (!githubUsername) {
+      const timer = setTimeout(handleSignIn, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [githubUsername, handleSignIn]);
 
   return (
     <div className="h-screen p-4 md:p-6 flex justify-center items-center">

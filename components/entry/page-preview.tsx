@@ -39,6 +39,7 @@ export function PagePreview({
   const blocksKey = JSON.stringify(blocks);
   const transformedBlocks = useMemo(
     () => blocks.map(block => transformImagePaths(block)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- blocksKey is the serialized blocks, intentionally used to detect object mutations
     [blocksKey]
   );
 
@@ -46,6 +47,7 @@ export function PagePreview({
   const initialDataRef = useRef({ blocks: transformedBlocks, blockKey });
   const initialDataParam = useMemo(
     () => encodeURIComponent(JSON.stringify(initialDataRef.current)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- key triggers recomputation on manual refresh; ref.current is intentionally not tracked
     [key]
   );
 

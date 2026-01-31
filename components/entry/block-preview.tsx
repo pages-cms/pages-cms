@@ -52,6 +52,7 @@ export function BlockPreview({
   // Serialize on every render to detect mutations (react-hook-form mutates in place)
   // Do NOT memoize this - we need fresh serialization each render
   const blockDataKey = JSON.stringify(blockData);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- blockDataKey is the serialized blockData, intentionally used to detect object mutations
   const transformedData = useMemo(() => transformImagePaths(blockData), [blockDataKey]);
 
   // Store initial data for iframe URL (stable - doesn't change on edits)
@@ -59,7 +60,8 @@ export function BlockPreview({
   const initialDataRef = useRef(transformedData);
   const initialDataParam = useMemo(
     () => encodeURIComponent(JSON.stringify(initialDataRef.current)),
-    [key] // Only recompute when key changes (on refresh)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- key triggers recomputation on manual refresh; ref.current is intentionally not tracked
+    [key]
   );
 
   // Base preview URL (without data for open in new tab with current data)

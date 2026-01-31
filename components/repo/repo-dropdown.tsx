@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useConfig } from "@/contexts/config-context";
 import { useRepo } from "@/contexts/repo-context";
@@ -64,7 +65,7 @@ export function RepoDropdown({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="w-full h-15 justify-start px-3">
-            <img className="h-10 w-10 rounded-lg" src={`https://github.com/${owner}.png`} alt="Picture of the author" />
+            <Image className="h-10 w-10 rounded-lg" width={40} height={40} src={`https://github.com/${owner}.png`} alt={`${owner}'s avatar`} />
             <div className="text-left overflow-hidden ml-3">
               <div className="font-medium truncate">{repo}</div>
               <div className="text-xs text-muted-foreground truncate">{config?.branch}</div>
