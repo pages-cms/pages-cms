@@ -756,8 +756,8 @@ const EntryForm = ({
               </div>
             </div>
 
-            <div className={cn("hidden lg:block sticky top-0 self-start", previewUrl && currentBlockData ? "w-96" : "w-64")}>
-              <div className="flex flex-col gap-y-4">
+            <div className={cn("hidden lg:block sticky top-0 self-start max-h-[calc(100vh-6rem)] overflow-y-auto", previewUrl && currentBlockData ? "w-96" : "w-64")}>
+              <div className="flex flex-col gap-y-4 pb-4">
                 <div className="flex gap-x-2">
                   <Button type="submit" className="w-full" disabled={isSubmitting || !isDirty}>
                     Save
