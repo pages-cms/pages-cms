@@ -58,6 +58,7 @@ import {
   Trash2,
   Underline as UnderlineIcon
 } from "lucide-react";
+import { InlineLinkPicker } from "@/fields/core/link/inline-link-picker";
 import { toast } from "sonner";
 import { getSchemaByName } from "@/lib/schema";
 import { extensionCategories, normalizePath } from "@/lib/utils/file";
@@ -295,36 +296,16 @@ const EditComponent = forwardRef((props: any, ref) => {
                   <Link2 className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-1">
-                <div className="flex gap-x-1 items-center">
-                  <Input
-                    className="h-8 flex-1"
-                    placeholder="e.g. http://pagescms.org"
-                    value={linkUrl}
-                    onChange={e => setLinkUrl(e.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="xxs"
-                    className="shrink-0"
-                    onClick={() => linkUrl
-                      ? editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run()
-                      : editor.chain().focus().extendMarkRange('link').unsetLink()
-                        .run()
-                    }
-                  >Link</Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="xxs"
-                    className="shrink-0"
-                    onClick={() => editor.chain().focus().extendMarkRange('link').unsetLink()
-                      .run()}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+              <PopoverContent className="p-1 w-auto">
+                <InlineLinkPicker
+                  value={linkUrl}
+                  onChange={setLinkUrl}
+                  onApply={() => linkUrl
+                    ? editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run()
+                    : editor.chain().focus().extendMarkRange('link').unsetLink().run()
+                  }
+                  onRemove={() => editor.chain().focus().extendMarkRange('link').unsetLink().run()}
+                />
               </PopoverContent>
             </Popover>
             {(editor.isActive("paragraph") || editor.isActive("heading")) &&

@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useState, useEffect, useMemo } from "react";
+import { forwardRef, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,87 +17,23 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { ChevronDown, ExternalLink, FileText, Loader2 } from "lucide-react";
-import { useConfig } from "@/contexts/config-context";
-
-interface ManifestLink {
-  url: string;
-  title: string;
-}
-
-interface SiteManifest {
-  generated: string;
-  collections: Record<string, ManifestLink[]>;
-}
-
-let manifestCache: { url: string; data: SiteManifest | null; loading: boolean } = {
-  url: "",
-  data: null,
-  loading: false,
-};
-let manifestPromise: Promise<SiteManifest | null> | null = null;
+import {
+  useSiteManifest,
+  findLinkTitle,
+  isExternalUrl,
+  formatCollectionName,
+} from "./use-site-manifest";
 
 const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) => {
   const { value, onChange, field } = props;
-  const { config } = useConfig();
+  const { manifest, loading, manifestUrl } = useSiteManifest();
   const [open, setOpen] = useState(false);
-  const [manifest, setManifest] = useState<SiteManifest | null>(manifestCache.data);
-  const [loading, setLoading] = useState(false);
 
-  const previewUrl = config?.object?.previewUrl;
-  const manifestUrl = previewUrl ? `${previewUrl}/site-manifest.json` : null;
-
-  useEffect(() => {
-    if (!manifestUrl) return;
-
-    if (manifestCache.url === manifestUrl && manifestCache.data) {
-      setManifest(manifestCache.data);
-      return;
-    }
-
-    if (manifestCache.url === manifestUrl && manifestPromise) {
-      setLoading(true);
-      manifestPromise.then((data) => {
-        setManifest(data);
-        setLoading(false);
-      });
-      return;
-    }
-
-    setLoading(true);
-    manifestCache = { url: manifestUrl, data: null, loading: true };
-
-    manifestPromise = fetch(manifestUrl)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch manifest");
-        return res.json();
-      })
-      .then((data: SiteManifest) => {
-        manifestCache = { url: manifestUrl, data, loading: false };
-        setManifest(data);
-        setLoading(false);
-        return data;
-      })
-      .catch((err) => {
-        console.warn("Could not load site manifest:", err);
-        manifestCache = { url: manifestUrl, data: null, loading: false };
-        setLoading(false);
-        return null;
-      });
-  }, [manifestUrl]);
-
-  const isExternal = useMemo(() => {
-    if (!value) return false;
-    return value.startsWith("http://") || value.startsWith("https://");
-  }, [value]);
-
-  const selectedTitle = useMemo(() => {
-    if (!value || !manifest || isExternal) return null;
-    for (const links of Object.values(manifest.collections)) {
-      const found = links.find((link) => link.url === value);
-      if (found) return found.title;
-    }
-    return null;
-  }, [value, manifest, isExternal]);
+  const isExternal = useMemo(() => isExternalUrl(value), [value]);
+  const selectedTitle = useMemo(
+    () => (isExternal ? null : findLinkTitle(manifest, value)),
+    [value, manifest, isExternal]
+  );
 
   const handleSelect = (url: string) => {
     onChange(url);
@@ -106,10 +42,6 @@ const EditComponent = forwardRef((props: any, ref: React.Ref<HTMLInputElement>) 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
-  };
-
-  const formatCollectionName = (name: string) => {
-    return name.charAt(0).toUpperCase() + name.slice(1);
   };
 
   return (
