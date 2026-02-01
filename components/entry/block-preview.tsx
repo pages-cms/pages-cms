@@ -20,6 +20,8 @@ interface BlockPreviewProps {
   totalBlocks?: number;
   onIndexChange?: (index: number) => void;
   onBlockSelect?: (index: number) => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 export function BlockPreview({
@@ -30,12 +32,12 @@ export function BlockPreview({
   totalBlocks = 1,
   onIndexChange,
   onBlockSelect,
+  isCollapsed,
+  onToggleCollapse,
 }: BlockPreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  // Start collapsed - lazy load on first expand
-  const [isCollapsed, setIsCollapsed] = useState(true);
   const [hasEverOpened, setHasEverOpened] = useState(false);
   const [key, setKey] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -127,7 +129,7 @@ export function BlockPreview({
   // Handle collapse/expand toggle
   const handleToggleCollapse = () => {
     const willOpen = isCollapsed;
-    setIsCollapsed(!isCollapsed);
+    onToggleCollapse();
     if (willOpen && !hasEverOpened) {
       setHasEverOpened(true);
       // Update initial data when first opening

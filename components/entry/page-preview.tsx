@@ -14,18 +14,20 @@ interface PagePreviewProps {
   blocks: Array<Record<string, unknown>>;
   blockKey: string;
   previewBaseUrl: string;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 export function PagePreview({
   blocks,
   blockKey,
   previewBaseUrl,
+  isCollapsed,
+  onToggleCollapse,
 }: PagePreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  // Start collapsed - lazy load on first expand
-  const [isCollapsed, setIsCollapsed] = useState(true);
   const [hasEverOpened, setHasEverOpened] = useState(false);
   const [key, setKey] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -98,7 +100,7 @@ export function PagePreview({
   // Handle collapse/expand toggle
   const handleToggleCollapse = () => {
     const willOpen = isCollapsed;
-    setIsCollapsed(!isCollapsed);
+    onToggleCollapse();
     if (willOpen && !hasEverOpened) {
       setHasEverOpened(true);
       // Update initial data when first opening

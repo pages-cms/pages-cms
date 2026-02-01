@@ -640,6 +640,8 @@ const EntryForm = ({
   const [mobilePreviewLoaded, setMobilePreviewLoaded] = useState(false);
   const [mobilePreviewKey, setMobilePreviewKey] = useState(0);
   const mobilePreviewIframeRef = useRef<HTMLIFrameElement>(null);
+  // Track which preview panel is open (only one at a time)
+  const [openPreview, setOpenPreview] = useState<'block' | 'page' | null>(null);
 
   // Block list controls for preview navigation
   const blockListControlsRef = useRef<Map<string, BlockListControls>>(new Map());
@@ -835,6 +837,8 @@ const EntryForm = ({
                     totalBlocks={blocksValue?.length ?? 0}
                     onIndexChange={setPreviewBlockIndex}
                     onBlockSelect={handleBlockSelect}
+                    isCollapsed={openPreview !== 'block'}
+                    onToggleCollapse={() => setOpenPreview(openPreview === 'block' ? null : 'block')}
                   />
                 )}
                 {previewUrl && blocksValue && blocksValue.length > 0 && blockFieldInfo && (
@@ -842,6 +846,8 @@ const EntryForm = ({
                     blocks={blocksValue}
                     blockKey={blockFieldInfo.blockKey}
                     previewBaseUrl={previewUrl}
+                    isCollapsed={openPreview !== 'page'}
+                    onToggleCollapse={() => setOpenPreview(openPreview === 'page' ? null : 'page')}
                   />
                 )}
               {path && history && <EntryHistoryBlock history={history} path={path} />}
