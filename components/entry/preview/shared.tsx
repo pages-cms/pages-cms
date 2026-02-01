@@ -110,24 +110,16 @@ export function PreviewToolbar({
 }
 
 /**
- * iPhone-style device frame for mobile preview
+ * Simple preview frame container with consistent dimensions
  */
-interface IPhoneFrameProps {
+interface PreviewFrameProps {
   children: ReactNode;
 }
 
-export function IPhoneFrame({ children }: IPhoneFrameProps) {
+export function PreviewFrame({ children }: PreviewFrameProps) {
   return (
-    <div className="mx-auto w-[375px] bg-gray-900 rounded-[2.5rem] p-2 shadow-xl mt-4">
-      {/* Screen */}
-      <div className="bg-white rounded-[2rem] overflow-hidden h-[667px] relative">
-        {/* Notch */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-2xl z-20" />
-        {/* Content */}
-        <div className="h-full pt-6 overflow-hidden">
-          {children}
-        </div>
-      </div>
+    <div className="border rounded-lg overflow-hidden mt-2 h-[500px] bg-white">
+      {children}
     </div>
   );
 }
