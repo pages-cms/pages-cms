@@ -159,7 +159,7 @@ export function BlockPreview({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- blockDataKey is the serialized blockData, intentionally used to detect object mutations
   const transformedData = useMemo(
     () => transformImagePaths(blockData),
-    [blockData],
+    [blockDataKey],
   );
 
   // Store initial data for iframe URL (stable - doesn't change on edits)
