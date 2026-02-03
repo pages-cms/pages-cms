@@ -76,6 +76,18 @@ const ListSchema = z.union([
   }).strict()
 ]);
 
+// Schema for collection dependencies in components
+const CollectionDependencySchema = z.object({
+  name: z.string({
+    required_error: "Collection 'name' is required.",
+    invalid_type_error: "Collection 'name' must be a string.",
+  }),
+  limit: z.union([
+    z.number().positive(),
+    z.string(), // Field reference like "count"
+  ]).optional(),
+});
+
 // Generator for Field Object Schema (components do not have a `name` field)
 const generateFieldObjectSchema = (isComponent?: boolean, isBlock?: boolean): z.ZodType<any> => {
   let baseObjectSchema = {
@@ -96,6 +108,9 @@ const generateFieldObjectSchema = (isComponent?: boolean, isBlock?: boolean): z.
       z.lazy(() => generateFieldObjectSchema()),
       { message: "'fields' must be an array of field definitions." }
     ).optional(),
+    collections: z.array(CollectionDependencySchema, {
+      message: "'collections' must be an array of collection dependency objects."
+    }).optional(),
   };
 
   if (!isComponent) {

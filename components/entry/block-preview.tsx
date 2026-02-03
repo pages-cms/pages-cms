@@ -1,8 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useConfig } from "@/contexts/config-context";
+import { getSchemaByName } from "@/lib/schema";
 import {
   transformImagePaths,
   PreviewToolbar,
@@ -10,7 +12,12 @@ import {
   IFrameWrapper,
   ExpandedPreviewModal,
   CollapsiblePreviewSection,
-} from './preview/shared';
+} from "./preview/shared";
+
+interface CollectionDependency {
+  name: string;
+  limit?: number | string;
+}
 
 interface BlockPreviewProps {
   blockType: string;
@@ -22,6 +29,25 @@ interface BlockPreviewProps {
   onBlockSelect?: (index: number) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+}
+
+// Transform collection API response to format expected by preview blocks
+function transformCollectionData(
+  collectionName: string,
+  apiData: {
+    contents: Array<{
+      name: string;
+      path: string;
+      fields: Record<string, unknown>;
+    }>;
+  },
+): Array<{ slug: string; data: Record<string, unknown> }> {
+  return apiData.contents
+    .filter((item) => item.fields) // Only include items with parsed fields
+    .map((item) => ({
+      slug: item.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+      data: item.fields,
+    }));
 }
 
 export function BlockPreview({
@@ -41,6 +67,12 @@ export function BlockPreview({
   const [hasEverOpened, setHasEverOpened] = useState(false);
   const [key, setKey] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [collectionData, setCollectionData] = useState<
+    Record<string, unknown[]>
+  >({});
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+
+  const { config } = useConfig();
 
   // For portal rendering
   useEffect(() => {
@@ -48,14 +80,87 @@ export function BlockPreview({
   }, []);
 
   // Normalize block type: convert underscores to hyphens
-  const normalizedBlockType = blockType.replace(/_/g, '-');
+  const normalizedBlockType = blockType.replace(/_/g, "-");
+
+  // Get the block's component definition from config to find collection dependencies
+  const blockCollections = useMemo((): CollectionDependency[] => {
+    if (!config?.object?.components) return [];
+
+    // Find the component definition for this block type
+    // Block types like "sermon-grid" map to components like "sermonGridBlock"
+    const componentName =
+      normalizedBlockType
+        .split("-")
+        .map((part, i) =>
+          i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1),
+        )
+        .join("") + "Block";
+
+    const componentDef = config.object.components[componentName];
+    return componentDef?.collections || [];
+  }, [config, normalizedBlockType]);
+
+  // Fetch collection data when block has collection dependencies
+  const fetchCollections = useCallback(async () => {
+    if (!config || blockCollections.length === 0) return;
+
+    setCollectionsLoading(true);
+    const newCollectionData: Record<string, unknown[]> = {};
+
+    try {
+      await Promise.all(
+        blockCollections.map(async (dep) => {
+          try {
+            const collectionSchema = getSchemaByName(config.object, dep.name);
+            const collectionPath = collectionSchema?.path || "";
+            const response = await fetch(
+              `/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collections/${dep.name}?path=${encodeURIComponent(collectionPath)}`,
+            );
+            if (!response.ok) return;
+
+            const data = await response.json();
+            if (data.status === "success" && data.data?.contents) {
+              let items = transformCollectionData(dep.name, data.data);
+
+              // Apply limit if specified
+              if (dep.limit) {
+                const limitValue =
+                  typeof dep.limit === "string"
+                    ? (blockData[dep.limit] as number) || 10
+                    : dep.limit;
+                items = items.slice(0, limitValue);
+              }
+
+              newCollectionData[dep.name] = items;
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch collection "${dep.name}":`, err);
+          }
+        }),
+      );
+
+      setCollectionData(newCollectionData);
+    } finally {
+      setCollectionsLoading(false);
+    }
+  }, [config, blockCollections, blockData]);
+
+  // Fetch collections when preview opens or block type changes
+  useEffect(() => {
+    if (hasEverOpened && blockCollections.length > 0) {
+      fetchCollections();
+    }
+  }, [hasEverOpened, fetchCollections, blockCollections.length]);
 
   // Transform data for sending to preview
   // Serialize on every render to detect mutations (react-hook-form mutates in place)
   // Do NOT memoize this - we need fresh serialization each render
   const blockDataKey = JSON.stringify(blockData);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- blockDataKey is the serialized blockData, intentionally used to detect object mutations
-  const transformedData = useMemo(() => transformImagePaths(blockData), [blockDataKey]);
+  const transformedData = useMemo(
+    () => transformImagePaths(blockData),
+    [blockData],
+  );
 
   // Store initial data for iframe URL (stable - doesn't change on edits)
   // This prevents iframe reloading on every keystroke
@@ -63,7 +168,7 @@ export function BlockPreview({
   const initialDataParam = useMemo(
     () => encodeURIComponent(JSON.stringify(initialDataRef.current)),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- key triggers recomputation on manual refresh; ref.current is intentionally not tracked
-    [key]
+    [key],
   );
 
   // Base preview URL (without data for open in new tab with current data)
@@ -75,11 +180,15 @@ export function BlockPreview({
   useEffect(() => {
     if (isLoaded && iframeRef.current?.contentWindow) {
       iframeRef.current.contentWindow.postMessage(
-        { type: 'UPDATE_PREVIEW', blockData: transformedData },
-        '*'
+        {
+          type: "UPDATE_PREVIEW",
+          blockData: transformedData,
+          collections: collectionData,
+        },
+        "*",
       );
     }
-  }, [transformedData, isLoaded]);
+  }, [transformedData, collectionData, isLoaded]);
 
   // Handle iframe load
   const handleLoad = () => {
@@ -88,11 +197,15 @@ export function BlockPreview({
     setTimeout(() => {
       if (iframeRef.current?.contentWindow) {
         iframeRef.current.contentWindow.postMessage(
-          { type: 'UPDATE_PREVIEW', blockData: transformedData },
-          '*'
+          {
+            type: "UPDATE_PREVIEW",
+            blockData: transformedData,
+            collections: collectionData,
+          },
+          "*",
         );
       }
-    }, 150);
+    }, 300);
   };
 
   // Reload iframe with fresh data
@@ -100,12 +213,18 @@ export function BlockPreview({
     initialDataRef.current = transformedData;
     setIsLoaded(false);
     setKey((k) => k + 1);
+    // Re-fetch collections on reload
+    if (blockCollections.length > 0) {
+      fetchCollections();
+    }
   };
 
   // Open preview in new tab with current data
   const handleOpenNewTab = () => {
-    const currentDataParam = encodeURIComponent(JSON.stringify(transformedData));
-    window.open(`${basePreviewUrl}?data=${currentDataParam}`, '_blank');
+    const currentDataParam = encodeURIComponent(
+      JSON.stringify(transformedData),
+    );
+    window.open(`${basePreviewUrl}?data=${currentDataParam}`, "_blank");
   };
 
   // Navigate to previous block
@@ -216,9 +335,7 @@ export function BlockPreview({
       onToggle={handleToggleCollapse}
     >
       {headerControls}
-      <PreviewFrame>
-        {iframeContent}
-      </PreviewFrame>
+      <PreviewFrame>{iframeContent}</PreviewFrame>
     </CollapsiblePreviewSection>
   );
 }
