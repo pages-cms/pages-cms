@@ -622,6 +622,7 @@ const EntryForm = ({
   filePath,
   options,
   previewUrl,
+  isTemplateMode = false,
 }: {
   title: string;
   navigateBack?: string;
@@ -633,6 +634,7 @@ const EntryForm = ({
   filePath?: React.ReactNode;
   options: React.ReactNode;
   previewUrl?: string;
+  isTemplateMode?: boolean;
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewBlockIndex, setPreviewBlockIndex] = useState<number | null>(null);
@@ -655,8 +657,8 @@ const EntryForm = ({
   }), []);
 
   const zodSchema = useMemo(() => {
-    return generateZodSchema(fields);
-  }, [fields]);
+    return generateZodSchema(fields, false, isTemplateMode);
+  }, [fields, isTemplateMode]);
 
   // Find block list fields for preview
   const blockFieldInfo = useMemo(() => {
@@ -696,6 +698,11 @@ const EntryForm = ({
   ): React.ReactNode[] => {
     return fields.map((field) => {
       if (!field || field.hidden) return null;
+
+      // In template mode, only show fields marked templateEditable: true
+      // Exception: block-type fields are always shown (they define structure)
+      if (isTemplateMode && field.templateEditable !== true && field.type !== 'block') return null;
+
       const currentFieldName = parentName ? `${parentName}.${field.name}` : field.name;
 
       if (field.list === true || (typeof field.list === 'object' && field.list !== null)) {
@@ -703,7 +710,7 @@ const EntryForm = ({
       }
       return <SingleField key={currentFieldName} field={field} fieldName={currentFieldName} renderFields={renderFields} />;
     });
-  }, []);
+  }, [isTemplateMode]);
 
   const handleSubmit = async (values: any) => {
     setIsSubmitting(true);

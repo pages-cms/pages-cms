@@ -115,11 +115,16 @@ const getDefaultValue = (field: Record<string, any>) => {
 // Generate a Zod schema for validation
 const generateZodSchema = (
   fields: Field[],
-  ignoreHidden: boolean = false
+  ignoreHidden: boolean = false,
+  isTemplateMode: boolean = false
 ): z.ZodTypeAny => {
   const buildSchemaObject = (currentFields: Field[]): Record<string, z.ZodTypeAny> => {
     return currentFields.reduce((acc: Record<string, z.ZodTypeAny>, field) => {
       if (ignoreHidden && field.hidden) return acc;
+
+      // In template mode, skip validation for non-templateEditable fields
+      // Exception: block-type fields are always validated (they define structure)
+      if (isTemplateMode && field.templateEditable !== true && field.type !== 'block') return acc;
 
       let fieldSchema: z.ZodTypeAny;
 

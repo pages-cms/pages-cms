@@ -142,6 +142,9 @@ const generateFieldObjectSchema = (isComponent?: boolean, isBlock?: boolean): z.
         hidden: z.boolean({
           message: "'hidden' must be a boolean."
         }).optional().nullable(),
+        templateEditable: z.boolean({
+          message: "'templateEditable' must be a boolean."
+        }).optional().nullable(),
         required: z.boolean({
           message: "'required' must be a boolean."
         }).optional().nullable(),
@@ -331,6 +334,9 @@ const ContentObjectSchema = z.object({
   subfolders: z.boolean({
     message: "'subfolders' must be a boolean."
   }).optional().nullable(),
+  isTemplate: z.boolean({
+    message: "'isTemplate' must be a boolean."
+  }).optional(),
   fields: z.array(
     generateFieldObjectSchema(),
     { message: "'fields' must be an array of field definitions." }

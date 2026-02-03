@@ -53,10 +53,12 @@ export function EntryEditor({
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
   
-  let schema = useMemo(() => {
+  const schema = useMemo(() => {
     if (!name) return;
     return getSchemaByName(config?.object, name)
   }, [config, name]);
+
+  const isTemplateMode = schema?.isTemplate === true;
   
   let entryFields = useMemo(() => {
     return !schema?.fields || schema.fields.length === 0
@@ -227,7 +229,8 @@ export function EntryEditor({
             content: schema?.list === true
               ? contentObject.listWrapper
               : contentObject,
-            sha: sha
+            sha: sha,
+            isTemplateMode: isTemplateMode
           }),
         });
         if (!response.ok) throw new Error(`Failed to save file: ${response.status} ${response.statusText}`);
@@ -415,6 +418,7 @@ export function EntryEditor({
         path={path}
         history={history}
         previewUrl={config.object?.previewUrl}
+        isTemplateMode={isTemplateMode}
         // filePath={(path && schema?.type === 'collection')
         //   ? <FilePath
         //       path={path}

@@ -79,7 +79,8 @@ export async function POST(
             }
             
             // Use mapBlocks to convert config blocks array to a map
-            const zodSchema = generateZodSchema(contentFields);
+            // In template mode, only validate templateEditable fields
+            const zodSchema = generateZodSchema(contentFields, false, data.isTemplateMode === true);
             const zodValidation = zodSchema.safeParse(contentObject);
             
             if (zodValidation.success === false ) {

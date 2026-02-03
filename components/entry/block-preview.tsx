@@ -156,9 +156,9 @@ export function BlockPreview({
   // Serialize on every render to detect mutations (react-hook-form mutates in place)
   // Do NOT memoize this - we need fresh serialization each render
   const blockDataKey = JSON.stringify(blockData);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- blockDataKey is the serialized blockData, intentionally used to detect object mutations
   const transformedData = useMemo(
     () => transformImagePaths(blockData),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- blockDataKey is the serialized blockData, intentionally used to detect object mutations
     [blockDataKey],
   );
 
