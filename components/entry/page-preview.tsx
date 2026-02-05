@@ -76,6 +76,7 @@ export function PagePreview({
     const collectionsMap = new Map<string, CollectionDependency>();
 
     blocks.forEach((block) => {
+      if (!block) return;
       const blockType = (block[blockKey] as string)?.replace(/_/g, "-");
       if (!blockType) return;
 
@@ -166,7 +167,7 @@ export function PagePreview({
   // Serialize on every render to detect mutations (react-hook-form mutates in place)
   const blocksKey = JSON.stringify(blocks);
   const transformedBlocks = useMemo(
-    () => blocks.map((block) => transformImagePaths(block)),
+    () => blocks.filter((block) => block !== null).map((block) => transformImagePaths(block)),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- blocksKey is the serialized blocks, intentionally used to detect object mutations
     [blocksKey],
   );
