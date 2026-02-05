@@ -130,10 +130,12 @@ const ListField = ({
   field,
   fieldName,
   renderFields,
+  isTemplateMode = false,
 }: {
   field: Field;
   fieldName: string;
   renderFields: Function;
+  isTemplateMode?: boolean;
 }) => {
   const isCollapsible = !!(field.list && !(typeof field.list === 'object' && field.list?.collapsible === false));
 
@@ -297,6 +299,7 @@ const ListField = ({
                         isOpen={openStatesRef.current[index]}
                         toggleOpen={() => toggleOpen(index)}
                         index={index}
+                        isTemplateMode={isTemplateMode}
                       />
                     </div>
                     <Tooltip>
@@ -335,7 +338,7 @@ const ListField = ({
 };
 
 const BlocksField = forwardRef((props: any, ref) => {
-  const { field, fieldName, renderFields, isOpen, onToggleOpen, index } = props;
+  const { field, fieldName, renderFields, isOpen, onToggleOpen, index, isTemplateMode } = props;
 
   const isCollapsible = !!(field.list && !(typeof field.list === 'object' && field.list?.collapsible === false));
   
@@ -451,7 +454,15 @@ const BlocksField = forwardRef((props: any, ref) => {
                   selectedBlockDefinition.fields || [],
                   fieldName
                 );
-                return renderedElements;
+                const visibleElements = renderedElements.filter(Boolean);
+                if (visibleElements.length === 0 && isTemplateMode) {
+                  return (
+                    <p className="text-sm text-muted-foreground italic">
+                      No configuration options for this block
+                    </p>
+                  );
+                }
+                return visibleElements;
               })()
             ) : (
               <SingleField
@@ -459,6 +470,7 @@ const BlocksField = forwardRef((props: any, ref) => {
                 fieldName={fieldName}
                 renderFields={renderFields}
                 showLabel={false}
+                isTemplateMode={isTemplateMode}
               />
             )}
           </div>
@@ -520,7 +532,8 @@ const SingleField = ({
   isOpen = true,
   toggleOpen = () => {},
   index = 0,
-  disabled = false
+  disabled = false,
+  isTemplateMode = false
 }: {
   field: Field;
   fieldName: string;
@@ -530,6 +543,7 @@ const SingleField = ({
   toggleOpen?: () => void;
   index?: number;
   disabled?: boolean;
+  isTemplateMode?: boolean;
 }) => {
   const { control, formState: { errors } } = useFormContext();
   
@@ -550,7 +564,7 @@ const SingleField = ({
 
   let fieldComponentProps: any = { field: field };
   if (['object', 'block'].includes(field.type)) {
-    fieldComponentProps = { ...fieldComponentProps, fieldName, renderFields, isOpen };
+    fieldComponentProps = { ...fieldComponentProps, fieldName, renderFields, isOpen, isTemplateMode };
     if (isCollapsible) {
       fieldComponentProps = { ...fieldComponentProps, onToggleOpen: toggleOpen, index };
     }
@@ -619,12 +633,14 @@ const ToggleFieldGroup = ({
   toggleField,
   controlledFields,
   parentName,
-  renderFields: renderFieldsFn
+  renderFields: renderFieldsFn,
+  isTemplateMode = false
 }: {
   toggleField: Field;
   controlledFields: Field[];
   parentName?: string;
   renderFields: Function;
+  isTemplateMode?: boolean;
 }) => {
   const { watch } = useFormContext();
   const toggleFieldName = parentName ? `${parentName}.${toggleField.name}` : toggleField.name;
@@ -637,6 +653,7 @@ const ToggleFieldGroup = ({
         field={toggleField}
         fieldName={toggleFieldName}
         renderFields={renderFieldsFn}
+        isTemplateMode={isTemplateMode}
       />
       {/* Render controlled fields with disabled state when toggle is false */}
       {controlledFields.map((controlledField) => {
@@ -652,6 +669,7 @@ const ToggleFieldGroup = ({
                 field={controlledField}
                 fieldName={controlledFieldName}
                 renderFields={renderFieldsFn}
+                isTemplateMode={isTemplateMode}
               />
             </div>
           );
@@ -664,6 +682,7 @@ const ToggleFieldGroup = ({
             fieldName={controlledFieldName}
             renderFields={renderFieldsFn}
             disabled={!toggleValue}
+            isTemplateMode={isTemplateMode}
           />
         );
       })}
@@ -801,15 +820,16 @@ const EntryForm = ({
               controlledFields={visibleControlledFields}
               parentName={parentName}
               renderFields={renderFields}
+              isTemplateMode={isTemplateMode}
             />
           );
         }
       }
 
       if (field.list === true || (typeof field.list === 'object' && field.list !== null)) {
-        return <ListField key={currentFieldName} field={field} fieldName={currentFieldName} renderFields={renderFields} />;
+        return <ListField key={currentFieldName} field={field} fieldName={currentFieldName} renderFields={renderFields} isTemplateMode={isTemplateMode} />;
       }
-      return <SingleField key={currentFieldName} field={field} fieldName={currentFieldName} renderFields={renderFields} />;
+      return <SingleField key={currentFieldName} field={field} fieldName={currentFieldName} renderFields={renderFields} isTemplateMode={isTemplateMode} />;
     });
   }, [isTemplateMode]);
 
