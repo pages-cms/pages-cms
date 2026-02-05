@@ -174,17 +174,25 @@ const ListField = ({
 
   useEffect(() => {
     if (openStatesRef.current.length === 0 && arrayFields.length > 0) {
+      // For block fields, default to collapsed (except first block is expanded)
+      // For other fields, check the explicit collapsible.collapsed config
       const defaultCollapsed =
-        isCollapsible &&
-        typeof field.list === 'object' &&
-        field.list.collapsible &&
-        typeof field.list.collapsible === 'object' &&
-        field.list.collapsible.collapsed;
+        field.type === 'block' ||
+        (isCollapsible &&
+          typeof field.list === 'object' &&
+          field.list.collapsible &&
+          typeof field.list.collapsible === 'object' &&
+          field.list.collapsible.collapsed);
 
-      openStatesRef.current = Array(arrayFields.length).fill(!defaultCollapsed);
+      if (field.type === 'block') {
+        // First block expanded, rest collapsed
+        openStatesRef.current = arrayFields.map((_, index) => index === 0);
+      } else {
+        openStatesRef.current = Array(arrayFields.length).fill(!defaultCollapsed);
+      }
       forceUpdate({});
     }
-  }, [arrayFields.length, field.list, isCollapsible]);
+  }, [arrayFields.length, field.list, field.type, isCollapsible]);
 
   const toggleOpen = (index: number) => {
     if (index >= 0 && index < openStatesRef.current.length) {
