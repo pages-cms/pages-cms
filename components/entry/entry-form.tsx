@@ -519,7 +519,8 @@ const SingleField = ({
   showLabel = true,
   isOpen = true,
   toggleOpen = () => {},
-  index = 0
+  index = 0,
+  disabled = false
 }: {
   field: Field;
   fieldName: string;
@@ -528,6 +529,7 @@ const SingleField = ({
   isOpen?: boolean;
   toggleOpen?: () => void;
   index?: number;
+  disabled?: boolean;
 }) => {
   const { control, formState: { errors } } = useFormContext();
   
@@ -561,7 +563,7 @@ const SingleField = ({
     };
 
     return (
-      <FormItem key={fieldName}>
+      <FormItem key={fieldName} className={disabled ? "opacity-50 pointer-events-none" : ""}>
         {showLabel &&
           <div className="flex items-center h-5 gap-x-2">
             {field.label !== false &&
@@ -585,7 +587,7 @@ const SingleField = ({
         key={fieldName}
         control={control}
         render={({ field: rhfManagedFieldProps, fieldState }) => (
-          <FormItem>
+          <FormItem className={disabled ? "opacity-50" : ""}>
             <div className="flex items-center h-5 gap-x-2">
               {showLabel && field.label !== false &&
                 <FormLabel>
@@ -595,9 +597,10 @@ const SingleField = ({
               {showLabel && field.required && <span className="inline-flex items-center rounded-full bg-muted border px-2 h-5 text-xs font-medium">Required</span>}
             </div>
             <FormControl>
-              <FieldComponent 
+              <FieldComponent
                 {...rhfManagedFieldProps}
                 {...fieldComponentProps}
+                disabled={disabled}
               />
             </FormControl>
             {field.description && <FormDescription>{field.description}</FormDescription>}
@@ -610,6 +613,65 @@ const SingleField = ({
 };
 
 SingleField.displayName = 'SingleField';
+
+// Component to render a boolean toggle with its controlled fields inline
+const ToggleFieldGroup = ({
+  toggleField,
+  controlledFields,
+  parentName,
+  renderFields: renderFieldsFn
+}: {
+  toggleField: Field;
+  controlledFields: Field[];
+  parentName?: string;
+  renderFields: Function;
+}) => {
+  const { watch } = useFormContext();
+  const toggleFieldName = parentName ? `${parentName}.${toggleField.name}` : toggleField.name;
+  const toggleValue = watch(toggleFieldName);
+
+  return (
+    <div className="space-y-3">
+      {/* Render the toggle field */}
+      <SingleField
+        field={toggleField}
+        fieldName={toggleFieldName}
+        renderFields={renderFieldsFn}
+      />
+      {/* Render controlled fields with disabled state when toggle is false */}
+      {controlledFields.map((controlledField) => {
+        const controlledFieldName = parentName
+          ? `${parentName}.${controlledField.name}`
+          : controlledField.name;
+
+        if (controlledField.list === true || (typeof controlledField.list === 'object' && controlledField.list !== null)) {
+          // For list fields, wrap in a disabled container
+          return (
+            <div key={controlledFieldName} className={cn(!toggleValue && "opacity-50 pointer-events-none")}>
+              <ListField
+                field={controlledField}
+                fieldName={controlledFieldName}
+                renderFields={renderFieldsFn}
+              />
+            </div>
+          );
+        }
+
+        return (
+          <SingleField
+            key={controlledFieldName}
+            field={controlledField}
+            fieldName={controlledFieldName}
+            renderFields={renderFieldsFn}
+            disabled={!toggleValue}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+ToggleFieldGroup.displayName = 'ToggleFieldGroup';
 
 const EntryForm = ({
   title,
@@ -696,14 +758,53 @@ const EntryForm = ({
     fields: Field[],
     parentName?: string
   ): React.ReactNode[] => {
+    // Build a map of fields controlled by boolean toggles
+    const controlledFieldsMap = new Map<string, Field[]>();
+    const controlledFieldNames = new Set<string>();
+
+    // First pass: identify controlled fields and their controllers
+    for (const field of fields) {
+      if (field?.controlledBy) {
+        const controlled = controlledFieldsMap.get(field.controlledBy) || [];
+        controlled.push(field);
+        controlledFieldsMap.set(field.controlledBy, controlled);
+        controlledFieldNames.add(field.name);
+      }
+    }
+
     return fields.map((field) => {
       if (!field || field.hidden) return null;
+
+      // Skip fields that are controlled by a toggle (they render as part of the group)
+      if (controlledFieldNames.has(field.name)) return null;
 
       // In template mode, only show fields marked templateEditable: true
       // Exception: block-type fields are always shown (they define structure)
       if (isTemplateMode && field.templateEditable !== true && field.type !== 'block') return null;
 
       const currentFieldName = parentName ? `${parentName}.${field.name}` : field.name;
+
+      // Check if this is a boolean toggle with controlled fields
+      const controlledFields = controlledFieldsMap.get(field.name);
+      if (field.type === 'boolean' && controlledFields && controlledFields.length > 0) {
+        // Filter controlled fields based on template mode
+        const visibleControlledFields = controlledFields.filter(cf => {
+          if (isTemplateMode && cf.templateEditable !== true && cf.type !== 'block') return false;
+          return !cf.hidden;
+        });
+
+        if (visibleControlledFields.length > 0) {
+          return (
+            <ToggleFieldGroup
+              key={currentFieldName}
+              toggleField={field}
+              controlledFields={visibleControlledFields}
+              parentName={parentName}
+              renderFields={renderFields}
+            />
+          );
+        }
+      }
 
       if (field.list === true || (typeof field.list === 'object' && field.list !== null)) {
         return <ListField key={currentFieldName} field={field} fieldName={currentFieldName} renderFields={renderFields} />;

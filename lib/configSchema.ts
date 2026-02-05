@@ -176,8 +176,13 @@ const generateFieldObjectSchema = (isComponent?: boolean, isBlock?: boolean): z.
         ]).optional(),
         blockKey: z.string({
           message: "'blockKey' must be a string."
-        }).min(1, { 
+        }).min(1, {
            message: "'blockKey' cannot be empty."
+        }).optional(),
+        controlledBy: z.string({
+          message: "'controlledBy' must be a string (the name of a boolean toggle field)."
+        }).regex(/^[a-zA-Z0-9-_]+$/, {
+          message: "'controlledBy' must be alphanumeric with dashes and underscores.",
         }).optional()
       },
       ...baseObjectSchema

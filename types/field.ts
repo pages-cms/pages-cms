@@ -14,4 +14,6 @@ export type Field = {
   fields?: Field[];
   blocks?: Field[];
   blockKey?: string;
+  // Links this field to a boolean toggle field - when false, this field is disabled
+  controlledBy?: string;
 };
