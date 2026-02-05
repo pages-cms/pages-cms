@@ -122,6 +122,12 @@ export function BlockPreview({
             if (data.status === "success" && data.data?.contents) {
               let items = transformCollectionData(dep.name, data.data);
 
+              // Transform image paths in collection items
+              items = items.map((item) => ({
+                ...item,
+                data: transformImagePaths(item.data as Record<string, unknown>),
+              }));
+
               // Apply limit if specified
               if (dep.limit) {
                 const limitValue =
