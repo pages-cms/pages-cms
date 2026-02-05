@@ -183,6 +183,9 @@ const generateFieldObjectSchema = (isComponent?: boolean, isBlock?: boolean): z.
           message: "'controlledBy' must be a string (the name of a boolean toggle field)."
         }).regex(/^[a-zA-Z0-9-_]+$/, {
           message: "'controlledBy' must be alphanumeric with dashes and underscores.",
+        }).optional(),
+        controlledByInverse: z.boolean({
+          message: "'controlledByInverse' must be a boolean."
         }).optional()
       },
       ...baseObjectSchema

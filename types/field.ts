@@ -16,4 +16,6 @@ export type Field = {
   blockKey?: string;
   // Links this field to a boolean toggle field - when false, this field is disabled
   controlledBy?: string;
+  // When true, inverts the controlledBy logic - field is enabled when toggle is OFF
+  controlledByInverse?: boolean;
 };

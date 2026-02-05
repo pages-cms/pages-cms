@@ -663,16 +663,19 @@ const ToggleFieldGroup = ({
         renderFields={renderFieldsFn}
         isTemplateMode={isTemplateMode}
       />
-      {/* Render controlled fields with disabled state when toggle is false */}
+      {/* Render controlled fields with disabled state based on toggle value */}
       {controlledFields.map((controlledField) => {
         const controlledFieldName = parentName
           ? `${parentName}.${controlledField.name}`
           : controlledField.name;
 
+        // Invert the disabled logic if controlledByInverse is true
+        const isDisabled = controlledField.controlledByInverse ? toggleValue : !toggleValue;
+
         if (controlledField.list === true || (typeof controlledField.list === 'object' && controlledField.list !== null)) {
           // For list fields, wrap in a disabled container
           return (
-            <div key={controlledFieldName} className={cn(!toggleValue && "opacity-50 pointer-events-none")}>
+            <div key={controlledFieldName} className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <ListField
                 field={controlledField}
                 fieldName={controlledFieldName}
@@ -689,7 +692,7 @@ const ToggleFieldGroup = ({
             field={controlledField}
             fieldName={controlledFieldName}
             renderFields={renderFieldsFn}
-            disabled={!toggleValue}
+            disabled={isDisabled}
             isTemplateMode={isTemplateMode}
           />
         );
