@@ -91,12 +91,12 @@ export async function POST(
               throw new Error(`Content validation failed: ${errorMessages.join(", ")}`);
             }
 
-            const validatedContentObject = deepMap(
+            const validatedContentObject = await deepMapAsync(
               zodValidation.data,
               contentFields,
-              (value, field) => {
+              async (value, field) => {
                 const fieldType = field.type as string;
-                return writeFns[fieldType] ? writeFns[fieldType](value, field, config || {}) : value;
+                return writeFns[fieldType] ? await writeFns[fieldType](value, field, config || {}) : value;
               }
             );
 
@@ -419,4 +419,68 @@ export async function DELETE(
       message: error.message,
     });
   }
+};
+const deepMapAsync = async (
+  contentObject: Record<string, any>,
+  fields: any[],
+  apply: (value: any, field: any) => Promise<any>
+): Promise<Record<string, any>> => {
+  const traverse = async (data: any, schema: any[]): Promise<any> => {
+    const result: Record<string, any> = {};
+    const currentData = data || {};
+
+    for (const field of schema) {
+      const value = currentData[field.name];
+
+      if (field.list) {
+        if (value === undefined) {
+          result[field.name] = await apply(value, field);
+        } else if (Array.isArray(value)) {
+          result[field.name] = await Promise.all(
+            value.map(async (item) => {
+              if (field.type === "object") {
+                return traverse(item, field.fields || []);
+              }
+
+              if (field.type === "block") {
+                const blockKey = field.blockKey || "_block";
+                const blockName = item?.[blockKey];
+                const blockDef = field.blocks?.find((block: any) => block.name === blockName);
+
+                if (blockDef) {
+                  const innerResult = await traverse(item, blockDef.fields || []);
+                  return { [blockKey]: blockName, ...innerResult };
+                }
+
+                return item;
+              }
+
+              return apply(item, field);
+            })
+          );
+        } else {
+          result[field.name] = [];
+        }
+      } else if (field.type === "object") {
+        result[field.name] = await traverse(value, field.fields || []);
+      } else if (field.type === "block") {
+        const blockKey = field.blockKey || "_block";
+        const blockName = value?.[blockKey];
+        const blockDef = field.blocks?.find((block: any) => block.name === blockName);
+
+        if (blockDef && value) {
+          const innerResult = await traverse(value, blockDef.fields || []);
+          result[field.name] = { [blockKey]: blockName, ...innerResult };
+        } else {
+          result[field.name] = value;
+        }
+      } else {
+        result[field.name] = await apply(value, field);
+      }
+    }
+
+    return result;
+  };
+
+  return traverse(contentObject, fields);
 };
