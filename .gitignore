@@ -38,3 +38,6 @@ next-env.d.ts
 
 # Database
 local.db
+.dev.vars
+.env
+.staging.vars
