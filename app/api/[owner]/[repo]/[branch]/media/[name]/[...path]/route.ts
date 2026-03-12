@@ -10,14 +10,14 @@ import { getMediaCache, checkRepoAccess } from "@/lib/githubCache";
 /**
  * Get the list of media files in a directory.
  *
- * GET /api/[owner]/[repo]/[branch]/media/[path]
+ * GET /api/[owner]/[repo]/[branch]/media/[name]/[...path]
  * 
  * Requires authentication.
  */
 
 export async function GET(
   request: Request,
-  { params }: { params: { owner: string, repo: string, branch: string, name: string, path: string } }
+  { params }: { params: { owner: string, repo: string, branch: string, name: string, path: string[] } }
 ) {
   try {
     const { user, session } = await getAuth();
@@ -41,8 +41,8 @@ export async function GET(
       throw new Error(`No media configuration found for ${params.owner}/${params.repo}/${params.branch}.`);
     }
 
-    const normalizedPath = normalizePath(params.path);
-    if (!normalizedPath.startsWith(mediaConfig.input)) throw new Error(`Invalid path "${params.path}" for media "${params.name}".`);
+    const normalizedPath = normalizePath(params.path.join("/"));
+    if (!normalizedPath.startsWith(mediaConfig.input)) throw new Error(`Invalid path "${normalizedPath}" for media "${params.name}".`);
 
     const { searchParams } = new URL(request.url);
     const nocache = searchParams.get('nocache');

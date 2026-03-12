@@ -9,7 +9,8 @@ import {
   getFileSize,
   getParentPath,
   getFileName,
-  normalizePath
+  normalizePath,
+  toRoutePath
 } from "@/lib/utils/file";
 import { EmptyCreate } from "@/components/empty-create";
 import { FolderCreate} from "@/components/folder-create";
@@ -110,7 +111,7 @@ const MediaView = ({
         setError(null);
 
         try {
-          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/media/${encodeURIComponent(mediaConfig.name)}/${encodeURIComponent(path)}`);
+          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/media/${encodeURIComponent(mediaConfig.name)}/${toRoutePath(path)}`);
           if (!response.ok) throw new Error(`Failed to fetch media: ${response.status} ${response.statusText}`);
 
           const data: any = await response.json();

@@ -8,6 +8,7 @@ import {
   getParentPath,
   getFileName,
   normalizePath,
+  toRoutePath,
   sortFiles
 } from "@/lib/utils/file";
 import { viewComponents } from "@/fields/registry";
@@ -233,7 +234,7 @@ export function CollectionView({
       
       const renamePromise = new Promise(async (resolve, reject) => {
         try {
-          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(normalizedPath)}/rename`, {
+          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${toRoutePath(normalizedPath)}/rename`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -290,7 +291,7 @@ export function CollectionView({
             return (
               <Link
                 className="font-medium truncate"
-                href={`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/edit/${encodeURIComponent(row.original.path)}`}
+                href={`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/edit/${toRoutePath(row.original.path)}`}
                 prefetch={true}
               >
                 {CellView}
@@ -316,7 +317,7 @@ export function CollectionView({
             <>
               <Link
                 className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8")}
-                href={`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${name}/edit/${encodeURIComponent(row.original.path)}`}
+                href={`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${name}/edit/${toRoutePath(row.original.path)}`}
                 prefetch={true}
               >
                 Edit

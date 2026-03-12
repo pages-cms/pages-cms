@@ -81,6 +81,14 @@ const joinPathSegments = (segments: string[]): string => {
     .join("/");
 };
 
+const toRoutePath = (path: string): string => {
+  return normalizePath(path)
+    .split("/")
+    .filter(Boolean)
+    .map(segment => encodeURIComponent(segment))
+    .join("/");
+};
+
 const sortFiles = (data: Record<string, any>[]): Record<string, any>[] => {
   return data.sort((a, b) => {
     if (a.type === b.type) {
@@ -98,6 +106,7 @@ export {
   getRelativePath,
   normalizePath,
   joinPathSegments,
+  toRoutePath,
   sortFiles,
   extensionCategories,
   serializedTypes

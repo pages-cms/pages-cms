@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useConfig } from "@/contexts/config-context";
-import { joinPathSegments, normalizePath } from "@/lib/utils/file";
+import { joinPathSegments, normalizePath, toRoutePath } from "@/lib/utils/file";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -44,7 +44,7 @@ const FolderCreate = ({
 
       const createPromise = new Promise(async (resolve, reject) => {
         try {
-          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(fullNewPath + "/.gitkeep")}`, {
+          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${toRoutePath(fullNewPath + "/.gitkeep")}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
