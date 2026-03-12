@@ -6,10 +6,11 @@ import { getUserToken } from "@/lib/token";
 import { InviteEmailTemplate } from "@/components/email/invite";
 import { Resend } from "resend";
 import { createLoginToken } from "@/lib/actions/auth";
-import { db } from "@/db";
+import { createDb } from "@/db";
 import { and, eq} from "drizzle-orm";
 import { collaboratorTable } from "@/db/schema";
 import { z } from "zod";
+import { getBaseUrl } from "@/lib/base-url";
 
 // Invite a collaborator to a repository.
 const handleAddCollaborator = async (prevState: any, formData: FormData) => {
@@ -36,6 +37,8 @@ const handleAddCollaborator = async (prevState: any, formData: FormData) => {
 
 		const email = emailValidation.data;
 
+		const db = await createDb();
+
 		const token = await getUserToken();
   	if (!token) throw new Error("Token not found");
 		
@@ -55,11 +58,7 @@ const handleAddCollaborator = async (prevState: any, formData: FormData) => {
 		if (collaborator) throw new Error(`${email} is already invited to "${owner}/${repo}".`);
 
     const loginToken = await createLoginToken(email as string);
-		const baseUrl = process.env.BASE_URL
-			? process.env.BASE_URL
-			: process.env.VERCEL_PROJECT_PRODUCTION_URL
-				? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-				: "";
+		const baseUrl = getBaseUrl();
     const inviteUrl = `${baseUrl}/sign-in/collaborator/${loginToken}?redirect=/${owner}/${repo}`;
 
 		const resend = new Resend(process.env.RESEND_API_KEY);
@@ -108,6 +107,8 @@ const handleRemoveCollaborator = async (collaboratorId: number, owner: string, r
 	try {
 		const { user } = await getAuth();
 		if (!user || !user.githubId) throw new Error("You must be signed in with GitHub to invite collaborators.");
+
+		const db = await createDb();
 
 		const token = await getUserToken();
   	if (!token) throw new Error("Token not found");

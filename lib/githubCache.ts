@@ -2,7 +2,7 @@
  * Helper functions to manage the database cache.
  */
 
-import { db } from "@/db";
+import { createDb } from "@/db";
 import { eq, and, inArray, gt, count, min } from "drizzle-orm";
 import { cacheFileTable, cachePermissionTable } from "@/db/schema";
 import { createOctokitInstance } from "@/lib/utils/octokit";
@@ -28,6 +28,8 @@ type FileOperation = {
   };
 };
 
+type DbClient = Awaited<ReturnType<typeof createDb>>;
+
 // Helper to get all non-root ancestor paths (e.g., [a, a/b, a/b/c] for a/b/c/file.txt)
 const getAncestorPaths = (filePath: string): string[] => {
   const ancestors: string[] = [];
@@ -41,6 +43,7 @@ const getAncestorPaths = (filePath: string): string[] => {
 
 // Batch update parent directory cache entries
 const updateParentFolderCachesBatch = async (
+  db: DbClient,
   owner: string,
   repo: string,
   branch: string,
@@ -208,6 +211,7 @@ const updateParentFolderCachesBatch = async (
 
 // Update parent directory cache for a single file operation
 const updateParentFolderCache = async (
+  db: DbClient,
   owner: string,
   repo: string,
   branch: string,
@@ -323,6 +327,7 @@ const updateMultipleFilesCache = async (
   token: string,
   commit?: { sha: string; timestamp: number }
 ) => {
+  const db = await createDb();
   const lowerOwner = owner.toLowerCase();
   const lowerRepo = repo.toLowerCase();
   const removedPaths = removedFiles.map(f => f.path);
@@ -474,7 +479,7 @@ const updateMultipleFilesCache = async (
 
   // 8. Update parent folder caches
   // Run *after* all file operations are potentially complete
-  await updateParentFolderCachesBatch(owner, repo, branch, addedPaths, removedPaths);
+  await updateParentFolderCachesBatch(db, owner, repo, branch, addedPaths, removedPaths);
 };
 
 // Update the cache for an individual file (add, modify, delete, rename).
@@ -485,6 +490,7 @@ const updateFileCache = async (
   branch: string,
   operation: FileOperation
 ) => {
+  const db = await createDb();
   const lowerOwner = owner.toLowerCase();
   const lowerRepo = repo.toLowerCase();
   const parentPath = getParentPath(operation.path);
@@ -500,7 +506,7 @@ const updateFileCache = async (
         )
       );
       // Update parent cache after successful delete
-      await updateParentFolderCache(owner, repo, branch, operation.path, 'delete');
+      await updateParentFolderCache(db, owner, repo, branch, operation.path, 'delete');
       break;
 
     case 'add':
@@ -530,7 +536,7 @@ const updateFileCache = async (
 
       // Only update parent for 'add' operations where parent was likely already cached
       if (operation.type === 'add') {
-        await updateParentFolderCache(owner, repo, branch, operation.path, 'add');
+        await updateParentFolderCache(db, owner, repo, branch, operation.path, 'add');
       }
       break;
 
@@ -562,9 +568,9 @@ const updateFileCache = async (
       // Update parent caches only if the update was successful and parent changed
       if (updateResult.length > 0 && parentPath !== newParentPath) {
         // Treat as delete from old parent hierarchy
-        await updateParentFolderCache(owner, repo, branch, operation.path, 'delete');
+        await updateParentFolderCache(db, owner, repo, branch, operation.path, 'delete');
         // Treat as add to new parent hierarchy
-        await updateParentFolderCache(owner, repo, branch, operation.newPath, 'add');
+        await updateParentFolderCache(db, owner, repo, branch, operation.newPath, 'add');
       }
       break;
   }
@@ -576,6 +582,7 @@ const updateFileCacheRepository = async (
   oldName: string,
   newName: string
 ) => {
+  const db = await createDb();
   await db.update(cacheFileTable)
     .set({ repo: newName.toLowerCase() })
     .where(
@@ -591,6 +598,7 @@ const updateFileCacheOwner = async (
   oldOwner: string,
   newOwner: string
 ) => {
+  const db = await createDb();
   await db.update(cacheFileTable)
     .set({ owner: newOwner.toLowerCase() })
     .where(
@@ -604,6 +612,7 @@ const clearFileCache = async (
   repo?: string,
   branch?: string
 ) => {
+  const db = await createDb();
   const conditions = [];
   conditions.push(eq(cacheFileTable.owner, owner.toLowerCase()));
   if (repo) {
@@ -623,6 +632,7 @@ const getCollectionCache = async (
   token: string,
   nodeEntryFilename?: string
 ) => {
+  const db = await createDb();
   // Check the cache (no context as we may invalidate media cache)
   let entries = await db.query.cacheFileTable.findMany({
     where: and(
@@ -808,6 +818,7 @@ const getMediaCache = async (
   token: string,
   nocache?: boolean
 ) => {
+  const db = await createDb();
   let entries: any[] = [];
 
   if (!nocache) {
@@ -896,6 +907,7 @@ const checkRepoAccess = async (
   repo: string,
   githubId: number
 ): Promise<boolean> => {
+  const db = await createDb();
   // Check if we have a cached result
   const now = new Date();
   const ttl = parseInt(process.env.PERMISSION_CACHE_TTL || "60") * 60 * 1000;

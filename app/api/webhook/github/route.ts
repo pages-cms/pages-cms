@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import crypto from "crypto";
-import { db } from "@/db";
+import { createDb } from "@/db";
 import { collaboratorTable, githubInstallationTokenTable } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { normalizePath } from "@/lib/utils/file";
@@ -33,8 +33,9 @@ export async function POST(request: Request) {
     if (signature !== digest) throw new Error("Invalid signature");
 
     const data = JSON.parse(body);
+    const db = await createDb();
 
-    const headersList = headers();
+    const headersList = await headers();
     const event = headersList.get("X-GitHub-Event");
 
     try {

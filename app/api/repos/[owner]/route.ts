@@ -3,7 +3,7 @@ import { createOctokitInstance } from "@/lib/utils/octokit";
 import { getAuth } from "@/lib/auth";
 import { getInstallations, getInstallationRepos } from "@/lib/githubApp";
 import { getUserToken } from "@/lib/token";
-import { db } from "@/db";
+import { createDb } from "@/db";
 import { and, eq } from "drizzle-orm";
 import { collaboratorTable } from "@/db/schema";
 
@@ -27,7 +27,7 @@ export async function GET(
 
     let repos: any[] = [];
 
-    const searchParams = request.nextUrl.searchParams;
+    const searchParams = new URL(request.url).searchParams;
     const type = searchParams.get("type");
 
     if (user.githubId) {
@@ -66,6 +66,7 @@ export async function GET(
         updatedAt: repo.updated_at,
       }));
     } else {
+      const db = await createDb();
       repos = await db.query.collaboratorTable.findMany({
         where: and(
           eq(collaboratorTable.email, user.email),
