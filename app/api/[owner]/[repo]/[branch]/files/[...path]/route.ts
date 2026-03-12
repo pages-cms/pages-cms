@@ -14,15 +14,15 @@ import mergeWith from "lodash.mergewith";
 /**
  * Create, update and delete individual files in a GitHub repository.
  * 
- * POST /api/[owner]/[repo]/[branch]/files/[path]
- * DELETE /api/[owner]/[repo]/[branch]/files/[path]
+ * POST /api/[owner]/[repo]/[branch]/files/[...path]
+ * DELETE /api/[owner]/[repo]/[branch]/files/[...path]
  * 
  * Requires authentication.
  */
 
 export async function POST(
   request: Request,
-  { params }: { params: { owner: string, repo: string, branch: string, path: string } }
+  { params }: { params: { owner: string, repo: string, branch: string, path: string[] } }
 ) {
   try {
     const { user, session } = await getAuth();
@@ -31,7 +31,7 @@ export async function POST(
     const token = await getToken(user, params.owner, params.repo);
     if (!token) throw new Error("Token not found");
 
-    const normalizedPath = normalizePath(params.path);
+    const normalizedPath = normalizePath(params.path.join("/"));
 
     const config = await getConfig(params.owner, params.repo, params.branch);
     if (!config && normalizedPath !== ".pages.yml") throw new Error(`Configuration not found for ${params.owner}/${params.repo}/${params.branch}.`);
@@ -48,7 +48,7 @@ export async function POST(
         schema = getSchemaByName(config?.object, data.name);
         if (!schema) throw new Error(`Content schema not found for ${data.name}.`);
 
-        if (!normalizedPath.startsWith(schema.path)) throw new Error(`Invalid path "${params.path}" for ${data.type} "${data.name}".`);
+        if (!normalizedPath.startsWith(schema.path)) throw new Error(`Invalid path "${normalizedPath}" for ${data.type} "${data.name}".`);
 
         if (schema.subfolders === false && getParentPath(normalizedPath) !== schema.path) {
           throw new Error(`Subfolders are not allowed for collection "${data.name}".`);
@@ -91,12 +91,12 @@ export async function POST(
               throw new Error(`Content validation failed: ${errorMessages.join(", ")}`);
             }
 
-            const validatedContentObject = deepMap(
+            const validatedContentObject = await deepMapAsync(
               zodValidation.data,
               contentFields,
-              (value, field) => {
+              async (value, field) => {
                 const fieldType = field.type as string;
-                return writeFns[fieldType] ? writeFns[fieldType](value, field, config || {}) : value;
+                return writeFns[fieldType] ? await writeFns[fieldType](value, field, config || {}) : value;
               }
             );
 
@@ -150,7 +150,7 @@ export async function POST(
         schema = getSchemaByName(config?.object, data.name, "media");
         if (!schema) throw new Error(`Media schema not found for ${data.name}.`);
 
-        if (!normalizedPath.startsWith(schema.input)) throw new Error(`Invalid path "${params.path}" for media "${data.name}".`);
+        if (!normalizedPath.startsWith(schema.input)) throw new Error(`Invalid path "${normalizedPath}" for media "${data.name}".`);
         
         if (getFileName(normalizedPath) === ".gitkeep") {
           // Folder creation
@@ -165,7 +165,7 @@ export async function POST(
         }
         break;
       case "settings":
-        if (normalizedPath !== ".pages.yml") throw new Error(`Invalid path "${params.path}" for settings.`);
+        if (normalizedPath !== ".pages.yml") throw new Error(`Invalid path "${normalizedPath}" for settings.`);
 
         contentBase64 = Buffer.from(data.content.body ?? "").toString("base64");
         break;
@@ -325,7 +325,7 @@ const githubSaveFile = async (
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { owner: string, repo: string, branch: string, path: string } }
+  { params }: { params: { owner: string, repo: string, branch: string, path: string[] } }
 ) {
   try {
     const { user, session } = await getAuth();
@@ -334,9 +334,11 @@ export async function DELETE(
     const token = await getToken(user, params.owner, params.repo);
     if (!token) throw new Error("Token not found");
 
-    if (params.path === ".pages.yml") throw new Error(`Deleting the settings file isn't allowed.`);
+    const normalizedPath = normalizePath(params.path.join("/"));
 
-    const searchParams = request.nextUrl.searchParams;
+    if (normalizedPath === ".pages.yml") throw new Error(`Deleting the settings file isn't allowed.`);
+
+    const searchParams = new URL(request.url).searchParams;
     const sha = searchParams.get("sha");
     const type = searchParams.get("type");
     const name = searchParams.get("name");
@@ -348,7 +350,6 @@ export async function DELETE(
     const config = await getConfig(params.owner, params.repo, params.branch);
     if (!config) throw new Error(`Configuration not found for ${params.owner}/${params.repo}/${params.branch}.`);
 
-    const normalizedPath = normalizePath(params.path);
     let schema;
 
     switch (type) {
@@ -358,7 +359,7 @@ export async function DELETE(
         schema = getSchemaByName(config.object, name);
         if (!schema) throw new Error(`Content schema not found for ${name}.`);
         
-        if (!normalizedPath.startsWith(schema.path)) throw new Error(`Invalid path "${params.path}" for ${type} "${name}".`);
+        if (!normalizedPath.startsWith(schema.path)) throw new Error(`Invalid path "${normalizedPath}" for ${type} "${name}".`);
         
         if (schema.subfolders === false && getParentPath(normalizedPath) !== schema.path) {
           throw new Error(`Subfolders are not allowed for collection "${name}".`);
@@ -372,7 +373,7 @@ export async function DELETE(
         schema = getSchemaByName(config.object, name, "media");
         if (!schema) throw new Error(`Media schema not found for ${name}.`);
 
-        if (!normalizedPath.startsWith(schema.input)) throw new Error(`Invalid path "${params.path}" for media "${name}".`);
+        if (!normalizedPath.startsWith(schema.input)) throw new Error(`Invalid path "${normalizedPath}" for media "${name}".`);
 
         if (
           schema.extensions?.length > 0 &&
@@ -386,9 +387,9 @@ export async function DELETE(
       owner: params.owner,
       repo: params.repo,
       branch: params.branch,
-      path: params.path,
+      path: normalizedPath,
       sha: sha,
-      message: `Delete ${params.path} (via Pages CMS)`,
+      message: `Delete ${normalizedPath} (via Pages CMS)`,
     });
 
     // Update cache after successful deletion
@@ -399,9 +400,9 @@ export async function DELETE(
       params.branch,
       {
         type: 'delete',
-        path: params.path
-      }
-    );
+         path: normalizedPath
+       }
+     );
 
     return Response.json({
       status: "success",
@@ -419,4 +420,68 @@ export async function DELETE(
       message: error.message,
     });
   }
+};
+const deepMapAsync = async (
+  contentObject: Record<string, any>,
+  fields: any[],
+  apply: (value: any, field: any) => Promise<any>
+): Promise<Record<string, any>> => {
+  const traverse = async (data: any, schema: any[]): Promise<any> => {
+    const result: Record<string, any> = {};
+    const currentData = data || {};
+
+    for (const field of schema) {
+      const value = currentData[field.name];
+
+      if (field.list) {
+        if (value === undefined) {
+          result[field.name] = await apply(value, field);
+        } else if (Array.isArray(value)) {
+          result[field.name] = await Promise.all(
+            value.map(async (item) => {
+              if (field.type === "object") {
+                return traverse(item, field.fields || []);
+              }
+
+              if (field.type === "block") {
+                const blockKey = field.blockKey || "_block";
+                const blockName = item?.[blockKey];
+                const blockDef = field.blocks?.find((block: any) => block.name === blockName);
+
+                if (blockDef) {
+                  const innerResult = await traverse(item, blockDef.fields || []);
+                  return { [blockKey]: blockName, ...innerResult };
+                }
+
+                return item;
+              }
+
+              return apply(item, field);
+            })
+          );
+        } else {
+          result[field.name] = [];
+        }
+      } else if (field.type === "object") {
+        result[field.name] = await traverse(value, field.fields || []);
+      } else if (field.type === "block") {
+        const blockKey = field.blockKey || "_block";
+        const blockName = value?.[blockKey];
+        const blockDef = field.blocks?.find((block: any) => block.name === blockName);
+
+        if (blockDef && value) {
+          const innerResult = await traverse(value, blockDef.fields || []);
+          result[field.name] = { [blockKey]: blockName, ...innerResult };
+        } else {
+          result[field.name] = value;
+        }
+      } else {
+        result[field.name] = await apply(value, field);
+      }
+    }
+
+    return result;
+  };
+
+  return traverse(contentObject, fields);
 };

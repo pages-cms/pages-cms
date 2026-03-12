@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
+import { createDb } from "@/db";
 import { cacheFileTable, cachePermissionTable } from "@/db/schema";
 import { lt, sql } from "drizzle-orm";
 
@@ -10,6 +10,8 @@ export async function GET(request: Request) {
   
   try {
     console.log("Cron job started: Cleaning up cache.");
+
+    const db = await createDb();
 
     // Delete expired cache_file entries (default 7 days)
     const fileCacheTTL = parseInt(process.env.FILE_CACHE_TTL || "10080") * 60 * 1000;

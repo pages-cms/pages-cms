@@ -4,7 +4,6 @@
  */
 
 import { Octokit } from "octokit";
-import { handleSignOut } from "@/lib/actions/auth";
 
 export const createOctokitInstance = (token: string, options?: any) => {
   if (!token) throw new Error("Auth token is required to initialize Octokit");
@@ -17,17 +16,18 @@ export const createOctokitInstance = (token: string, options?: any) => {
         try {
           const response = await fetch(url, options);
           
-          // Only attempt to log out on a 401 status
+          // Avoid invoking request-scoped auth actions from inside Octokit fetches.
+          // In Workers that can cross request boundaries and trigger I/O errors.
           if (response.status === 401) {
             try {
-              const data = await response.json();
+              const data = await response.clone().json();
               if (data.message === "Bad credentials") {
-                // If the user revoked access, sign them out
-                await handleSignOut();
+                throw new Error("GitHub credentials are no longer valid. Please sign in again.");
               }
             } catch (parseError) {
-              // If we can't parse the JSON, just continue
-              console.warn("Could not parse 401 response:", parseError);
+              if (parseError instanceof Error && parseError.message === "GitHub credentials are no longer valid. Please sign in again.") {
+                throw parseError;
+              }
             }
           }
           

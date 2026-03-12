@@ -84,8 +84,8 @@ You will need to fill in the following information:
 
 Variable | Comments
 --- | ---
-`BASE_URL` | **OPTIONAL**. If you're deploying to Vercel or working locally, you won't need that. If you're deploying elsewhere, you'll need to specify the base URL for the app (e.g. `https://mycustomdomain.com`).
-`DATABASE_URL` | The database URL, including your credentials (e.g. `postgresql://user:password@example.com:6543`). If you're using [Supabase](https://supabase.com), use the "Transaction pooler" url.
+`BASE_URL` | Recommended outside Vercel. Set it to the public URL for the app (e.g. `https://cms.example.com`). For Cloudflare Workers, set this explicitly.
+`DATABASE_URL` | The direct PostgreSQL URL used for local development and Drizzle migrations (e.g. `postgresql://user:password@example.com:6543`). If you're using [Supabase](https://supabase.com), use the direct connection string or local pooler string for migrations. Cloudflare runtime traffic should go through Hyperdrive instead of using this directly.
 `CRYPTO_KEY` | Used to encrypt/decrypt GitHub tokens in the database. On MacOS/Linux*, you can use `openssl rand -base64 32`.
 `GITHUB_APP_ID` | GitHub App ID from your GitHub App details page.
 `GITHUB_APP_NAME` | Machine name for your GitHub App (e.g. `pages-cms`), should be the slug the URL of your GitHub App details page.
@@ -104,9 +104,31 @@ Variable | Comments
 We assume you've already created the GitHub App and have a running tunnel for the GitHub App Webhook (using [ngrok](https://ngrok.com/) for example):
 
 1. **Install the dependencies**: `npm install`
-2. **Update your environment variables**: copy `.env.example` to `.env` and fill in the values according to your setting (see section above).
-3. **Create the database**: `npm run db:migrate`
-4. **Run it**: `npm run dev`
+2. **Start local PostgreSQL**: `npm run db:docker:up`
+3. **Update your environment variables**: create a local `.env` file and set `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/pages_cms` plus the rest of the required values.
+4. **Create the database**: `npm run db:migrate`
+5. **Run it**: `npm run dev`
+
+The default local Hyperdrive target in `wrangler.jsonc` also points to `postgresql://postgres:postgres@127.0.0.1:5432/pages_cms`, so local Worker development and Drizzle migrations use the same Docker database.
+
+### Deploy on Cloudflare Workers + Supabase Postgres
+
+1. **Create a PostgreSQL database**: Supabase is a good fit for this project.
+2. **Keep `DATABASE_URL` for local development and migrations**: `npm run db:migrate` still runs outside Cloudflare.
+3. **Create Hyperdrive bindings**: create one per environment and attach them in `wrangler.jsonc` under `env.staging.hyperdrive` and `env.production.hyperdrive`.
+4. **Set Cloudflare secrets**: at minimum `BASE_URL`, `CRYPTO_KEY`, `GITHUB_APP_ID`, `GITHUB_APP_NAME`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_APP_WEBHOOK_SECRET`, `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `CRON_SECRET`.
+5. **Generate Worker types**: run `npm run cf:typegen` after updating `wrangler.jsonc`.
+6. **Deploy**: use `npm run deploy:staging` or `npm run deploy`.
+7. **Point your custom domain**: add a `routes` entry in `wrangler.jsonc` or configure the route in the Cloudflare dashboard, then set `BASE_URL` to that hostname.
+
+Example Hyperdrive commands:
+
+```bash
+npx wrangler hyperdrive create pages-cms-staging --connection-string="postgresql://..."
+npx wrangler hyperdrive create pages-cms-production --connection-string="postgresql://..."
+```
+
+For local Worker development, `env.staging.hyperdrive[0].localConnectionString` is set to `postgresql://postgres:postgres@127.0.0.1:5432/pages_cms`. Start Docker with `npm run db:docker:up`, then use `vinext dev` or `wrangler dev --env staging`.
 
 ### Deploy on Vercel
 

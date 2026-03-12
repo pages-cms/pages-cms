@@ -12,7 +12,7 @@ import { getToken } from "@/lib/token";
  * Fetches and parses individual file contents from GitHub repositories
  * (usually for editing).
  * 
- * GET /api/[owner]/[repo]/[branch]/entries/[path]?name=[schemaName]
+ * GET /api/[owner]/[repo]/[branch]/entries/[...path]?name=[schemaName]
  * 
  * Requires authentication. If no schema name is provided, we return the raw
  * contents.
@@ -20,7 +20,7 @@ import { getToken } from "@/lib/token";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { owner: string, repo: string, branch: string, path: string } }
+  { params }: { params: { owner: string, repo: string, branch: string, path: string[] } }
 ) {
   try {
     const { user, session } = await getAuth();
@@ -29,10 +29,10 @@ export async function GET(
     const token = await getToken(user, params.owner, params.repo);
     if (!token) throw new Error("Token not found");
 
-    const searchParams = request.nextUrl.searchParams;
+    const searchParams = new URL(request.url).searchParams;
     const name = searchParams.get("name");
     
-    const normalizedPath = normalizePath(params.path);
+    const normalizedPath = normalizePath(params.path.join("/"));
 
     if (!name && normalizedPath !== ".pages.yml") throw new Error("If no content entry name is provided, the path must be \".pages.yml\".");
 
@@ -46,7 +46,7 @@ export async function GET(
       schema = getSchemaByName(config.object, name);
       if (!schema) throw new Error(`Schema not found for ${name}.`);
 
-      if (!normalizedPath.startsWith(schema.path)) throw new Error(`Invalid path "${params.path}" for ${schema.type} "${name}".`);
+      if (!normalizedPath.startsWith(schema.path)) throw new Error(`Invalid path "${normalizedPath}" for ${schema.type} "${name}".`);
 
       if (getFileExtension(normalizedPath) !== schema.extension) throw new Error(`Invalid extension "${getFileExtension(normalizedPath)}" for ${schema.type} "${name}".`);
     } else {

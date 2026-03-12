@@ -13,6 +13,7 @@ import {
   Text,
   Tailwind,
 } from "@react-email/components";
+import { getBaseUrl } from "@/lib/base-url";
 
 export const LoginEmailTemplate = ({
   url,
@@ -21,11 +22,7 @@ export const LoginEmailTemplate = ({
   url: string,
   email: string
 }) => {
-  const baseUrl = process.env.BASE_URL
-    ? process.env.BASE_URL
-    : process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : "";
+  const baseUrl = getBaseUrl();
 
   return (
     <Html>

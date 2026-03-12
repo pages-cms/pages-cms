@@ -3,10 +3,29 @@ import { htmlSwapPrefix, rawToRelativeUrls } from "@/lib/githubImage";
 import { EditComponent } from "./edit-component";
 import { ViewComponent } from "./view-component";
 import { marked } from "marked";
-import TurndownService from "turndown";
-import { tables, strikethrough } from "joplin-turndown-plugin-gfm";
 import { getSchemaByName } from "@/lib/schema";
 import { z } from "zod";
+
+let turndownModulePromise: Promise<{
+  default: any;
+  tables: any;
+  strikethrough: any;
+}> | null = null;
+
+const getTurndownModules = async () => {
+  if (!turndownModulePromise) {
+    turndownModulePromise = Promise.all([
+      import("turndown"),
+      import("joplin-turndown-plugin-gfm"),
+    ]).then(([turndownModule, pluginModule]) => ({
+      default: turndownModule.default,
+      tables: pluginModule.tables,
+      strikethrough: pluginModule.strikethrough,
+    }));
+  }
+
+  return turndownModulePromise;
+};
 
 const read = (value: any, field: Field, config: Record<string, any>) => {
   let html = field.options?.format === "html"
@@ -26,7 +45,7 @@ const read = (value: any, field: Field, config: Record<string, any>) => {
   return htmlSwapPrefix(html, mediaConfig.output, mediaConfig.input, true);
 };
 
-const write = (value: any, field: Field, config: Record<string, any>) => {
+const write = async (value: any, field: Field, config: Record<string, any>) => {
   let content = value || '';
 
   content = rawToRelativeUrls(config.owner, config.repo, config.branch, content);
@@ -42,6 +61,7 @@ const write = (value: any, field: Field, config: Record<string, any>) => {
   }
 
   if (field.options?.format !== "html") {
+    const { default: TurndownService, tables, strikethrough } = await getTurndownModules();
     const turndownService = new TurndownService({
       headingStyle: "atx",
       codeBlockStyle: "fenced"

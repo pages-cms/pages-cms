@@ -2,11 +2,10 @@
  * Token helper functions.
  */
 
-import { cache } from "react";
 import { App } from "octokit";
 import { getAuth } from "@/lib/auth";
 import { decrypt, encrypt } from "@/lib/crypto";
-import { db } from "@/db";
+import { createDb } from "@/db";
 import {
   collaboratorTable,
   githubUserTokenTable,
@@ -16,7 +15,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { User } from "@/types/user";
 
 // Get a token for a user (including collagborators who need to provide an owner/repo scope).
-const getToken = cache(async (user: User, owner: string, repo: string) => {
+const getToken = async (user: User, owner: string, repo: string) => {
+  const db = await createDb();
   if (user.githubId) return await getUserToken();
 
   const permission = await db.query.collaboratorTable.findFirst({
@@ -30,10 +30,11 @@ const getToken = cache(async (user: User, owner: string, repo: string) => {
   const installationToken = await getInstallationToken(owner, repo);
 
   return installationToken
-});
+};
 
 // Get the GitHub App installation token for a specific repository.
-const getInstallationToken = cache(async (owner: string, repo: string) => {
+const getInstallationToken = async (owner: string, repo: string) => {
+  const db = await createDb();
   const app = new App({
 		appId: process.env.GITHUB_APP_ID!,
 		privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
@@ -79,10 +80,11 @@ const getInstallationToken = cache(async (owner: string, repo: string) => {
   }
 
   return installationToken.data.token;
-});
+};
 
 // Get the GitHub user token.
-const getUserToken = cache(async () => {
+const getUserToken = async () => {
+  const db = await createDb();
   const { user } = await getAuth();
 	if (!user) throw new Error("User not found");
   if (!user.githubId) throw new Error("User must be logged in with Github");
@@ -98,6 +100,6 @@ const getUserToken = cache(async () => {
   if (!token) throw new Error(`Token could not be retrieved and/or decrypted.`);
 
   return token;
-});
+};
 
 export { getInstallationToken, getUserToken, getToken };

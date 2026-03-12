@@ -2,7 +2,7 @@
  * Get the list of GitHub accounts the user (incl. collaborators) has access to.
  */
 
-import { db } from "@/db";
+import { createDb } from "@/db";
 import { collaboratorTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getUserToken } from "@/lib/token";
@@ -27,6 +27,7 @@ const getAccounts = async (user: User) => {
 			}))
 		];
 	} else {
+		const db = await createDb();
 		const groupedRepos = await db
 			.selectDistinct({
 				owner: collaboratorTable.owner,

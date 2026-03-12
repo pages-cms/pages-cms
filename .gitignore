@@ -15,6 +15,7 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
@@ -37,3 +38,6 @@ next-env.d.ts
 
 # Database
 local.db
+.dev.vars
+.env
+.staging.vars

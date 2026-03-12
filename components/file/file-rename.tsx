@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useConfig } from "@/contexts/config-context";
-import { getRelativePath, joinPathSegments, normalizePath } from "@/lib/utils/file";
+import { getRelativePath, joinPathSegments, normalizePath, toRoutePath } from "@/lib/utils/file";
 import { getSchemaByName } from "@/lib/schema";
 import {
   Dialog,
@@ -54,7 +54,7 @@ export function FileRename({
       
       const renamePromise = new Promise(async (resolve, reject) => {
         try {
-          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(normalizedPath)}/rename`, {
+          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${toRoutePath(normalizedPath)}/rename`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

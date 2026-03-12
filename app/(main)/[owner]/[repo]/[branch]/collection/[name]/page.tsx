@@ -1,25 +1,17 @@
 "use client";
 
 import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useConfig } from "@/contexts/config-context";
 import { getSchemaByName } from "@/lib/schema";
 import { CollectionView } from "@/components/collection/collection-view";
 
-export default function Page({
-  params
-}: {
-  params: {
-    owner: string;
-    repo: string;
-    branch: string;
-    name: string
-  }
-}) {
+export default function Page() {
   const { config } = useConfig();
   if (!config) throw new Error(`Configuration not found.`);
 
-  const name = decodeURIComponent(params.name);
+  const params = useParams<{ name?: string }>();
+  const name = decodeURIComponent(params.name || "");
   const schema = useMemo(() => getSchemaByName(config?.object, name), [config, name]);
   if (!schema) throw new Error(`Schema not found for ${name}.`);
 

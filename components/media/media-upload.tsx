@@ -2,7 +2,7 @@
 
 import { useRef, isValidElement, cloneElement, useMemo, useCallback, createContext, useContext, useState } from "react";
 import { useConfig } from "@/contexts/config-context";
-import { joinPathSegments } from "@/lib/utils/file";
+import { joinPathSegments, toRoutePath } from "@/lib/utils/file";
 import { toast } from "sonner";
 import { getSchemaByName } from "@/lib/schema";
 import { cn } from "@/lib/utils";
@@ -70,7 +70,7 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
               const content = (reader.result as string).replace(/^(.+,)/, "");
               const fullPath = joinPathSegments([path ?? "", file.name]);
 
-              const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(fullPath)}`, {
+              const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${toRoutePath(fullPath)}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

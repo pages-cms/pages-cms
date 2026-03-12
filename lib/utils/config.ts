@@ -6,45 +6,44 @@
  * normalized and validated.
  */
 
-import { cache } from "react";
 import { Config } from "@/types/config";
-import { db } from "@/db";
+import { createDb } from "@/db";
 import { configTable } from "@/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 
 // TODO: add a fallback behavior to retrieve conf if not in DB
-const getConfig = cache(
-  async (
-    owner: string,
-    repo: string,
-    branch: string,
-  ): Promise<Config | null> => {
-    if (!owner || !repo || !branch) throw new Error(`Owner, repo, and branch must all be provided.`);
-    
-    const config = await db.query.configTable.findFirst({
-      where: and(
-        sql`lower(${configTable.owner}) = lower(${owner})`,
-        sql`lower(${configTable.repo}) = lower(${repo})`,
-        eq(configTable.branch, branch),
-      )
-    });
-    
-    if (!config) return null;
+const getConfig = async (
+  owner: string,
+  repo: string,
+  branch: string,
+): Promise<Config | null> => {
+  if (!owner || !repo || !branch) throw new Error(`Owner, repo, and branch must all be provided.`);
 
-    return {
-      owner: config.owner,
-      repo: config.repo,
-      branch: config.branch,
-      sha: config.sha,
-      version: config.version,
-      object: JSON.parse(config.object)
-    }
+  const db = await createDb();
+  const config = await db.query.configTable.findFirst({
+    where: and(
+      sql`lower(${configTable.owner}) = lower(${owner})`,
+      sql`lower(${configTable.repo}) = lower(${repo})`,
+      eq(configTable.branch, branch),
+    )
+  });
+
+  if (!config) return null;
+
+  return {
+    owner: config.owner,
+    repo: config.repo,
+    branch: config.branch,
+    sha: config.sha,
+    version: config.version,
+    object: JSON.parse(config.object)
   }
-);
+};
 
 const saveConfig = async (
   config: Config,
 ): Promise<Config> => {
+  const db = await createDb();
   const result = await db.insert(configTable).values({
     owner: config.owner,
     repo: config.repo,
@@ -60,6 +59,7 @@ const saveConfig = async (
 const updateConfig = async (
   config: Config,
 ): Promise<Config> => {
+  const db = await createDb();
   await db.update(configTable).set({
     sha: config.sha,
     version: config.version,

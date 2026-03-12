@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useConfig } from "@/contexts/config-context";
-import { normalizePath } from "@/lib/utils/file";
+import { normalizePath, toRoutePath } from "@/lib/utils/file";
 import { getSchemaByName, initializeState } from "@/lib/schema";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -63,7 +63,7 @@ const EmptyCreate = ({
     try {
       const createPromise = new Promise(async (resolve, reject) => {
         try {
-          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(normalizePath(path))}`, {
+          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${toRoutePath(normalizePath(path))}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

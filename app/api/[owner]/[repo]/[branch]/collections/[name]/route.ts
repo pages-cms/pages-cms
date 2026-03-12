@@ -42,7 +42,7 @@ export async function GET(
     const schema = getSchemaByName(config.object, params.name);
     if (!schema) throw new Error(`Schema not found for ${params.name}.`);
 
-    const searchParams = request.nextUrl.searchParams;
+    const searchParams = new URL(request.url).searchParams;
     const path = searchParams.get("path") || "";
     const type = searchParams.get("type");
     const query = searchParams.get("query") || "";

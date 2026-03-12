@@ -10,16 +10,18 @@ import { TimeSpan, createDate, isWithinExpirationDate } from "oslo";
 import { sha256 } from "oslo/crypto";
 import { encodeHex } from "oslo/encoding";
 import { generateIdFromEntropySize } from "lucia";
-import { github, lucia, getAuth } from "@/lib/auth";
-import { db } from "@/db";
+import { getLucia, github, getAuth } from "@/lib/auth";
+import { createDb } from "@/db";
 import { emailLoginTokenTable, userTable } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { Resend } from "resend";
 import { LoginEmailTemplate } from "@/components/email/login";
+import { getBaseUrl } from "@/lib/base-url";
 
 // Create a login token for the user.
 const createLoginToken = async (email: string): Promise<string> => {
+	const db = await createDb();
 	await db.delete(emailLoginTokenTable).where(eq(sql`lower(${emailLoginTokenTable.email})`, email.toLowerCase()));
 	const tokenId = generateIdFromEntropySize(25);
 	const tokenHash = encodeHex(await sha256(new TextEncoder().encode(tokenId)));
@@ -41,11 +43,7 @@ const handleEmailSignIn = async (prevState: any, formData: FormData) => {
 	const email = validation.data;
 
 	const loginToken = await createLoginToken(email as string);
-	const baseUrl = process.env.BASE_URL
-    ? process.env.BASE_URL
-    : process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : "";
+	const baseUrl = getBaseUrl();
 	const loginUrl = `${baseUrl}/sign-in/collaborator/${loginToken}`;
 
 	const resend = new Resend(process.env.RESEND_API_KEY);
@@ -69,13 +67,23 @@ const handleEmailSignIn = async (prevState: any, formData: FormData) => {
 const handleGithubSignIn = async () => {
   const state = generateState();
 	const url = await github.createAuthorizationURL(state, { scopes: ["repo", "user:email"] });
+  const cookieStore = await cookies();
+	console.info("[auth] starting GitHub sign-in", {
+		hasClientId: Boolean(process.env.GITHUB_APP_CLIENT_ID),
+		callbackPath: "/api/auth/github",
+		oauthUrl: url.href
+	});
 
-	cookies().set("github_oauth_state", state, {
+	cookieStore.set("github_oauth_state", state, {
 		path: "/",
 		secure: process.env.NODE_ENV === "production",
 		httpOnly: true,
 		maxAge: 60 * 10,
 		sameSite: "lax"
+	});
+	console.info("[auth] stored GitHub OAuth state cookie", {
+		cookieName: "github_oauth_state",
+		hasState: Boolean(state)
 	});
 
 	return redirect(url.href);
@@ -85,17 +93,20 @@ const handleGithubSignIn = async () => {
 const handleSignOut = async () => {
 	const { session } = await getAuth();
 	if (!session) return { error: "Unauthorized" };
+	const lucia = await getLucia();
 	
 	await lucia.invalidateSession(session.id);
 	
 	const sessionCookie = lucia.createBlankSessionCookie();
-	cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+	const cookieStore = await cookies();
+	cookieStore.set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 	
 	return redirect("/");
 };
 
 // Helper function to get the token data
 const getTokenData = async (token: string) => {
+	const db = await createDb();
   const tokenHash = encodeHex(await sha256(new TextEncoder().encode(token)));
 	const emailLoginToken = await db.query.emailLoginTokenTable.findFirst({
 		where: eq(emailLoginTokenTable.tokenHash, tokenHash)
@@ -110,6 +121,8 @@ const getTokenData = async (token: string) => {
 
 // Sign in with token (collaborator)
 const handleSignInWithToken = async (token: string, redirectTo?: string) => {
+	const db = await createDb();
+	const lucia = await getLucia();
   let tokenHash, emailLoginToken;
   try {
     ({ tokenHash, emailLoginToken } = await getTokenData(token));
@@ -143,7 +156,8 @@ const handleSignInWithToken = async (token: string, redirectTo?: string) => {
   // await lucia.invalidateUserSessions(userId);
   const session = await lucia.createSession(userId, {});
   const sessionCookie = lucia.createSessionCookie(session.id);
-  cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+  const cookieStore = await cookies();
+  cookieStore.set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
     
   if (redirectTo) {
     return redirect(redirectTo);
@@ -154,13 +168,15 @@ const handleSignInWithToken = async (token: string, redirectTo?: string) => {
 
 // Sign out the user and sign in with token (collaborator)
 const handleSignOutAndSignIn = async (token: string, redirectTo?: string) => {
-  const { session } = await getAuth();
+	const { session } = await getAuth();
 	if (!session) return { error: "Unauthorized" };
+	const lucia = await getLucia();
 	
 	await lucia.invalidateSession(session.id);
 	
 	const sessionCookie = lucia.createBlankSessionCookie();
-	cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+	const cookieStore = await cookies();
+	cookieStore.set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 
   return handleSignInWithToken(token, redirectTo);
 }

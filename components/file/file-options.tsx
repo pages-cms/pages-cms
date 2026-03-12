@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useConfig } from "@/contexts/config-context";
-import { getParentPath, getRelativePath, joinPathSegments, normalizePath } from "@/lib/utils/file";
+import { getParentPath, getRelativePath, joinPathSegments, normalizePath, toRoutePath } from "@/lib/utils/file";
 import { getSchemaByName } from "@/lib/schema";
 import {
   AlertDialog,
@@ -75,7 +75,7 @@ export function FileOptions({
           });
           if (name) params.set("name", name);
 
-          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(normalizedPath)}?${params.toString()}`, {
+          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${toRoutePath(normalizedPath)}?${params.toString()}`, {
             method: "DELETE",
           });
 
