@@ -68,6 +68,41 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+const COLLECTION_CACHE_TTL_MS = 60_000;
+const COLLECTION_CACHE_MAX_ENTRIES = 200;
+
+type CollectionRows = Record<string, any>[];
+type CollectionCacheEntry = {
+  data: CollectionRows;
+  updatedAt: number;
+};
+
+const collectionResponseCache = new Map<string, CollectionCacheEntry>();
+const collectionInFlight = new Map<string, Promise<CollectionRows | undefined>>();
+
+function getCachedCollectionRows(cacheKey: string): CollectionRows | undefined {
+  const entry = collectionResponseCache.get(cacheKey);
+  if (!entry) return undefined;
+  if (Date.now() - entry.updatedAt > COLLECTION_CACHE_TTL_MS) {
+    collectionResponseCache.delete(cacheKey);
+    return undefined;
+  }
+  return entry.data;
+}
+
+function setCachedCollectionRows(cacheKey: string, data: CollectionRows): void {
+  collectionResponseCache.set(cacheKey, {
+    data,
+    updatedAt: Date.now(),
+  });
+  if (collectionResponseCache.size <= COLLECTION_CACHE_MAX_ENTRIES) return;
+
+  const oldestEntry = collectionResponseCache.entries().next().value;
+  if (!oldestEntry) return;
+  const [oldestKey] = oldestEntry as [string, CollectionCacheEntry];
+  collectionResponseCache.delete(oldestKey);
+}
+
 const CollectionHeaderActions = memo(function CollectionHeaderActions({
   addEntryHref,
   collectionPath,
@@ -202,6 +237,14 @@ export function Collection({
     viewFields.forEach((item: any) => paths.add(item.path));
     return Array.from(paths);
   }, [primaryField, viewFields]);
+  const getCollectionCacheKey = useCallback((fetchPath: string) => [
+    config.owner,
+    config.repo,
+    config.branch,
+    name,
+    normalizePath(fetchPath),
+    requestedFieldPaths.join(","),
+  ].join("|"), [config.branch, config.owner, config.repo, name, requestedFieldPaths]);
 
   const handleTableSearchChange = useCallback((value: string) => {
     setTableSearch(value);
@@ -209,43 +252,58 @@ export function Collection({
 
   const fetchCollectionData = useCallback(async (fetchPath: string): Promise<Record<string, any>[] | undefined> => {
     if (!config) return undefined;
+    const cacheKey = getCollectionCacheKey(fetchPath);
+    const cachedRows = getCachedCollectionRows(cacheKey);
+    if (cachedRows) return cachedRows;
 
-    try {
-      const params = new URLSearchParams({
-        path: fetchPath,
-        fields: requestedFieldPaths.join(","),
-      });
-      const apiUrl = `/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collections/${encodeURIComponent(name)}?${params.toString()}`;
-      
-      const response = await fetch(apiUrl);
-      if (response.status === 404 && fetchPath === (path || schema.path)) {
-        throw new Error("Not found");
+    const inFlightRequest = collectionInFlight.get(cacheKey);
+    if (inFlightRequest) return inFlightRequest;
+
+    const request = (async () => {
+      try {
+        const params = new URLSearchParams({
+          path: fetchPath,
+          fields: requestedFieldPaths.join(","),
+        });
+        const apiUrl = `/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collections/${encodeURIComponent(name)}?${params.toString()}`;
+
+        const response = await fetch(apiUrl);
+        if (response.status === 404 && fetchPath === (path || schema.path)) {
+          throw new Error("Not found");
+        }
+        const result = await requireApiSuccess<any>(response, "Fetch failed");
+
+        if (result.data.errors?.length) {
+          result.data.errors.forEach((e: any) => toast.error(e));
+        }
+
+        const unsortedData = result.data.contents || [];
+        const sortedData = unsortedData.length === 0
+          ? []
+          : unsortedData.sort((a: any, b: any) => {
+            if (a.type === "dir" && b.type === "file") return schema.view?.foldersFirst ? -1 : 1;
+            if (a.type === "file" && b.type === "dir") return schema.view?.foldersFirst ? 1 : -1;
+            return a.name.localeCompare(b.name);
+          });
+
+        setCachedCollectionRows(cacheKey, sortedData);
+        return sortedData;
+      } catch (err: any) {
+        console.error(`Fetch failed for path ${fetchPath}:`, err);
+        if (fetchPath === (path || schema.path)) {
+          setError(err.message);
+        } else {
+          toast.error(`Could not load items inside ${getFileName(fetchPath)}: ${err.message}`);
+        }
+        return undefined;
+      } finally {
+        collectionInFlight.delete(cacheKey);
       }
-      const result = await requireApiSuccess<any>(response, "Fetch failed");
+    })();
 
-      if (result.data.errors?.length) {
-        result.data.errors.forEach((e: any) => toast.error(e));
-      }
-
-      const unsortedData = result.data.contents || [];
-      
-      if (unsortedData.length === 0) return [];
-      return unsortedData.sort((a: any, b: any) => {
-        if (a.type === "dir" && b.type === "file") return schema.view?.foldersFirst ? -1 : 1;
-        if (a.type === "file" && b.type === "dir") return schema.view?.foldersFirst ? 1 : -1;
-        return a.name.localeCompare(b.name);
-      });
-
-    } catch (err: any) {
-      console.error(`Fetch failed for path ${fetchPath}:`, err);
-      if (fetchPath === (path || schema.path)) {
-        setError(err.message);
-      } else {
-        toast.error(`Could not load items inside ${getFileName(fetchPath)}: ${err.message}`);
-      }
-      return undefined;
-    }
-  }, [config, name, path, requestedFieldPaths, schema.path, schema.view?.foldersFirst]);
+    collectionInFlight.set(cacheKey, request);
+    return request;
+  }, [config, getCollectionCacheKey, name, path, requestedFieldPaths, schema.path, schema.view?.foldersFirst]);
 
   const handleDelete = useCallback((path: string) => {
     setData((prevData) => prevData?.filter((item: any) => item.path !== path));
@@ -499,9 +557,16 @@ export function Collection({
     const currentPath = schema.view?.layout === 'tree'
       ? schema.path
       : path || schema.path;
+    const cacheKey = getCollectionCacheKey(currentPath);
+    const cachedRows = getCachedCollectionRows(cacheKey);
     let isMounted = true;
 
-    setIsLoading(true);
+    if (cachedRows) {
+      setData(cachedRows);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
 
     fetchCollectionData(currentPath)
@@ -517,7 +582,7 @@ export function Collection({
       });
 
     return () => { isMounted = false };
-  }, [fetchCollectionData, path, schema.path, schema.view?.layout]);
+  }, [fetchCollectionData, getCollectionCacheKey, path, schema.path, schema.view?.layout]);
 
   const handleNavigate = useCallback((newPath: string) => {
     const params = new URLSearchParams(Array.from(searchParams.entries()));

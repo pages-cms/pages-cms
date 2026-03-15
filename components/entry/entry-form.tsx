@@ -209,6 +209,7 @@ const ListField = ({
   } = useFieldArray({
     name: fieldName,
   });
+  const { getValues, setValue } = useFormContext();
   const [openStates, setOpenStates] = useState<boolean[]>([]);
   const shouldShowListHeader =
     field.label !== false ||
@@ -250,8 +251,19 @@ const ListField = ({
 
     if (oldIndex < 0 || newIndex < 0) return;
 
+    const currentValues = getValues(fieldName);
+    const reorderedValues = Array.isArray(currentValues)
+      ? arrayMove(currentValues, oldIndex, newIndex)
+      : currentValues;
+
     setOpenStates((prev) => arrayMove(prev, oldIndex, newIndex));
     move(oldIndex, newIndex);
+    if (reorderedValues !== currentValues) {
+      setValue(fieldName, reorderedValues, {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    }
   };
 
   const addItem = () => {

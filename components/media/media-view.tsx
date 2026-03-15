@@ -52,6 +52,58 @@ import {
   Upload
 } from "lucide-react";
 
+const MEDIA_CACHE_TTL_MS = 60_000;
+const MEDIA_CACHE_MAX_ENTRIES = 200;
+
+type MediaCacheEntry = {
+  data: MediaItem[];
+  updatedAt: number;
+};
+
+const mediaResponseCache = new Map<string, MediaCacheEntry>();
+const mediaInFlight = new Map<string, Promise<MediaItem[] | undefined>>();
+
+function getMediaCacheKey(
+  owner: string,
+  repo: string,
+  branch: string,
+  mediaName: string,
+  path: string,
+): string {
+  return [owner, repo, branch, mediaName, normalizePath(path)].join("|");
+}
+
+function getCachedMediaItems(cacheKey: string): MediaItem[] | undefined {
+  const entry = mediaResponseCache.get(cacheKey);
+  if (!entry) return undefined;
+  if (Date.now() - entry.updatedAt > MEDIA_CACHE_TTL_MS) {
+    mediaResponseCache.delete(cacheKey);
+    return undefined;
+  }
+  return entry.data;
+}
+
+function setCachedMediaItems(cacheKey: string, data: MediaItem[]): void {
+  mediaResponseCache.set(cacheKey, {
+    data,
+    updatedAt: Date.now(),
+  });
+  if (mediaResponseCache.size <= MEDIA_CACHE_MAX_ENTRIES) return;
+  const oldestEntry = mediaResponseCache.entries().next().value;
+  if (!oldestEntry) return;
+  const [oldestKey] = oldestEntry as [string, MediaCacheEntry];
+  mediaResponseCache.delete(oldestKey);
+}
+
+function invalidateMediaCacheForPrefix(prefix: string): void {
+  for (const cacheKey of mediaResponseCache.keys()) {
+    if (cacheKey.startsWith(prefix)) mediaResponseCache.delete(cacheKey);
+  }
+  for (const cacheKey of mediaInFlight.keys()) {
+    if (cacheKey.startsWith(prefix)) mediaInFlight.delete(cacheKey);
+  }
+}
+
 function MediaHeaderActions({
   mediaName,
   path,
@@ -279,31 +331,48 @@ const MediaView = ({
   useEffect(() => {
     if (!config) return;
     const cfg = config;
-
-    const controller = new AbortController();
+    const currentPath = normalizePath(path);
+    const cacheKey = getMediaCacheKey(cfg.owner, cfg.repo, cfg.branch, mediaConfig.name, currentPath);
+    const cachedItems = getCachedMediaItems(cacheKey);
+    const inFlightRequest = mediaInFlight.get(cacheKey);
+    let isMounted = true;
 
     async function fetchMedia() {
-      setIsLoading(true);
+      if (cachedItems) {
+        setData(cachedItems);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
       setError(null);
 
-      try {
-        const response = await fetch(
-          `/api/${cfg.owner}/${cfg.repo}/${encodeURIComponent(cfg.branch)}/media/${encodeURIComponent(mediaConfig.name)}/${encodeURIComponent(path)}`,
-          { signal: controller.signal },
-        );
-        const payload = await requireApiSuccess<any>(
-          response,
-          "Failed to fetch media",
-        );
-        if (controller.signal.aborted) return;
+      if (cachedItems) return;
 
-        setData(payload.data);
+      try {
+        const request = inFlightRequest ?? (async () => {
+          const response = await fetch(
+            `/api/${cfg.owner}/${cfg.repo}/${encodeURIComponent(cfg.branch)}/media/${encodeURIComponent(mediaConfig.name)}/${encodeURIComponent(currentPath)}`,
+          );
+          const payload = await requireApiSuccess<any>(
+            response,
+            "Failed to fetch media",
+          );
+          const rows = payload.data as MediaItem[];
+          setCachedMediaItems(cacheKey, rows);
+          return rows;
+        })();
+
+        if (!inFlightRequest) mediaInFlight.set(cacheKey, request);
+        const nextData = await request;
+        if (!isMounted || !nextData) return;
+        setData(nextData);
       } catch (error: unknown) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (!isMounted) return;
         const message = error instanceof Error ? error.message : "Failed to fetch media.";
         setError(message);
       } finally {
-        if (!controller.signal.aborted) {
+        if (!inFlightRequest) mediaInFlight.delete(cacheKey);
+        if (isMounted) {
           setIsLoading(false);
         }
       }
@@ -312,7 +381,7 @@ const MediaView = ({
     fetchMedia();
 
     return () => {
-      controller.abort();
+      isMounted = false;
     };
   }, [config.branch, config.owner, config.repo, mediaConfig.name, path]);
 
@@ -340,8 +409,10 @@ const MediaView = ({
 
         return sortMediaItems([...prevData, mediaEntry]);
     });
+    const scopePrefix = [config.owner, config.repo, config.branch, mediaConfig.name].join("|");
+    invalidateMediaCacheForPrefix(scopePrefix);
     onUpload?.(entry);
-  }, [onUpload, sortMediaItems]);
+  }, [config.branch, config.owner, config.repo, mediaConfig.name, onUpload, sortMediaItems]);
 
   const handleDelete = useCallback((deletedPath: string) => {
     setData((prevData) => {
@@ -349,7 +420,9 @@ const MediaView = ({
       const next = prevData.filter((item) => item.path !== deletedPath);
       return next.length === prevData.length ? prevData : next;
     });
-  }, []);
+    const scopePrefix = [config.owner, config.repo, config.branch, mediaConfig.name].join("|");
+    invalidateMediaCacheForPrefix(scopePrefix);
+  }, [config.branch, config.owner, config.repo, mediaConfig.name]);
 
   const handleRename = useCallback((oldPath: string, newPath: string) => {
     setData((prevData) => {
@@ -368,7 +441,9 @@ const MediaView = ({
       const next = prevData.filter((item) => item.path !== oldPath);
       return next.length === prevData.length ? prevData : next;
     });
-  }, []);
+    const scopePrefix = [config.owner, config.repo, config.branch, mediaConfig.name].join("|");
+    invalidateMediaCacheForPrefix(scopePrefix);
+  }, [config.branch, config.owner, config.repo, mediaConfig.name]);
 
   const handleFolderCreate = useCallback((entry: unknown) => {
     const createdPath = typeof entry === "string"
@@ -397,7 +472,9 @@ const MediaView = ({
       }
       return sortMediaItems([...prevData, parent]);
     });
-  }, [sortMediaItems]);
+    const scopePrefix = [config.owner, config.repo, config.branch, mediaConfig.name].join("|");
+    invalidateMediaCacheForPrefix(scopePrefix);
+  }, [config.branch, config.owner, config.repo, mediaConfig.name, sortMediaItems]);
 
   const handleNavigate = useCallback((newPath: string) => {
     setPath(newPath);

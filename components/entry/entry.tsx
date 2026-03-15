@@ -49,6 +49,56 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner";
 import { EllipsisVertical, History } from "lucide-react";
 
+const ENTRY_CACHE_TTL_MS = 30_000;
+const ENTRY_CACHE_MAX_ENTRIES = 300;
+
+type EntryCacheEntry = {
+  data: EntryData;
+  updatedAt: number;
+};
+
+const entryResponseCache = new Map<string, EntryCacheEntry>();
+const entryInFlight = new Map<string, Promise<EntryData | undefined>>();
+
+function getEntryCacheScopePrefix(owner: string, repo: string, branch: string, name: string): string {
+  return [owner, repo, branch, name].join("|");
+}
+
+function getEntryCacheKey(owner: string, repo: string, branch: string, name: string, path: string): string {
+  return [owner, repo, branch, name, normalizePath(path)].join("|");
+}
+
+function getCachedEntry(cacheKey: string): EntryData | undefined {
+  const entry = entryResponseCache.get(cacheKey);
+  if (!entry) return undefined;
+  if (Date.now() - entry.updatedAt > ENTRY_CACHE_TTL_MS) {
+    entryResponseCache.delete(cacheKey);
+    return undefined;
+  }
+  return entry.data;
+}
+
+function setCachedEntry(cacheKey: string, data: EntryData): void {
+  entryResponseCache.set(cacheKey, {
+    data,
+    updatedAt: Date.now(),
+  });
+  if (entryResponseCache.size <= ENTRY_CACHE_MAX_ENTRIES) return;
+  const oldestEntry = entryResponseCache.entries().next().value;
+  if (!oldestEntry) return;
+  const [oldestKey] = oldestEntry as [string, EntryCacheEntry];
+  entryResponseCache.delete(oldestKey);
+}
+
+function invalidateEntryCacheForPrefix(prefix: string): void {
+  for (const cacheKey of entryResponseCache.keys()) {
+    if (cacheKey.startsWith(prefix)) entryResponseCache.delete(cacheKey);
+  }
+  for (const cacheKey of entryInFlight.keys()) {
+    if (cacheKey.startsWith(prefix)) entryInFlight.delete(cacheKey);
+  }
+}
+
 type LintView = {
   state: {
     doc: {
@@ -138,52 +188,72 @@ export function Entry({
         : {};
   }, [schema, entry, path]);
 
+  const applyEntryState = useCallback((entryData: EntryData) => {
+    setEntry(entryData);
+    setSha(entryData.sha);
+    setHasRegisteredChanges(false);
+
+    if (initialPath && schema && schema.type === "collection") {
+      const primaryField = getPrimaryField(schema);
+      setDisplayTitle(`Editing "${entryData.contentObject?.[primaryField] || getFileName(normalizePath(path || initialPath))}"`);
+    } else if (!title && path && path !== ".pages.yml") {
+      setDisplayTitle(`Editing "${getFileName(normalizePath(path))}"`);
+    }
+  }, [initialPath, path, schema, title]);
+
   useEffect(() => {
-    const controller = new AbortController();
+    if (!path) return;
+    let isMounted = true;
 
     const fetchEntry = async () => {
-      if (path) {
-        setIsLoading(true);
-        setError(null);
+      const normalizedPath = normalizePath(path);
+      const cacheKey = getEntryCacheKey(config.owner, config.repo, config.branch, name, normalizedPath);
+      const cachedEntry = getCachedEntry(cacheKey);
+      const inFlightRequest = entryInFlight.get(cacheKey);
 
-        try {
-          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/entries/${encodeURIComponent(path)}?name=${encodeURIComponent(name)}`, {
-            signal: controller.signal,
-          });
+      if (cachedEntry) {
+        applyEntryState(cachedEntry);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
+      setError(null);
+
+      if (cachedEntry) return;
+
+      try {
+        const request = inFlightRequest ?? (async () => {
+          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/entries/${encodeURIComponent(path)}?name=${encodeURIComponent(name)}`);
           const data = await requireApiSuccess<any>(
             response,
             "Failed to fetch entry",
           );
-          if (controller.signal.aborted) return;
-          
-          setEntry(data.data);
-          setSha(data.data.sha);
-          setHasRegisteredChanges(false);
+          const nextEntryData = data.data as EntryData;
+          setCachedEntry(cacheKey, nextEntryData);
+          return nextEntryData;
+        })();
+        if (!inFlightRequest) entryInFlight.set(cacheKey, request);
 
-          if (initialPath && schema && schema.type === "collection") {
-            const primaryField = getPrimaryField(schema);
-            setDisplayTitle(`Editing "${data.data.contentObject?.[primaryField] || getFileName(normalizePath(path))}"`);
-          } else if (!title && path && path !== ".pages.yml") {
-            setDisplayTitle(`Editing "${getFileName(normalizePath(path))}"`);
-          }
-        } catch (error: unknown) {
-          if (error instanceof DOMException && error.name === "AbortError") return;
-          const message = error instanceof Error ? error.message : "Failed to fetch entry.";
-          setError(message);
-        } finally {
-          if (!controller.signal.aborted) {
-            setIsLoading(false);
-          }
+        const nextEntryData = await request;
+        if (!isMounted || !nextEntryData) return;
+        applyEntryState(nextEntryData);
+      } catch (error: unknown) {
+        if (!isMounted) return;
+        const message = error instanceof Error ? error.message : "Failed to fetch entry.";
+        setError(message);
+      } finally {
+        if (!inFlightRequest) entryInFlight.delete(cacheKey);
+        if (isMounted) {
+          setIsLoading(false);
         }
       }
     };
 
-    fetchEntry();
-
+    void fetchEntry();
     return () => {
-      controller.abort();
+      isMounted = false;
     };
-  }, [config.branch, config.owner, config.repo, name, path, refetchTrigger, initialPath, schema, title]);
+  }, [applyEntryState, config.branch, config.owner, config.repo, name, path, refetchTrigger]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -260,6 +330,20 @@ export function Entry({
               : prevEntry
           ));
           setHasRegisteredChanges(false);
+
+          if (savePath) {
+            const scopePrefix = getEntryCacheScopePrefix(config.owner, config.repo, config.branch, name);
+            invalidateEntryCacheForPrefix(scopePrefix);
+            const cacheKey = getEntryCacheKey(config.owner, config.repo, config.branch, name, savePath);
+            const previousEntry = entry ?? ({} as EntryData);
+            setCachedEntry(cacheKey, {
+              ...previousEntry,
+              ...data.data,
+              path: savePath,
+              sha: data.data.sha,
+              contentObject: savedContentSnapshot,
+            } as EntryData);
+          }
         }
 
         if (!path && schemaType === "collection") router.push(`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/edit/${encodeURIComponent(data.data.path)}`);
@@ -299,6 +383,8 @@ export function Entry({
 
   const handleDelete = useCallback((path: string) => {
     // TODO: disable save button or freeze form while deleting?
+    const scopePrefix = getEntryCacheScopePrefix(config.owner, config.repo, config.branch, name);
+    invalidateEntryCacheForPrefix(scopePrefix);
     if (schemaType === "collection") {
       router.push(`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}`);
     } else {
@@ -307,6 +393,8 @@ export function Entry({
   }, [config.branch, config.owner, config.repo, name, router, schemaType]);
 
   const handleRename = useCallback((oldPath: string, newPath: string) => {
+    const scopePrefix = getEntryCacheScopePrefix(config.owner, config.repo, config.branch, name);
+    invalidateEntryCacheForPrefix(scopePrefix);
     setPath(newPath);
     router.replace(`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collection/${encodeURIComponent(name)}/edit/${encodeURIComponent(newPath)}`);
   }, [config.branch, config.owner, config.repo, name, router]);
