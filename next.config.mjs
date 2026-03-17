@@ -5,6 +5,9 @@ const withBundleAnalyzer = bundleAnalyzer({
 })
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  // When BUNNY_BUILD=true, export as static HTML for edge deployment
+  ...(process.env.BUNNY_BUILD === 'true' ? { output: 'export' } : {}),
+};
 
 export default withBundleAnalyzer(nextConfig);

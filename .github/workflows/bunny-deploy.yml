@@ -1,0 +1,46 @@
+name: Deploy to Bunny Edge
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Build the Next.js frontend as a static export
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build frontend (static export)
+        run: npm run build
+        env:
+          # Add any required build-time env vars here
+          NEXT_PUBLIC_API_URL: ""
+
+      # Install Deno dependencies and build the edge bundle
+      - name: Install Deno dependencies
+        run: deno install
+
+      - name: Build edge bundle
+        run: deno task build:edge
+
+      # Deploy to Bunny Edge Scripting
+      - name: Deploy to Bunny
+        uses: BunnyWay/actions/deploy-script@main
+        with:
+          script_id: ${{ secrets.BUNNY_SCRIPT_ID }}
+          file: "bunny-script.ts"
+          api_key: ${{ secrets.BUNNY_ACCESS_KEY }}

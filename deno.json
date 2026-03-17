@@ -1,0 +1,42 @@
+{
+  "name": "pages-cms-edge",
+  "version": "0.1.0",
+  "exports": "./edge/server.ts",
+  "tasks": {
+    "start": "deno run --allow-net --allow-env --allow-read --allow-sys edge/server.ts",
+    "build:edge": "deno run --allow-env --allow-read --allow-write --allow-run --allow-net scripts/build-edge.ts",
+    "typecheck": "deno check edge/**/*.ts",
+    "lint": "deno lint edge scripts"
+  },
+  "imports": {
+    "#edge/": "./edge/",
+    "#edge/lib/": "./edge/lib/",
+    "#edge/routes/": "./edge/routes/",
+    "@libsql/client": "npm:@libsql/client@^0.17.0",
+    "@bunny.net/edgescript-sdk": "npm:@bunny.net/edgescript-sdk@^0.12.0",
+    "octokit": "npm:octokit@^4.0.2",
+    "yaml": "npm:yaml@^2.4.2",
+    "zod": "npm:zod@^3.23.8",
+    "@ltd/j-toml": "npm:@ltd/j-toml@^1.38.0",
+    "marked": "npm:marked@^12.0.2",
+    "slugify": "npm:slugify@^1.6.6",
+    "date-fns": "npm:date-fns@^3.6.0",
+    "lodash.mergewith": "npm:lodash.mergewith@^4.6.2",
+    "arctic": "npm:arctic@^1.8.0",
+    "esbuild": "npm:esbuild@^0.20.0"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true
+  },
+  "lint": {
+    "include": ["edge/", "scripts/"],
+    "rules": {
+      "tags": ["recommended"]
+    }
+  },
+  "fmt": {
+    "include": ["edge/", "scripts/"]
+  }
+}
