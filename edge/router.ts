@@ -34,19 +34,18 @@ const compilePattern = (
 ): { regex: RegExp; paramNames: string[] } => {
   const paramNames: string[] = [];
 
-  let regexStr = pattern
-    // Escape special regex chars except : and *
-    .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-    // Handle catch-all params (*slug)
-    .replace(/\*(\w+)/g, (_, name) => {
-      paramNames.push(name);
+  // Escape special regex chars except : and *
+  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+
+  // Single-pass replacement to maintain correct param ordering
+  const regexStr = escaped.replace(/(\*(\w+))|(:(\w+))/g, (_, catchAll, catchName, _named, namedName) => {
+    if (catchAll) {
+      paramNames.push(catchName);
       return "(.+)";
-    })
-    // Handle named params (:param)
-    .replace(/:(\w+)/g, (_, name) => {
-      paramNames.push(name);
-      return "([^/]+)";
-    });
+    }
+    paramNames.push(namedName);
+    return "([^/]+)";
+  });
 
   return {
     regex: new RegExp(`^${regexStr}$`),

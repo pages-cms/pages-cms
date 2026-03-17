@@ -5,6 +5,7 @@
   "tasks": {
     "start": "deno run --allow-net --allow-env --allow-read --allow-sys edge/server.ts",
     "build:edge": "deno run --allow-env --allow-read --allow-write --allow-run --allow-net scripts/build-edge.ts",
+    "test": "deno test --allow-all edge/test/",
     "typecheck": "deno check edge/**/*.ts",
     "lint": "deno lint edge scripts"
   },
@@ -23,7 +24,8 @@
     "date-fns": "npm:date-fns@^3.6.0",
     "lodash.mergewith": "npm:lodash.mergewith@^4.6.2",
     "arctic": "npm:arctic@^1.8.0",
-    "esbuild": "npm:esbuild@^0.20.0"
+    "esbuild": "npm:esbuild@^0.20.0",
+    "@std/assert": "jsr:@std/assert@^1.0.0"
   },
   "compilerOptions": {
     "strict": true,
