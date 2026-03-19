@@ -76,7 +76,6 @@ import {
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  X,
   GripVertical,
   Plus,
   Trash2,
@@ -543,8 +542,6 @@ const BlocksField = forwardRef<HTMLDivElement, NestedFieldProps>(
     const { blocks = [] } = field;
     const blockKey = field.blockKey || "_block";
     const selectedBlockName = value?.[blockKey];
-    const [isRemoveBlockDialogOpen, setIsRemoveBlockDialogOpen] =
-      useState(false);
 
     const handleBlockSelect = (blockName: string) => {
       const selectedBlockDef = blocks.find((b: Field) => b.name === blockName);
@@ -557,10 +554,6 @@ const BlocksField = forwardRef<HTMLDivElement, NestedFieldProps>(
       onChange(initialState);
     };
 
-    const handleRemoveBlock = () => {
-      onChange(null);
-    };
-
     const selectedBlockDefinition = useMemo(() => {
       const definition = blocks.find(
         (b: Field) => b.name === selectedBlockName,
@@ -568,7 +561,9 @@ const BlocksField = forwardRef<HTMLDivElement, NestedFieldProps>(
       return definition;
     }, [blocks, selectedBlockName]);
 
-    const itemLabel = getCollapsibleItemLabel(field, value, index);
+    const itemLabel = hasCollapsibleSummary(field)
+      ? getCollapsibleItemLabel(field, value, index)
+      : (selectedBlockDefinition?.label || selectedBlockDefinition?.name);
 
     return (
       <div className="space-y-3" ref={ref as React.Ref<HTMLDivElement>}>
@@ -601,73 +596,24 @@ const BlocksField = forwardRef<HTMLDivElement, NestedFieldProps>(
               onClick={isCollapsible ? onToggleOpen : undefined}
             >
               {isCollapsible && (
-                <>
-                  <ChevronRight
-                    className={cn(
-                      "size-4 transition-transform shrink-0",
-                      isOpen ? "rotate-90" : "",
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "truncate",
-                      hasErrors() ? "text-destructive" : "",
-                    )}
-                  >
-                    {itemLabel}
-                  </span>
-                </>
+                <ChevronRight
+                  className={cn(
+                    "size-4 transition-transform shrink-0",
+                    isOpen ? "rotate-90" : "",
+                  )}
+                />
               )}
-              <Badge
-                className="text-muted-foreground ml-auto -mr-2"
-                variant="outline"
+              <span
+                className={cn(
+                  "truncate",
+                  hasErrors() ? "text-destructive" : "",
+                )}
               >
-                {selectedBlockDefinition.label || selectedBlockDefinition.name}
-
-                <Tooltip>
-                  <AlertDialog
-                    open={isRemoveBlockDialogOpen}
-                    onOpenChange={setIsRemoveBlockDialogOpen}
-                  >
-                    <TooltipTrigger asChild>
-                      <AlertDialogTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setIsRemoveBlockDialogOpen(true);
-                          }}
-                          className="text-muted-foreground hover:text-foreground -my-0.5 -mx-2 px-2 transition-colors"
-                        >
-                          <X className="size-3" />
-                        </button>
-                      </AlertDialogTrigger>
-                    </TooltipTrigger>
-                    <AlertDialogContent
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Remove this block?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => {
-                            handleRemoveBlock();
-                            setIsRemoveBlockDialogOpen(false);
-                          }}
-                        >
-                          Remove
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                  <TooltipContent>Remove block</TooltipContent>
-                </Tooltip>
-              </Badge>
+                {itemLabel}
+              </span>
+              <div className="flex items-center ml-auto gap-x-2 text-muted-foreground text-xs pr-2">
+                {index !== undefined && <span>#{index + 1}</span>}
+              </div>
             </header>
             <div
               className={cn(
