@@ -1,6 +1,6 @@
 /**
  * Functions to parse, normalize and validate the configuration file.
- * 
+ *
  * Look at the `lib/utils/config.ts` file to understand how the config is
  * retrieved, saved and updated in the DB.
  */
@@ -11,13 +11,23 @@ import { ConfigSchema } from "@/lib/config-schema";
 import { z } from "zod";
 import mergeWith from "lodash.mergewith";
 
-const configVersion = "2.3";
+const configVersion = "3.0";
+
+type NavigationNode = {
+  type: "group" | "file" | "collection" | "media";
+  name: string;
+  label?: string;
+  items?: NavigationNode[];
+};
 
 // Parse the config file (YAML to JSON)
 const parseConfig = (content: string) => {
-  const document = YAML.parseDocument(content, { strict: false, prettyErrors: false });
+  const document = YAML.parseDocument(content, {
+    strict: false,
+    prettyErrors: false,
+  });
 
-  let errors = document.errors.map(error => {
+  let errors = document.errors.map((error) => {
     return {
       severity: "error",
       from: error.pos ? error.pos[0] : null,
@@ -26,7 +36,7 @@ const parseConfig = (content: string) => {
       yaml: error,
     };
   });
-  
+
   return { document, errors };
 };
 
@@ -40,22 +50,37 @@ const normalizeConfig = (configObject: any) => {
   // Normalize legacy root toggles into settings.
   if (configObjectCopy.settings === false) {
     configObjectCopy.settings = { config: false };
-  } else if (typeof configObjectCopy.settings !== "object" || configObjectCopy.settings == null) {
+  } else if (
+    typeof configObjectCopy.settings !== "object" ||
+    configObjectCopy.settings == null
+  ) {
     configObjectCopy.settings = {};
   }
-  if (typeof configObjectCopy.cache === "boolean" && configObjectCopy.settings.cache == null) {
+  if (
+    typeof configObjectCopy.cache === "boolean" &&
+    configObjectCopy.settings.cache == null
+  ) {
     configObjectCopy.settings.cache = configObjectCopy.cache;
   }
-  if (typeof configObjectCopy.hide === "boolean" && configObjectCopy.settings.config == null) {
+  if (
+    typeof configObjectCopy.hide === "boolean" &&
+    configObjectCopy.settings.config == null
+  ) {
     configObjectCopy.settings.config = !configObjectCopy.hide;
   }
   delete configObjectCopy.cache;
   delete configObjectCopy.hide;
 
   // Resolve component references in `components`
-  if (configObjectCopy.components && typeof configObjectCopy.components === 'object') {
+  if (
+    configObjectCopy.components &&
+    typeof configObjectCopy.components === "object"
+  ) {
     Object.keys(configObjectCopy.components).forEach((componentKey: string) => {
-      configObjectCopy.components[componentKey] = resolveComponent(configObjectCopy.components[componentKey], configObjectCopy.components);
+      configObjectCopy.components[componentKey] = resolveComponent(
+        configObjectCopy.components[componentKey],
+        configObjectCopy.components,
+      );
     });
   }
 
@@ -63,19 +88,26 @@ const normalizeConfig = (configObject: any) => {
     if (typeof configObjectCopy.media === "string") {
       // Ensure media.input is a relative path (and add name and label)
       const relativePath = configObjectCopy.media.replace(/^\/|\/$/g, "");
-      configObjectCopy.media = [{
-        name: "default",
-        label: "Media",
-        input: relativePath,
-        output: `/${relativePath}`,
-      }];
-    } else if (typeof configObjectCopy.media === "object" && !Array.isArray(configObjectCopy.media)) {
+      configObjectCopy.media = [
+        {
+          name: "default",
+          label: "Media",
+          input: relativePath,
+          output: `/${relativePath}`,
+        },
+      ];
+    } else if (
+      typeof configObjectCopy.media === "object" &&
+      !Array.isArray(configObjectCopy.media)
+    ) {
       // Ensure it's an array of media configurations (and add name and label)
-      configObjectCopy.media = [{
-        name: "default",
-        label: "Media",
-        ...configObjectCopy.media
-      }];
+      configObjectCopy.media = [
+        {
+          name: "default",
+          label: "Media",
+          ...configObjectCopy.media,
+        },
+      ];
     }
 
     // We normalize each media configuration
@@ -84,7 +116,11 @@ const normalizeConfig = (configObject: any) => {
         // Make sure input is relative
         mediaConfig.input = mediaConfig.input.replace(/^\/|\/$/g, "");
       }
-      if (mediaConfig.output != null && mediaConfig.output !== "/" && typeof mediaConfig.output === "string") {
+      if (
+        mediaConfig.output != null &&
+        mediaConfig.output !== "/" &&
+        typeof mediaConfig.output === "string"
+      ) {
         // Make sure output doesn"t have a trailing slash
         mediaConfig.output = mediaConfig.output.replace(/\/$/, "");
       }
@@ -95,7 +131,9 @@ const normalizeConfig = (configObject: any) => {
           mediaConfig.extensions = [];
           mediaConfig.categories.map((category: string) => {
             if (extensionCategories[category] != null) {
-              mediaConfig.extensions = mediaConfig.extensions.concat(extensionCategories[category]);
+              mediaConfig.extensions = mediaConfig.extensions.concat(
+                extensionCategories[category],
+              );
             }
           });
           delete mediaConfig.categories;
@@ -104,9 +142,10 @@ const normalizeConfig = (configObject: any) => {
 
       if (mediaConfig.commit && typeof mediaConfig.commit === "object") {
         if (
-          mediaConfig.commit.message
-          && typeof mediaConfig.commit.message === "object"
-          && (mediaConfig.commit.templates == null || typeof mediaConfig.commit.templates !== "object")
+          mediaConfig.commit.message &&
+          typeof mediaConfig.commit.message === "object" &&
+          (mediaConfig.commit.templates == null ||
+            typeof mediaConfig.commit.templates !== "object")
         ) {
           mediaConfig.commit.templates = mediaConfig.commit.message;
         }
@@ -117,122 +156,212 @@ const normalizeConfig = (configObject: any) => {
     });
   }
 
-  // Normalize content
-  if (configObjectCopy.content && Array.isArray(configObjectCopy?.content) && configObjectCopy.content.length > 0) {
-    configObjectCopy.content = configObjectCopy.content.map((item: any) => {
-      if (item.path != null) {
-        item.path = item.path.replace(/^\/|\/$/g, "");
-      }
-      if (item.type === "collection" && item.filename && typeof item.filename === "object") {
-        if (typeof item.filename.template === "string") {
-          const filenameField = item.filename.field;
-          item.filename = item.filename.template;
-          if (
-            filenameField === true ||
-            filenameField === false ||
-            filenameField === "create"
-          ) {
-            item.filenameField = filenameField;
-          }
-        }
-      }
-      if (item.filename == null && item.type === "collection") {
-        item.filename = "{year}-{month}-{day}-{primary}.md";
-      }
-      if (item.extension == null) {
-        const filename = item.type === "file" ? item.path : item.filename;
-        item.extension = getFileExtension(filename);
-      }
-      if (item.format == null) {
-        item.format = "raw";
-        const codeExtensions = ["yaml", "yml", "javascript", "js", "jsx", "typescript", "ts", "tsx", "json", "html", "htm", "markdown", "md", "mdx"];
-        if (item.fields?.length > 0) {
-          switch (item.extension) {
-            case "json":
-              item.format = "json";
-              break;
-            case "toml":
-              item.format = "toml";
-              break;
-            case "yaml":
-            case "yml":
-              item.format = "yaml";
-              break;
-            default:
-              // TODO: should we default to this or only consider "markdown", "md", "mdx" and "html"
-              // This may catch things like csv or xml for example, which is acceptable IMO (e.g. sitemap.xml)
-              item.format = "yaml-frontmatter";
-              break;
-          }
-        } else if (codeExtensions.includes(item.extension)) {
-          item.format = "code";
-        } else if (item.extension === "csv") {
-          item.format = "datagrid";
-        }
-      }
-      if (item.view?.node && typeof item.view.node === "string") {
-        item.view.node = {
-          filename: item.view.node,
-          hideDirs: "nodes"
-        };
-      }
+  const navigation: Record<string, NavigationNode[]> = {};
 
-      if (item.commit && typeof item.commit === "object") {
-        if (
-          item.commit.message
-          && typeof item.commit.message === "object"
-          && (item.commit.templates == null || typeof item.commit.templates !== "object")
-        ) {
-          item.commit.templates = item.commit.message;
-        }
-        delete item.commit.message;
-      }
-      
-      // Process content fields to resolve component references
-      if (Array.isArray(item.fields)) {
-        item.fields = item.fields.map((field: any) => {
-          return resolveComponent(field, configObjectCopy?.components);
-        });
-      }
-      
-      return item;
-    });
+  // Normalize content
+  if (
+    configObjectCopy.content &&
+    Array.isArray(configObjectCopy?.content) &&
+    configObjectCopy.content.length > 0
+  ) {
+    const normalizedContent = normalizeContentEntries(
+      configObjectCopy.content,
+      configObjectCopy?.components,
+    );
+    configObjectCopy.content = normalizedContent.items;
+    navigation.content = normalizedContent.navigation;
   }
 
   // Normalize settings
-  if (configObjectCopy.settings && typeof configObjectCopy.settings === "object") {
+  if (
+    configObjectCopy.settings &&
+    typeof configObjectCopy.settings === "object"
+  ) {
     if (
-      typeof configObjectCopy.settings.hide === "boolean"
-      && configObjectCopy.settings.config == null
+      typeof configObjectCopy.settings.hide === "boolean" &&
+      configObjectCopy.settings.config == null
     ) {
       configObjectCopy.settings.config = !configObjectCopy.settings.hide;
     }
     delete configObjectCopy.settings.hide;
 
     if (
-      configObjectCopy.settings.commit
-      && typeof configObjectCopy.settings.commit === "object"
+      configObjectCopy.settings.commit &&
+      typeof configObjectCopy.settings.commit === "object"
     ) {
       const commit = configObjectCopy.settings.commit;
       if (
-        commit.message
-        && typeof commit.message === "object"
-        && (commit.templates == null || typeof commit.templates !== "object")
+        commit.message &&
+        typeof commit.message === "object" &&
+        (commit.templates == null || typeof commit.templates !== "object")
       ) {
         commit.templates = commit.message;
       }
       delete commit.message;
     }
   }
-  
+
+  if (
+    Array.isArray(configObjectCopy.media) &&
+    configObjectCopy.media.length > 0
+  ) {
+    navigation.media = configObjectCopy.media.map((item: any) => ({
+      type: "media",
+      name: item.name || "default",
+      label: item.label || item.name || "Media",
+    }));
+  }
+
+  if (Object.keys(navigation).length > 0) {
+    configObjectCopy.navigation = navigation;
+  } else {
+    delete configObjectCopy.navigation;
+  }
+
   return configObjectCopy;
-}
+};
+
+const normalizeContentEntry = (
+  item: any,
+  componentsMap: Record<string, any>,
+) => {
+  if (item.path != null) {
+    item.path = item.path.replace(/^\/|\/$/g, "");
+  }
+  if (
+    item.type === "collection" &&
+    item.filename &&
+    typeof item.filename === "object"
+  ) {
+    if (typeof item.filename.template === "string") {
+      const filenameField = item.filename.field;
+      item.filename = item.filename.template;
+      if (
+        filenameField === true ||
+        filenameField === false ||
+        filenameField === "create"
+      ) {
+        item.filenameField = filenameField;
+      }
+    }
+  }
+  if (item.filename == null && item.type === "collection") {
+    item.filename = "{year}-{month}-{day}-{primary}.md";
+  }
+  if (item.extension == null) {
+    const filename = item.type === "file" ? item.path : item.filename;
+    item.extension = getFileExtension(filename);
+  }
+  if (item.format == null) {
+    item.format = "raw";
+    const codeExtensions = [
+      "yaml",
+      "yml",
+      "javascript",
+      "js",
+      "jsx",
+      "typescript",
+      "ts",
+      "tsx",
+      "json",
+      "html",
+      "htm",
+      "markdown",
+      "md",
+      "mdx",
+    ];
+    if (item.fields?.length > 0) {
+      switch (item.extension) {
+        case "json":
+          item.format = "json";
+          break;
+        case "toml":
+          item.format = "toml";
+          break;
+        case "yaml":
+        case "yml":
+          item.format = "yaml";
+          break;
+        default:
+          // TODO: should we default to this or only consider "markdown", "md", "mdx" and "html"
+          // This may catch things like csv or xml for example, which is acceptable IMO (e.g. sitemap.xml)
+          item.format = "yaml-frontmatter";
+          break;
+      }
+    } else if (codeExtensions.includes(item.extension)) {
+      item.format = "code";
+    } else if (item.extension === "csv") {
+      item.format = "datagrid";
+    }
+  }
+  if (item.view?.node && typeof item.view.node === "string") {
+    item.view.node = {
+      filename: item.view.node,
+      hideDirs: "nodes",
+    };
+  }
+
+  if (item.commit && typeof item.commit === "object") {
+    if (
+      item.commit.message &&
+      typeof item.commit.message === "object" &&
+      (item.commit.templates == null ||
+        typeof item.commit.templates !== "object")
+    ) {
+      item.commit.templates = item.commit.message;
+    }
+    delete item.commit.message;
+  }
+
+  if (Array.isArray(item.fields)) {
+    item.fields = item.fields.map((field: any) => {
+      return resolveComponent(field, componentsMap);
+    });
+  }
+
+  return item;
+};
+
+const normalizeContentEntries = (
+  entries: any[],
+  componentsMap: Record<string, any>,
+): { items: any[]; navigation: NavigationNode[] } => {
+  const items: any[] = [];
+  const navigation: NavigationNode[] = [];
+
+  entries.forEach((entry: any) => {
+    if (entry?.type === "group") {
+      const normalizedGroup = normalizeContentEntries(
+        entry.items || [],
+        componentsMap,
+      );
+      navigation.push({
+        type: "group",
+        name: entry.name,
+        label: entry.label || entry.name,
+        items: normalizedGroup.navigation,
+      });
+      items.push(...normalizedGroup.items);
+      return;
+    }
+
+    const normalizedEntry = normalizeContentEntry(entry, componentsMap);
+    items.push(normalizedEntry);
+    navigation.push({
+      type: normalizedEntry.type,
+      name: normalizedEntry.name,
+      label: normalizedEntry.label || normalizedEntry.name,
+    });
+  });
+
+  return { items, navigation };
+};
 
 // Helper function to resolve component references in fields
 function resolveComponent(field: any, componentsMap: Record<string, any>): any {
   let result = JSON.parse(JSON.stringify(field));
 
-  if (result.component && typeof result.component === 'string') {
+  if (result.component && typeof result.component === "string") {
     const componentKey = result.component;
     const componentDef = componentsMap[componentKey];
 
@@ -241,22 +370,33 @@ function resolveComponent(field: any, componentsMap: Record<string, any>): any {
       const originalName = result.name;
       const componentType = componentCopy.type;
       delete result.component;
-      result = mergeWith({}, componentCopy, result, (objValue: any, srcValue: any) => {
-        if (Array.isArray(srcValue)) {
-          return srcValue;
-        }
-      });
+      result = mergeWith(
+        {},
+        componentCopy,
+        result,
+        (objValue: any, srcValue: any) => {
+          if (Array.isArray(srcValue)) {
+            return srcValue;
+          }
+        },
+      );
       result.name = originalName;
       result.type = componentType;
     } else {
-      console.error(`Component reference "${componentKey}" could not be resolved.`);
+      console.error(
+        `Component reference "${componentKey}" could not be resolved.`,
+      );
       delete result.component; // Remove the broken reference
     }
   }
 
   // Default to `type: object` if fields exist and type is missing
-  if (Array.isArray(result.fields) && result.fields.length > 0 && result.type === undefined) {
-    result.type = 'object';
+  if (
+    Array.isArray(result.fields) &&
+    result.fields.length > 0 &&
+    result.type === undefined
+  ) {
+    result.type = "object";
   }
 
   // Nested fields
@@ -278,9 +418,10 @@ function resolveComponent(field: any, componentsMap: Record<string, any>): any {
 
 // Check if the config contains unresolved component references
 function containsUnresolvedComponent(data: any): boolean {
-  if (Array.isArray(data)) return data.some(item => containsUnresolvedComponent(item));
-  if (data && typeof data === 'object') {
-    if (typeof data.component === 'string') return true; 
+  if (Array.isArray(data))
+    return data.some((item) => containsUnresolvedComponent(item));
+  if (data && typeof data === "object") {
+    if (typeof data.component === "string") return true;
     if (Array.isArray(data.fields)) {
       if (containsUnresolvedComponent(data.fields)) return true;
     }
@@ -298,18 +439,22 @@ const validateConfig = (document: YAML.Document.Parsed) => {
     ConfigSchema.parse(content);
   } catch (zodError: any) {
     if (zodError instanceof z.ZodError) {
-      zodError.errors.forEach(error => {
-        processZodError(error, document, errors);    
+      zodError.errors.forEach((error) => {
+        processZodError(error, document, errors);
       });
     }
   }
-  
+
   return errors;
 };
 
 // Process the Zod errors from the validateConfig function. Helps us display errors
 // in the settings editor.
-const processZodError = (error: any, document: YAML.Document.Parsed, errors: any[]) => {
+const processZodError = (
+  error: any,
+  document: YAML.Document.Parsed,
+  errors: any[],
+) => {
   let path = error.path;
   let yamlNode: any = document.getIn(path, true);
   let range = [0, 0];
@@ -347,7 +492,10 @@ const processZodError = (error: any, document: YAML.Document.Parsed, errors: any
 
     case "unrecognized_keys":
       error.keys.forEach((key: string) => {
-        const parentNode = yamlNode && yamlNode.items && yamlNode.items.find((item: any) => item.key.value === key);
+        const parentNode =
+          yamlNode &&
+          yamlNode.items &&
+          yamlNode.items.find((item: any) => item.key.value === key);
         if (parentNode) {
           // TODO: investigate why/when parentNode isn't defined, we may want to leave to YAML parser error
           errors.push({
@@ -384,4 +532,10 @@ const parseAndValidateConfig = (content: string) => {
   return { document, parseErrors, validationErrors };
 };
 
-export { configVersion, parseConfig, normalizeConfig, validateConfig, parseAndValidateConfig };
+export {
+  configVersion,
+  parseConfig,
+  normalizeConfig,
+  validateConfig,
+  parseAndValidateConfig,
+};

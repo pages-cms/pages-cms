@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useActionState } from "react";
 import {
@@ -46,9 +47,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { requireApiSuccess } from "@/lib/api-client";
 import { toast } from "sonner";
-import { EllipsisVertical, Loader, Mail, Trash2 } from "lucide-react";
+import { BookText, EllipsisVertical, Loader, Mail, Trash2 } from "lucide-react";
 
 type Collaborator = {
   id: number;
@@ -291,7 +297,29 @@ export function Collaborators({
 
     return (
       <div className="flex items-center justify-between gap-2">
-        <h1 className="font-semibold text-lg">Collaborators</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="font-semibold text-lg">Collaborators</h1>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Link
+                  href="https://pagescms.org/docs/configuration/collaborators/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <BookText />
+                  <span className="sr-only">Collaborators docs</span>
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>View docs</TooltipContent>
+          </Tooltip>
+        </div>
         {showInviteAction ? (
           <InviteCollaboratorsDialog
             owner={owner}
@@ -352,9 +380,9 @@ export function Collaborators({
       <div className="absolute inset-0 p-4 md:p-6 flex items-center justify-center">
         <Empty className="max-w-[420px] flex-none">
           <EmptyHeader>
-            <EmptyTitle>Something's wrong</EmptyTitle>
+            <EmptyTitle>Something went wrong</EmptyTitle>
             <EmptyDescription>
-              We could not fetch the list of collaborators.
+              We couldn&apos;t load the list of collaborators.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -422,7 +450,7 @@ export function Collaborators({
                         resending.includes(collaborator.id)
                       }
                     >
-                      Resend invite
+                      Resend invitation
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -473,9 +501,9 @@ export function Collaborators({
         <div className="flex-1 flex items-center">
           <Empty>
             <EmptyHeader>
-              <EmptyTitle>No collaborators yet</EmptyTitle>
+              <EmptyTitle>No collaborators</EmptyTitle>
               <EmptyDescription>
-                Invite collaborators to grant repository access.
+                Invite collaborators to give them access to this repository.
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>

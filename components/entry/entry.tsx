@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useConfig } from "@/contexts/config-context";
 import { parseAndValidateConfig } from "@/lib/config";
 import { requireApiSuccess } from "@/lib/api-client";
-import { generateFilename, getPrimaryField, getSchemaByName } from "@/lib/schema";
+import {
+  generateFilename,
+  getPrimaryField,
+  getSchemaByName,
+  safeAccess,
+} from "@/lib/schema";
 import {
   getFileExtension,
   getFileName,
@@ -53,7 +59,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner";
-import { EllipsisVertical, History, Lock, LockOpen } from "lucide-react";
+import { EllipsisVertical, History, Lock, LockOpen, Save } from "lucide-react";
 import useSWR, { useSWRConfig } from "swr";
 
 type LintView = {
@@ -69,12 +75,14 @@ export function Entry({
   path: initialPath,
   parent,
   title,
+  headerMeta,
   onSave,
 }: {
   name?: string;
   path?: string;
   parent?: string;
   title?: string;
+  headerMeta?: ReactNode;
   onSave?: (data: Record<string, unknown>) => void;
 }) {
   const [path, setPath] = useState<string | undefined>(initialPath);
@@ -218,7 +226,16 @@ export function Entry({
 
     if (initialPath && schema && schema.type === "collection") {
       const primaryField = getPrimaryField(schema);
-      setDisplayTitle(`Editing "${swrEntryData.contentObject?.[primaryField] || getFileName(normalizePath(path))}"`);
+      const primaryValue = primaryField
+        ? safeAccess(swrEntryData.contentObject ?? {}, primaryField)
+        : undefined;
+      const hasPrimaryValue = typeof primaryValue === "string"
+        ? primaryValue !== ""
+        : primaryValue != null;
+      const titleValue = hasPrimaryValue
+        ? String(primaryValue)
+        : getFileName(normalizePath(path));
+      setDisplayTitle(`Editing "${titleValue}"`);
     } else if (!title && path && path !== ".pages.yml") {
       setDisplayTitle(`Editing "${getFileName(normalizePath(path))}"`);
     }
@@ -538,16 +555,17 @@ export function Entry({
   const showHeaderActions = error !== "Not found";
 
   const headerNode = useMemo(() => (
-    <div className="flex items-center justify-between gap-2">
-      <div className="min-w-0 truncate">
-        <Breadcrumb>
-          <BreadcrumbList className="font-semibold text-lg flex-nowrap">
+    <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+        <Breadcrumb className="min-w-0 flex-1 overflow-hidden">
+          <BreadcrumbList className="min-w-0 flex-nowrap font-semibold text-lg">
             {breadcrumbNode}
           </BreadcrumbList>
         </Breadcrumb>
+        {headerMeta}
       </div>
       {showHeaderActions && (
-        <div className="flex items-center gap-x-2">
+        <div className="flex shrink-0 items-center gap-x-2">
           {path && (
             historyData && historyData.length > 0 && !isLoading
               ? <EntryHistoryDropdown history={historyData} path={path} />
@@ -556,6 +574,7 @@ export function Entry({
           <Button
             type="submit"
             form="entry-form"
+            className="size-9 px-0 sm:h-9 sm:w-auto sm:px-4 sm:py-2"
             disabled={
               isBusy ||
               (showFilenameField && filenameValue.trim().length === 0) ||
@@ -573,8 +592,10 @@ export function Entry({
                 )
               )
             }
+            aria-label="Save"
           >
-            Save
+            <Save className="size-4 sm:hidden" />
+            <span className="hidden sm:inline">Save</span>
           </Button>
           {path && (
             sha
@@ -597,7 +618,7 @@ export function Entry({
         </div>
       )}
     </div>
-  ), [breadcrumbNode, handleDelete, handleRename, hasRegisteredChanges, historyData, isBusy, isFormDirty, isLoading, name, path, schemaType, sha, showHeaderActions]);
+  ), [breadcrumbNode, handleDelete, handleRename, hasRegisteredChanges, headerMeta, historyData, isBusy, isFormDirty, isLoading, name, path, schemaType, sha, showHeaderActions]);
 
   useRepoHeader({ header: headerNode });
 
@@ -642,11 +663,11 @@ export function Entry({
         <div className="absolute inset-0 p-4 md:p-6 flex items-center justify-center">
           <Empty className="max-w-[420px] flex-none">
             <EmptyHeader>
-              <EmptyTitle>{isSettingsPage ? "Configuration missing" : "File missing"}</EmptyTitle>
+              <EmptyTitle>{isSettingsPage ? "Configuration not found" : "File not found"}</EmptyTitle>
               <EmptyDescription>
                 {isSettingsPage
-                  ? "The settings file \".pages.yml\" has not been created yet."
-                  : `The file "${path ?? schema?.path ?? "unknown"}" has not been created yet.`}
+                  ? "The configuration file \".pages.yml\" does not exist yet."
+                  : `The file "${path ?? schema?.path ?? "unknown"}" does not exist yet.`}
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
@@ -664,7 +685,7 @@ export function Entry({
         <div className="absolute inset-0 p-4 md:p-6 flex items-center justify-center">
           <Empty className="max-w-[420px] flex-none">
             <EmptyHeader>
-              <EmptyTitle>Something&apos;s wrong</EmptyTitle>
+              <EmptyTitle>Something went wrong</EmptyTitle>
               <EmptyDescription>{error}</EmptyDescription>
             </EmptyHeader>
             <EmptyContent>

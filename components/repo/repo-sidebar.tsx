@@ -41,8 +41,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -53,6 +57,7 @@ import {
 import {
   ArrowLeft,
   ArrowUpRight,
+  ChevronRight,
   ChevronsUpDown,
   Database,
   FileStack,
@@ -70,6 +75,13 @@ type NavItem = {
   label: string;
   href: string;
   icon: React.ReactNode;
+};
+
+type NavigationNode = {
+  type: "group" | "file" | "collection" | "media";
+  name: string;
+  label?: string;
+  items?: NavigationNode[];
 };
 
 function RepoSwitcher() {
@@ -248,6 +260,27 @@ export function RepoSidebar() {
   const { user } = useUser();
   const { config } = useConfig();
   const { isMobile, setOpenMobile } = useSidebar();
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }, [isMobile, pathname, setOpenMobile]);
+
+  useEffect(() => {
+    if (typeof document === "undefined" || !isMobile) {
+      return;
+    }
+
+    // Radix sheet teardown can occasionally leave body interactions disabled
+    // after mobile sidebar navigation.
+    document.body.style.removeProperty("pointer-events");
+
+    return () => {
+      document.body.style.removeProperty("pointer-events");
+    };
+  }, [isMobile, pathname]);
 
   const handleNavigation = useCallback(() => {
     if (isMobile) {
@@ -255,32 +288,29 @@ export function RepoSidebar() {
     }
   }, [isMobile, setOpenMobile]);
 
-  const contentItems = useMemo<NavItem[]>(() => {
+  const contentNavigation = useMemo<NavigationNode[]>(() => {
     if (!config?.object) return [];
-    const content = (config.object as any).content ?? [];
+    const navigation = (config.object as any).navigation?.content;
+    if (Array.isArray(navigation)) return navigation;
 
+    const content = (config.object as any).content ?? [];
     return content.map((item: any) => ({
-      key: `content-${item.name}`,
+      type: item.type,
+      name: item.name,
       label: item.label || item.name,
-      href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/${item.type}/${encodeURIComponent(item.name)}`,
-      icon:
-        item.type === "collection" ? (
-          <FileStack className="size-4" />
-        ) : (
-          <FileText className="size-4" />
-        ),
     }));
   }, [config]);
 
-  const mediaItems = useMemo<NavItem[]>(() => {
+  const mediaNavigation = useMemo<NavigationNode[]>(() => {
     if (!config?.object) return [];
-    const media = (config.object as any).media ?? [];
+    const navigation = (config.object as any).navigation?.media;
+    if (Array.isArray(navigation)) return navigation;
 
+    const media = (config.object as any).media ?? [];
     return media.map((item: any) => ({
-      key: `media-${item.name || "default"}`,
+      type: "media",
+      name: item.name || "default",
       label: item.label || item.name || "Media",
-      href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/media/${item.name}`,
-      icon: <FolderOpen className="size-4" />,
     }));
   }, [config]);
 
@@ -322,7 +352,181 @@ export function RepoSidebar() {
     return items;
   }, [config, user]);
 
-  const renderGroup = (label: string, items: NavItem[]) => {
+  const getNodeHref = useCallback(
+    (node: NavigationNode) => {
+      if (!config) return "#";
+      if (node.type === "media") {
+        return `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/media/${encodeURIComponent(node.name)}`;
+      }
+      return `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/${node.type}/${encodeURIComponent(node.name)}`;
+    },
+    [config],
+  );
+
+  const getNodeIcon = (node: NavigationNode) => {
+    if (node.type === "collection") return <FileStack className="size-4" />;
+    if (node.type === "media") return <FolderOpen className="size-4" />;
+    return <FileText className="size-4" />;
+  };
+
+  const hasActiveDescendant = useCallback(
+    function hasActiveDescendant(node: NavigationNode): boolean {
+      if (node.type !== "group") {
+        const href = getNodeHref(node);
+        return pathname === href || pathname.startsWith(`${href}/`);
+      }
+      return (node.items || []).some((item) => hasActiveDescendant(item));
+    },
+    [getNodeHref, pathname],
+  );
+
+  const activeGroupKeys = useMemo(
+    () => {
+      const collectActiveGroupKeys = (
+        nodes: NavigationNode[],
+        prefix: string,
+      ): string[] => {
+        const keys: string[] = [];
+
+        nodes.forEach((node) => {
+          const key = `${prefix}-${node.name}`;
+          if (node.type !== "group") {
+            return;
+          }
+
+          if (hasActiveDescendant(node)) {
+            keys.push(key);
+          }
+
+          if (node.items?.length) {
+            keys.push(...collectActiveGroupKeys(node.items, key));
+          }
+        });
+
+        return keys;
+      };
+
+      return [
+        ...collectActiveGroupKeys(contentNavigation, "Content"),
+        ...collectActiveGroupKeys(mediaNavigation, "Media"),
+      ];
+    },
+    [contentNavigation, hasActiveDescendant, mediaNavigation],
+  );
+
+  useEffect(() => {
+    if (activeGroupKeys.length === 0) {
+      return;
+    }
+
+    setExpandedGroups((current) => {
+      let changed = false;
+      const next = { ...current };
+
+      activeGroupKeys.forEach((key) => {
+        if (!(key in next)) {
+          next[key] = true;
+          changed = true;
+        }
+      });
+
+      return changed ? next : current;
+    });
+  }, [activeGroupKeys]);
+
+  const toggleGroup = useCallback((key: string) => {
+    setExpandedGroups((current) => ({
+      ...current,
+      [key]: !(current[key] ?? false),
+    }));
+  }, []);
+
+  function renderNavigationNode(node: NavigationNode, key: string, nested: boolean = false): React.ReactNode {
+    if (node.type === "group") {
+      const isActive = hasActiveDescendant(node);
+      const isOpen = expandedGroups[key] ?? isActive;
+      if (nested) {
+        return (
+            <SidebarMenuSubItem key={key}>
+              <SidebarMenuSubButton
+                asChild
+              >
+                <button type="button" onClick={() => toggleGroup(key)}>
+                  <ChevronRight className={cn("size-4 transition-transform", isOpen && "rotate-90")} />
+                  <span>{node.label || node.name}</span>
+              </button>
+            </SidebarMenuSubButton>
+            {isOpen && node.items && node.items.length > 0 && (
+              <SidebarMenuSub>
+                {node.items.map((item) => renderNavigationNode(item, `${key}-${item.name}`, true))}
+              </SidebarMenuSub>
+            )}
+          </SidebarMenuSubItem>
+        );
+      }
+
+      return (
+        <SidebarMenuItem key={key}>
+          <SidebarMenuButton
+            asChild
+          >
+            <button type="button" onClick={() => toggleGroup(key)}>
+              <ChevronRight className={cn("size-4 transition-transform", isOpen && "rotate-90")} />
+              <span>{node.label || node.name}</span>
+            </button>
+          </SidebarMenuButton>
+          {isOpen && node.items && node.items.length > 0 && (
+            <SidebarMenuSub>
+              {node.items.map((item) => renderNavigationNode(item, `${key}-${item.name}`, true))}
+            </SidebarMenuSub>
+          )}
+        </SidebarMenuItem>
+      );
+    }
+
+    const href = getNodeHref(node);
+    const isActive = pathname === href || pathname.startsWith(`${href}/`);
+    if (nested) {
+      return (
+        <SidebarMenuSubItem key={key}>
+          <SidebarMenuSubButton asChild isActive={isActive}>
+            <Link href={href} onClick={handleNavigation}>
+              {getNodeIcon(node)}
+              <span>{node.label || node.name}</span>
+            </Link>
+          </SidebarMenuSubButton>
+        </SidebarMenuSubItem>
+      );
+    }
+
+    return (
+      <SidebarMenuItem key={key}>
+        <SidebarMenuButton asChild isActive={isActive}>
+          <Link href={href} onClick={handleNavigation}>
+            {getNodeIcon(node)}
+            <span>{node.label || node.name}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
+
+  const renderNavigationGroup = (label: string, nodes: NavigationNode[]) => {
+    if (nodes.length === 0) return null;
+
+    return (
+      <SidebarGroup>
+        <SidebarGroupLabel>{label}</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {nodes.map((node) => renderNavigationNode(node, `${label}-${node.name}`))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    );
+  };
+
+  const renderFlatGroup = (label: string, items: NavItem[]) => {
     if (items.length === 0) return null;
 
     return (
@@ -351,9 +555,9 @@ export function RepoSidebar() {
   };
 
   const groups = [
-    renderGroup("Content", contentItems),
-    renderGroup("Media", mediaItems),
-    renderGroup("Admin", adminItems),
+    renderNavigationGroup("Content", contentNavigation),
+    renderNavigationGroup("Media", mediaNavigation),
+    renderFlatGroup("Admin", adminItems),
   ].filter(Boolean);
 
   return (
