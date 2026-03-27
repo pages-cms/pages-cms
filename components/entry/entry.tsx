@@ -702,6 +702,8 @@ export function Entry({
     }
   }
   
+  const entryPath = path ? normalizePath(getParentPath(path)) : undefined;
+
   return (
     isLoading
       ? loadingSkeleton
@@ -709,6 +711,7 @@ export function Entry({
         fields={entryFields}
         contentObject={entryContentObject}
         onSubmit={onSubmit}
+        entryPath={entryPath}
         filePath={
           showFilenameField
             ? <InputGroup data-disabled={path ? !isFilenameUnlocked : false}>

@@ -102,6 +102,7 @@ type RenderFields = (
   parentName?: string,
   registerBeforeSubmitHook?: RegisterBeforeSubmitHook,
   inheritedReadonly?: boolean,
+  entryPath?: string,
 ) => React.ReactNode[];
 
 type NestedFieldProps = {
@@ -112,6 +113,7 @@ type NestedFieldProps = {
   isOpen?: boolean;
   onToggleOpen?: () => void;
   index?: number;
+  entryPath?: string;
 };
 
 const hasFieldPathError = (errors: unknown, fieldName: string): boolean => {
@@ -222,6 +224,7 @@ const ListItemRow = memo(function ListItemRow({
   onRequestRemove,
   onRemoveConfirm,
   onPendingRemoveChange,
+  entryPath,
 }: {
   id: string;
   field: FieldWithReadonlyMeta;
@@ -236,6 +239,7 @@ const ListItemRow = memo(function ListItemRow({
   onRequestRemove: (index: number) => void;
   onRemoveConfirm: (index: number) => void;
   onPendingRemoveChange: (index: number, open: boolean) => void;
+  entryPath?: string;
 }) {
   const isReadonly = Boolean(field.readonly);
   return (
@@ -250,6 +254,7 @@ const ListItemRow = memo(function ListItemRow({
           isOpen={isOpen ?? defaultOpen}
           toggleOpen={() => onToggleOpen(index)}
           index={index}
+          entryPath={entryPath}
         />
       </div>
       {!isReadonly && (
@@ -298,11 +303,13 @@ const ListField = ({
   fieldName,
   renderFields,
   registerBeforeSubmitHook,
+  entryPath,
 }: {
   field: FieldWithReadonlyMeta;
   fieldName: string;
   renderFields: RenderFields;
   registerBeforeSubmitHook?: RegisterBeforeSubmitHook;
+  entryPath?: string;
 }) => {
   const supportsItemCollapse =
     field.type === "object" || field.type === "block";
@@ -522,6 +529,7 @@ const ListField = ({
                     onRequestRemove={handleRequestRemove}
                     onRemoveConfirm={handleRemoveConfirm}
                     onPendingRemoveChange={handlePendingRemoveChange}
+                    entryPath={entryPath}
                   />
                 ))}
               </SortableContext>
@@ -559,6 +567,7 @@ const BlocksField = forwardRef<HTMLDivElement, NestedFieldProps>(
       isOpen,
       onToggleOpen,
       index,
+      entryPath,
     } = props;
 
     const isCollapsible = !!(
@@ -731,6 +740,7 @@ const BlocksField = forwardRef<HTMLDivElement, NestedFieldProps>(
                     fieldName,
                     registerBeforeSubmitHook,
                     isReadonly,
+                    entryPath,
                   );
                   return renderedElements;
                 })()
@@ -749,6 +759,7 @@ const BlocksField = forwardRef<HTMLDivElement, NestedFieldProps>(
                   renderFields={renderFields}
                   registerBeforeSubmitHook={registerBeforeSubmitHook}
                   showLabel={false}
+                  entryPath={entryPath}
                 />
               )}
             </div>
@@ -785,6 +796,7 @@ const ObjectField = forwardRef<HTMLDivElement, NestedFieldProps>(
       isOpen = true,
       onToggleOpen = () => {},
       index,
+      entryPath,
     } = props;
 
     const isCollapsible = !!(
@@ -843,6 +855,7 @@ const ObjectField = forwardRef<HTMLDivElement, NestedFieldProps>(
             fieldName,
             registerBeforeSubmitHook,
             Boolean(field.readonly),
+            entryPath,
           )}
         </div>
       </div>
@@ -862,6 +875,7 @@ const SingleField = ({
   isOpen = true,
   toggleOpen = () => {},
   index = 0,
+  entryPath,
 }: {
   field: FieldWithReadonlyMeta;
   fieldName: string;
@@ -872,6 +886,7 @@ const SingleField = ({
   isOpen?: boolean;
   toggleOpen?: () => void;
   index?: number;
+  entryPath?: string;
 }) => {
   const {
     control,
@@ -981,6 +996,7 @@ const SingleField = ({
                 const sharedProps = {
                   ...rhfManagedFieldProps,
                   field,
+                  entryPath,
                 };
                 if (field.type === "rich-text") {
                   return (
@@ -1013,6 +1029,7 @@ const EntryForm = ({
   contentObject,
   onSubmit = () => {},
   filePath,
+  entryPath,
   onDirtyChange,
   onChangeRegistered,
 }: {
@@ -1020,6 +1037,7 @@ const EntryForm = ({
   contentObject?: Record<string, unknown>;
   onSubmit: (values: Record<string, unknown>) => void;
   filePath?: React.ReactNode;
+  entryPath?: string;
   onDirtyChange?: (isDirty: boolean) => void;
   onChangeRegistered?: () => void;
 }) => {
@@ -1063,7 +1081,9 @@ const EntryForm = ({
       parentName?: string,
       registerBeforeSubmitHook?: RegisterBeforeSubmitHook,
       inheritedReadonly = false,
+      entryPathProp?: string,
     ): React.ReactNode[] => {
+      const currentEntryPath = entryPathProp ?? entryPath;
       return fields.map((field) => {
         if (!field || field.hidden) return null;
         const effectiveField =
@@ -1086,6 +1106,7 @@ const EntryForm = ({
               fieldName={currentFieldName}
               renderFields={renderFields}
               registerBeforeSubmitHook={registerBeforeSubmitHook}
+              entryPath={currentEntryPath}
             />
           );
         }
@@ -1097,11 +1118,12 @@ const EntryForm = ({
             renderFields={renderFields}
             registerBeforeSubmitHook={registerBeforeSubmitHook}
             onChangeRegistered={onChangeRegistered}
+            entryPath={currentEntryPath}
           />
         );
       });
     },
-    [onChangeRegistered],
+    [onChangeRegistered, entryPath],
   );
 
   const runBeforeValidationHooks = useCallback(async () => {

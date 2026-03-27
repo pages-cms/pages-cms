@@ -6,7 +6,7 @@ import { MediaUpload } from "@/components/media/media-upload";
 import { MediaDialog } from "@/components/media/media-dialog";
 import { Upload, FolderOpen, ArrowUpRight, EllipsisVertical } from "lucide-react";
 import { useConfig } from "@/contexts/config-context";
-import { normalizeMediaPath, normalizePath } from "@/lib/utils/file";
+import { normalizeMediaPath, normalizePath, joinPathSegments } from "@/lib/utils/file";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
@@ -43,6 +43,7 @@ type EditorProps = {
   value?: string | string[] | null;
   field: Field;
   onChange: (value: string | string[]) => void;
+  entryPath?: string;
 };
 
 type FieldOptions = {
@@ -52,11 +53,30 @@ type FieldOptions = {
   rename?: boolean;
 };
 
-const ImageTeaser = ({ file, config, onRemove }: { 
+const ImageTeaser = ({ file, config, entryPath, onRemove }: { 
   file: string;
   config: Pick<Config, "owner" | "repo" | "branch">;
+  entryPath?: string;
   onRemove?: () => void;
 }) => {
+  const resolvedPath = useMemo(() => {
+    if (!file) return "";
+    if (file.startsWith("http://") || file.startsWith("https://")) {
+      return file;
+    }
+    const normalizedFile = normalizeMediaPath(file);
+    if (normalizedFile.startsWith("/")) {
+      return normalizedFile;
+    }
+    if (normalizedFile.startsWith("http://") || normalizedFile.startsWith("https://")) {
+      return normalizedFile;
+    }
+    if (entryPath) {
+      return joinPathSegments([entryPath, normalizedFile]);
+    }
+    return normalizedFile;
+  }, [file, entryPath]);
+
   return (
     <>
       <div className="absolute bottom-1 right-1 bg-background rounded-md">
@@ -69,7 +89,7 @@ const ImageTeaser = ({ file, config, onRemove }: {
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
               <a
-                href={`https://github.com/${config.owner}/${config.repo}/blob/${config.branch}/${file}`}
+                href={`https://github.com/${config.owner}/${config.repo}/blob/${config.branch}/${resolvedPath}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full"
@@ -96,11 +116,12 @@ const ImageTeaser = ({ file, config, onRemove }: {
   )
 };
 
-const SortableItem = ({ id, file, config, media, onRemove, readonly = false }: { 
+const SortableItem = ({ id, file, config, media, entryPath, onRemove, readonly = false }: { 
   id: string;
   file: string;
   config: Pick<Config, "owner" | "repo" | "branch">;
   media: string;
+  entryPath?: string;
   onRemove?: () => void;
   readonly?: boolean;
 }) => {
@@ -126,13 +147,13 @@ const SortableItem = ({ id, file, config, media, onRemove, readonly = false }: {
       <div title={file} className={readonly ? undefined : "cursor-move"} {...(!readonly ? attributes : {})} {...(!readonly ? listeners : {})}>
         <Thumbnail name={media} path={file} className="rounded-md w-28 h-28"/>
       </div>
-      <ImageTeaser file={file} config={config} onRemove={onRemove} />
+      <ImageTeaser file={file} config={config} entryPath={entryPath} onRemove={onRemove} />
     </div>
   );
 };
 
 const EditComponent = forwardRef((props: EditorProps, ref: React.Ref<HTMLInputElement>) => {
-  const { value, field, onChange } = props;
+  const { value, field, onChange, entryPath } = props;
   void ref;
   const { config } = useConfig();
   if (!config) throw new Error("Configuration not found.");
@@ -304,6 +325,7 @@ const EditComponent = forwardRef((props: EditorProps, ref: React.Ref<HTMLInputEl
                         file={file.path}
                         config={config}
                         media={mediaConfig.name}
+                        entryPath={entryPath}
                         onRemove={isReadonly ? undefined : () => handleRemove(file.id)}
                         readonly={isReadonly}
                       />
@@ -316,7 +338,7 @@ const EditComponent = forwardRef((props: EditorProps, ref: React.Ref<HTMLInputEl
                 <div title={files[0].path}>
                   <Thumbnail name={mediaConfig.name} path={files[0].path} className="rounded-md w-28 h-28"/>
                 </div>
-                <ImageTeaser file={files[0].path} config={config} onRemove={isReadonly ? undefined : () => handleRemove(files[0].id)} />
+                <ImageTeaser file={files[0].path} config={config} entryPath={entryPath} onRemove={isReadonly ? undefined : () => handleRemove(files[0].id)} />
               </div>
             )
           )}

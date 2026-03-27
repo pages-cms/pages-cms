@@ -6,7 +6,7 @@ import { MediaUpload } from "@/components/media/media-upload";
 import { MediaDialog } from "@/components/media/media-dialog";
 import { Upload, File, FileText, FileVideo, FileImage, FileAudio, FileArchive, FileCode, FileType, FileSpreadsheet, GripVertical, FolderOpen, ArrowUpRight, EllipsisVertical } from "lucide-react";
 import { useConfig } from "@/contexts/config-context";
-import { getFileExtension, getFileName, extensionCategories, normalizeMediaPath, normalizePath } from "@/lib/utils/file";
+import { getFileExtension, getFileName, extensionCategories, normalizeMediaPath, normalizePath, joinPathSegments } from "@/lib/utils/file";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
@@ -41,6 +41,7 @@ type EditorProps = {
   value?: string | string[] | null;
   field: Field;
   onChange: (value: string | string[] | undefined) => void;
+  entryPath?: string;
 };
 
 type FieldOptions = {
@@ -52,12 +53,31 @@ type FieldOptions = {
   rename?: boolean;
 };
 
-const FileTeaser = ({ file, config, onRemove, getFileIcon }: { 
+const FileTeaser = ({ file, config, entryPath, onRemove, getFileIcon }: { 
   file: string;
   config: Pick<Config, "owner" | "repo" | "branch">;
+  entryPath?: string;
   onRemove?: () => void;
   getFileIcon: (file: string) => React.ReactNode;
 }) => {
+  const resolvedPath = useMemo(() => {
+    if (!file) return "";
+    if (file.startsWith("http://") || file.startsWith("https://")) {
+      return file;
+    }
+    const normalizedFile = normalizeMediaPath(file);
+    if (normalizedFile.startsWith("/")) {
+      return normalizedFile;
+    }
+    if (normalizedFile.startsWith("http://") || normalizedFile.startsWith("https://")) {
+      return normalizedFile;
+    }
+    if (entryPath) {
+      return joinPathSegments([entryPath, normalizedFile]);
+    }
+    return normalizedFile;
+  }, [file, entryPath]);
+
   return (
     <>
       <div title={file} className="flex items-center gap-x-1 px-2 h-9 rounded-md bg-muted truncate text-sm">
@@ -74,7 +94,7 @@ const FileTeaser = ({ file, config, onRemove, getFileIcon }: {
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
             <a
-              href={`https://github.com/${config.owner}/${config.repo}/blob/${config.branch}/${file}`}
+              href={`https://github.com/${config.owner}/${config.repo}/blob/${config.branch}/${resolvedPath}`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full"
@@ -100,10 +120,11 @@ const FileTeaser = ({ file, config, onRemove, getFileIcon }: {
   )
 };
 
-const SortableItem = ({ id, file, config, onRemove, getFileIcon, readonly = false }: { 
+const SortableItem = ({ id, file, config, entryPath, onRemove, getFileIcon, readonly = false }: { 
   id: string;
   file: string;
   config: Pick<Config, "owner" | "repo" | "branch">;
+  entryPath?: string;
   onRemove?: () => void;
   getFileIcon: (file: string) => React.ReactNode;
   readonly?: boolean;
@@ -134,14 +155,14 @@ const SortableItem = ({ id, file, config, onRemove, getFileIcon, readonly = fals
           </Button>
         )}
         
-        <FileTeaser file={file} config={config} onRemove={onRemove} getFileIcon={getFileIcon} />
+        <FileTeaser file={file} config={config} entryPath={entryPath} onRemove={onRemove} getFileIcon={getFileIcon} />
       </div>
     </div>
   );
 };
 
 const EditComponent = forwardRef((props: EditorProps, ref: React.Ref<HTMLInputElement>) => {
-  const { value, field, onChange } = props;
+  const { value, field, onChange, entryPath } = props;
   void ref;
   const { config } = useConfig();
   if (!config) throw new Error("Configuration not found.");
@@ -349,6 +370,7 @@ const EditComponent = forwardRef((props: EditorProps, ref: React.Ref<HTMLInputEl
                         id={file.id}
                         file={file.path}
                         config={config}
+                        entryPath={entryPath}
                         onRemove={isReadonly ? undefined : () => handleRemove(file.id)}
                         getFileIcon={getFileIcon}
                         readonly={isReadonly}
@@ -359,7 +381,7 @@ const EditComponent = forwardRef((props: EditorProps, ref: React.Ref<HTMLInputEl
               </div>
             ) : (
               <div className="grid grid-cols-[1fr_auto] items-center gap-2 pl-3 pr-1 bg-muted rounded-md h-10">
-                <FileTeaser file={files[0].path} config={config} onRemove={isReadonly ? undefined : () => handleRemove(files[0].id)} getFileIcon={getFileIcon} />
+                <FileTeaser file={files[0].path} config={config} entryPath={entryPath} onRemove={isReadonly ? undefined : () => handleRemove(files[0].id)} getFileIcon={getFileIcon} />
               </div>
             )
           )}
