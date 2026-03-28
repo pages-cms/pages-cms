@@ -94,7 +94,7 @@ const resolveCommitMessage = ({
 };
 
 const buildGithubIdentity = () => {
-  return `${process.env.GITHUB_APP_ID}+${process.env.GITHUB_APP_NAME}[bot]@users.noreply.github.com`;
+  return `${process.env.GITHUB_APP_USER_ID}+${process.env.GITHUB_APP_NAME}[bot]@users.noreply.github.com`;
 };
 
 const resolveCommitter = (user: { name?: string; email: string }) => {
