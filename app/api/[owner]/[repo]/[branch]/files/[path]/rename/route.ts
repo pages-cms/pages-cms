@@ -6,7 +6,11 @@ import { getToken } from "@/lib/token";
 import { updateFileCache } from "@/lib/github-cache";
 import { toErrorResponse } from "@/lib/api-error";
 import { getBranchHeadSha, setBranchHeadSha } from "@/lib/github-cache";
-import { buildCommitTokens, resolveCommitMessage } from "@/lib/commit-message";
+import {
+  buildCommitTokens,
+  resolveCommitMessage,
+  resolveCommitter,
+} from "@/lib/commit-message";
 import { requireApiUserSession } from "@/lib/session-server";
 
 /**
@@ -29,12 +33,8 @@ export async function POST(
 
     const { token, source } = await getToken(user, params.owner, params.repo, true);
     if (!token) throw new Error("Token not found");
-    const committer = source === "installation"
-      ? {
-          name: user.name?.trim() || user.email,
-          email: user.email,
-        }
-      : undefined;
+    const committer =
+      source === "installation" ? resolveCommitter(user) : undefined;
 
     if (params.path === ".pages.yml") throw new Error(`Renaming the settings file isn't allowed.`);
 

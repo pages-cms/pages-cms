@@ -93,4 +93,17 @@ const resolveCommitMessage = ({
   return renderCommitTemplate(template, tokens).replace(/\s+/g, " ").trim().slice(0, 200);
 };
 
-export { buildCommitTokens, resolveCommitMessage };
+const buildGithubIdentity = (user: { name?: string; email?: string }) => {
+  return `${process.env.GITHUB_APP_ID}+${process.env.GITHUB_APP_NAME}[bot]@users.noreply.github.com`;
+};
+
+const resolveCommitter = (user: { name?: string; email?: string }) => {
+  const name = user.name?.trim() || user.email;
+  const email =
+    process.env.USE_GITHUB_BOT_IDENTITY === "true"
+      ? buildGithubIdentity(user)
+      : user.email;
+  return { name, email };
+};
+
+export { buildCommitTokens, resolveCommitMessage, resolveCommitter };
