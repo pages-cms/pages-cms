@@ -135,6 +135,16 @@ const EditComponent = (props: any) => {
     onChange(nextValue ? toOutput(nextValue as Option) : null);
   };
 
+  const filterFn =  (option: Option, inputVal: string) => {
+    // Always show the create option, let others match by label
+    if (creatable && createOption && option.value === createOption.value) {
+      // show "Create..." if it should be shown
+      return true;
+    }
+    // Standard case-insensitive substring match for filtering
+    return option.label.toLowerCase().includes(inputVal.trim().toLowerCase());
+  };
+
   return (
     <Combobox
       items={allOptions}
@@ -145,7 +155,7 @@ const EditComponent = (props: any) => {
       readOnly={isReadonly}
       isItemEqualToValue={(item, selected) => item.value === selected?.value}
       autoHighlight
-      filter={creatable ? null : undefined}
+      filter={filterFn}
     >
       {multiple ? (
         <>
