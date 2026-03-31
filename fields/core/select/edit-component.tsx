@@ -58,7 +58,7 @@ const EditComponent = (props: any) => {
   const options = useMemo(() => {
     if (!creatable) return baseOptions;
 
-    const existingValues = new Set(baseOptions.map((o) => o.value));
+    const existingValues = new Set(baseOptions.map((o: Option) => o.value));
     const selectedItems = multiple
       ? (Array.isArray(value) ? value : [])
       : (value != null && value !== "" ? [value] : []);
@@ -77,7 +77,7 @@ const EditComponent = (props: any) => {
     if (!creatable || !inputValue.trim()) return null;
     const trimmed = inputValue.trim();
     const alreadyExists = options.some(
-      (o) => o.value.toLowerCase() === trimmed.toLowerCase(),
+      (o: Option) => o.value.toLowerCase() === trimmed.toLowerCase(),
     );
     return alreadyExists ? null : { value: trimmed, label: `Create "${trimmed}"` };
   }, [creatable, inputValue, options]);
