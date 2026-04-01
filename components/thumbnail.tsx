@@ -10,10 +10,12 @@ import { Ban, ImageOff, Loader } from "lucide-react";
 export function Thumbnail({
   name,
   path,
+  entryPath,
   className
 }: {
   name: string,
   path: string | null;
+  entryPath?: string;
   className?: string;
 }) {
   const [rawUrl, setRawUrl] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export function Thumbnail({
         setError(null);
         if (!rawUrl) setRawUrl(null);
         try {
-          const url = await getRawUrl(owner, repo, branch, name, path, isPrivate);
+          const url = await getRawUrl(owner, repo, branch, name, path, isPrivate, false, entryPath);
           setRawUrl(url);
         } catch (error: any) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';

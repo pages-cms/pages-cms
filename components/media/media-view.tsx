@@ -1,9 +1,10 @@
 "use client";
 
-import { Fragment, memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, type ReactNode, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useConfig } from "@/contexts/config-context";
+import { RepoActionButtons } from "@/components/repo/repo-action-buttons";
 import {
   extensionCategories,
   getFileSize,
@@ -39,6 +40,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { requireApiSuccess } from "@/lib/api-client";
+import { getSchemaActions } from "@/lib/repo-actions";
 import type { FileSaveData, MediaItem } from "@/types/api";
 import useSWR, { useSWRConfig } from "swr";
 import {
@@ -54,27 +56,24 @@ import {
 } from "lucide-react";
 
 function MediaHeaderActions({
+  actionNode,
   mediaName,
   path,
   onFolderCreate,
 }: {
+  actionNode?: ReactNode;
   mediaName: string;
   path: string;
   onFolderCreate: (entry: unknown) => void;
 }) {
   return (
     <div className="flex items-center gap-x-2 shrink-0">
-      <MediaUpload.Trigger>
-        <Button type="button" size="sm" className="gap-2">
-          <Upload />
-          Upload
-        </Button>
-      </MediaUpload.Trigger>
+      {actionNode}
       <Tooltip>
         <TooltipTrigger asChild>
           <div>
             <FolderCreate path={path} name={mediaName} type="media" onCreate={onFolderCreate}>
-              <Button type="button" variant="outline" size="icon-sm">
+              <Button type="button" variant="outline" size="icon">
                 <FolderPlus />
               </Button>
             </FolderCreate>
@@ -82,6 +81,12 @@ function MediaHeaderActions({
         </TooltipTrigger>
         <TooltipContent>Create folder</TooltipContent>
       </Tooltip>
+      <MediaUpload.Trigger>
+        <Button type="button" className="gap-2">
+          <Upload />
+          Upload
+        </Button>
+      </MediaUpload.Trigger>
     </div>
   );
 }
@@ -229,6 +234,10 @@ const MediaView = ({
 
     return allowedExtensions || [];
   }, [extensions, mediaConfig?.extensions]);
+  const mediaActions = useMemo(
+    () => getSchemaActions(mediaConfig),
+    [mediaConfig],
+  );
 
   const filteredExtensionsSet = useMemo(
     () => new Set((filteredExtensions || []).map((ext: string) => ext.toLowerCase())),
@@ -564,13 +573,29 @@ const MediaView = ({
       <div className="min-w-0 truncate overflow-hidden">{breadcrumbNode}</div>
       <MediaUpload media={mediaConfig.name} path={path} onUpload={handleUpload} extensions={filteredExtensions}>
         <MediaHeaderActions
+          actionNode={mediaActions.length > 0 ? (
+            <RepoActionButtons
+              actions={mediaActions}
+              owner={config.owner}
+              repo={config.repo}
+              refName={config.branch}
+              contextType="media"
+              contextName={mediaConfig.name}
+              contextPath={path}
+              contextData={{
+                label: mediaConfig.label || mediaConfig.name,
+                input: mediaConfig.input,
+                output: mediaConfig.output,
+              }}
+            />
+          ) : undefined}
           mediaName={mediaConfig.name}
           path={path}
           onFolderCreate={handleFolderCreate}
         />
       </MediaUpload>
     </div>
-  ), [breadcrumbNode, filteredExtensions, handleFolderCreate, handleUpload, mediaConfig.name, path]);
+  ), [breadcrumbNode, config.branch, config.owner, config.repo, filteredExtensions, handleFolderCreate, handleUpload, mediaActions, mediaConfig.input, mediaConfig.label, mediaConfig.name, mediaConfig.output, path]);
 
   useOptionalRepoHeader(
     { header: headerNode },
@@ -598,7 +623,7 @@ const MediaView = ({
         </EmptyHeader>
         <EmptyContent>
           <Link
-            className={buttonVariants({ variant: "default", size: "sm" })}
+            className={buttonVariants({ variant: "default" })}
             href={`/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/configuration`}
           >
             Open configuration
@@ -632,7 +657,7 @@ const MediaView = ({
             <EmptyDescription>{error}</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button size="sm" onClick={() => handleNavigate(mediaConfig.input)}>Open media root</Button>
+            <Button onClick={() => handleNavigate(mediaConfig.input)}>Open media root</Button>
           </EmptyContent>
         </Empty>
       );
@@ -690,6 +715,22 @@ const MediaView = ({
               </Button>
             </div>
             <MediaHeaderActions
+              actionNode={mediaActions.length > 0 ? (
+                <RepoActionButtons
+                  actions={mediaActions}
+                  owner={config.owner}
+                  repo={config.repo}
+                  refName={config.branch}
+                  contextType="media"
+                  contextName={mediaConfig.name}
+                  contextPath={path}
+                  contextData={{
+                    label: mediaConfig.label || mediaConfig.name,
+                    input: mediaConfig.input,
+                    output: mediaConfig.output,
+                  }}
+                />
+              ) : undefined}
               mediaName={mediaConfig.name}
               path={path}
               onFolderCreate={handleFolderCreate}

@@ -2,11 +2,13 @@ import {
   pgTable,
   text,
   integer,
+  bigint,
   boolean,
   serial,
   timestamp,
   index,
-  uniqueIndex
+  uniqueIndex,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 const userTable = pgTable("user", {
@@ -70,7 +72,7 @@ const githubInstallationTokenTable = pgTable("github_installation_token", {
   installationId: integer("installation_id").notNull(),
   expiresAt: timestamp("expires_at").notNull()
 }, table => ({
-  idx_github_installation_token_installationId: index("idx_github_installation_token_installationId").on(table.installationId)
+  uq_github_installation_token_installationId: uniqueIndex("uq_github_installation_token_installationId").on(table.installationId)
 }));
 
 const collaboratorTable = pgTable("collaborator", {
@@ -119,7 +121,7 @@ const cacheFileTable = pgTable("cache_file", {
   downloadUrl: text("download_url"),
   commitSha: text('commit_sha'),
   commitTimestamp: timestamp('commit_timestamp'),
-  lastUpdated: timestamp("last_updated").notNull()
+  updatedAt: timestamp("updated_at").notNull()
 }, table => ({
   idx_cache_file_owner_repo_branch_parentPath: index("idx_cache_file_owner_repo_branch_parentPath").on(table.owner, table.repo, table.branch, table.parentPath),
   idx_cache_file_owner_repo_branch_path: uniqueIndex("idx_cache_file_owner_repo_branch_path").on(table.owner, table.repo, table.branch, table.path)
@@ -130,13 +132,18 @@ const cacheFileMetaTable = pgTable("cache_file_meta", {
   owner: text("owner").notNull(),
   repo: text("repo").notNull(),
   branch: text("branch").notNull(),
-  sha: text("sha"),
+  path: text("path").notNull().default(""),
+  context: text("context").notNull().default("branch"),
+  commitSha: text("commit_sha"),
+  commitTimestamp: timestamp("commit_timestamp"),
+  targetCommitSha: text("target_commit_sha"),
+  targetCommitTimestamp: timestamp("target_commit_timestamp"),
   status: text("status").notNull().default("ok"),
   error: text("error"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   lastCheckedAt: timestamp("last_checked_at").notNull().defaultNow(),
 }, table => ({
-  idx_cache_file_meta_owner_repo_branch: uniqueIndex("idx_cache_file_meta_owner_repo_branch").on(table.owner, table.repo, table.branch)
+  idx_cache_file_meta_owner_repo_branch_path_context: uniqueIndex("idx_cache_file_meta_owner_repo_branch_path_context").on(table.owner, table.repo, table.branch, table.path, table.context)
 }));
 
 const cachePermissionTable = pgTable("cache_permission", {
@@ -149,6 +156,36 @@ const cachePermissionTable = pgTable("cache_permission", {
   idx_cache_permission_githubId_owner_repo: uniqueIndex("idx_cache_permission_githubId_owner_repo").on(table.githubId, table.owner, table.repo)
 }));
 
+const actionRunTable = pgTable("action_run", {
+  id: serial("id").primaryKey(),
+  owner: text("owner").notNull(),
+  repo: text("repo").notNull(),
+  ref: text("ref").notNull(),
+  workflowRef: text("workflow_ref").notNull(),
+  sha: text("sha").notNull(),
+  actionName: text("action_name").notNull(),
+  contextType: text("context_type").notNull(),
+  contextName: text("context_name"),
+  contextPath: text("context_path"),
+  workflow: text("workflow").notNull(),
+  workflowRunId: bigint("workflow_run_id", { mode: "number" }),
+  status: text("status").notNull(),
+  conclusion: text("conclusion"),
+  htmlUrl: text("html_url"),
+  triggeredBy: jsonb("triggered_by").notNull(),
+  failure: jsonb("failure"),
+  payload: jsonb("payload").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+}, table => ({
+  idx_action_run_owner_repo_createdAt: index("idx_action_run_owner_repo_createdAt").on(table.owner, table.repo, table.createdAt),
+  idx_action_run_owner_repo_actionName: index("idx_action_run_owner_repo_actionName").on(table.owner, table.repo, table.actionName),
+  idx_action_run_owner_repo_status: index("idx_action_run_owner_repo_status").on(table.owner, table.repo, table.status),
+  idx_action_run_context: index("idx_action_run_context").on(table.owner, table.repo, table.contextType, table.contextName, table.contextPath),
+  idx_action_run_workflowRunId: uniqueIndex("idx_action_run_workflowRunId").on(table.workflowRunId),
+}));
+
 export {
   userTable,
   sessionTable,
@@ -159,5 +196,6 @@ export {
   configTable,
   cacheFileTable,
   cacheFileMetaTable,
-  cachePermissionTable
+  cachePermissionTable,
+  actionRunTable
 };

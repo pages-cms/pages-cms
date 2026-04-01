@@ -7,10 +7,12 @@ import { useConfig } from "@/contexts/config-context";
 
 const ViewComponent = ({
   value,
-  field
+  field,
+  entryPath,
 }: {
   value: string;
   field: Field;
+  entryPath?: string;
 }) => {
   const extraValuesCount = value && Array.isArray(value) ? value.length - 1 : 0;
 
@@ -28,7 +30,7 @@ const ViewComponent = ({
 
   return (
     <span className="flex items-center gap-x-1.5">
-      <Thumbnail name={mediaName} path={path} className="w-8 rounded-md"/>
+      <Thumbnail name={mediaName} path={path} entryPath={entryPath} className="w-8 rounded-md"/>
       {extraValuesCount > 0 && (
         <span className="text-muted-foreground text-xs">
           +{extraValuesCount}

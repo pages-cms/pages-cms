@@ -1,7 +1,7 @@
 import { after } from "next/server";
 import crypto from "crypto";
 import { db } from "@/db";
-import { cacheFileTable, collaboratorTable, configTable, githubInstallationTokenTable } from "@/db/schema";
+import { actionRunTable, cacheFileTable, collaboratorTable, configTable, githubInstallationTokenTable } from "@/db/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { normalizePath } from "@/lib/utils/file";
 import { createOctokitInstance } from "@/lib/utils/octokit";
@@ -14,7 +14,7 @@ import {
 import { getInstallationToken } from "@/lib/token";
 import { configVersion, normalizeConfig, parseConfig } from "@/lib/config";
 import { saveConfig, updateConfig } from "@/lib/utils/config";
-import { deleteCacheFileMeta, upsertCacheFileMeta } from "@/lib/cache-file-meta";
+import { deleteCacheFileMeta, deleteCacheFileMetaByPaths, upsertCacheFileMeta } from "@/lib/cache-file-meta";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -82,6 +82,7 @@ const clearScopedFileCache = async (
 ) => {
   const uniqueChangedPaths = Array.from(new Set(changedPaths.filter(Boolean)));
   const affectedParentPaths = getAffectedParentPaths(uniqueChangedPaths);
+  await deleteCacheFileMetaByPaths(owner, repo, branch, affectedParentPaths);
   const whereBase = and(
     eq(cacheFileTable.owner, owner.toLowerCase()),
     eq(cacheFileTable.repo, repo.toLowerCase()),
@@ -125,6 +126,7 @@ const processWebhookEvent = async (event: string | null, data: any) => {
             eq(githubInstallationTokenTable.installationId, data.installation.id),
           ),
           clearFileCache(accountLogin),
+          deleteCacheFileMeta(accountLogin),
         ]);
       }
       break;
@@ -142,7 +144,10 @@ const processWebhookEvent = async (event: string | null, data: any) => {
           (data.repositories_removed || []).map((repo: any) => {
             const [owner, repoName] = (repo.full_name || "").split("/");
             if (owner && repoName) {
-              return clearFileCache(owner, repoName);
+              return Promise.all([
+                clearFileCache(owner, repoName),
+                deleteCacheFileMeta(owner, repoName),
+              ]);
             }
             return Promise.resolve();
           }),
@@ -166,6 +171,7 @@ const processWebhookEvent = async (event: string | null, data: any) => {
             eq(collaboratorTable.repoId, repoId),
           ),
           clearFileCache(owner, repoName),
+          deleteCacheFileMeta(owner, repoName),
         ]);
       } else if (data.action === "transferred") {
         const oldOwner = data.changes?.owner?.from?.login || owner;
@@ -175,6 +181,7 @@ const processWebhookEvent = async (event: string | null, data: any) => {
             eq(collaboratorTable.repoId, repoId),
           ),
           clearFileCache(oldOwner, repoName),
+          deleteCacheFileMeta(oldOwner, repoName),
         ]);
       } else if (data.action === "renamed") {
         const oldName = data.changes?.repository?.name?.from;
@@ -301,8 +308,9 @@ const processWebhookEvent = async (event: string | null, data: any) => {
         });
 
         await clearFileCache(pushOwner, pushRepo, pushBranch);
+        await deleteCacheFileMeta(pushOwner, pushRepo, pushBranch);
         await upsertCacheFileMeta(pushOwner, pushRepo, pushBranch, {
-          sha: commit.sha,
+          commitSha: commit.sha,
           status: "ok",
           error: null,
         });
@@ -323,8 +331,9 @@ const processWebhookEvent = async (event: string | null, data: any) => {
         });
 
         await clearScopedFileCache(pushOwner, pushRepo, pushBranch, uniqueChangedPaths);
+        await deleteCacheFileMeta(pushOwner, pushRepo, pushBranch);
         await upsertCacheFileMeta(pushOwner, pushRepo, pushBranch, {
-          sha: commit.sha,
+          commitSha: commit.sha,
           status: "ok",
           error: null,
         });
@@ -354,7 +363,7 @@ const processWebhookEvent = async (event: string | null, data: any) => {
       );
 
       await upsertCacheFileMeta(pushOwner, pushRepo, pushBranch, {
-        sha: commit.sha,
+        commitSha: commit.sha,
         status: "ok",
         error: null,
       });
@@ -410,6 +419,22 @@ const processWebhookEvent = async (event: string | null, data: any) => {
           }
         }
       }
+      break;
+    }
+
+    case "workflow_run": {
+      const workflowRunId = data.workflow_run?.id;
+      if (!workflowRunId) break;
+
+      await db.update(actionRunTable).set({
+        status: data.workflow_run?.status ?? "completed",
+        conclusion: data.workflow_run?.conclusion ?? null,
+        htmlUrl: data.workflow_run?.html_url ?? null,
+        updatedAt: new Date(),
+        completedAt: data.workflow_run?.status === "completed"
+          ? new Date(data.workflow_run?.updated_at ?? new Date().toISOString())
+          : null,
+      }).where(eq(actionRunTable.workflowRunId, workflowRunId));
       break;
     }
   }

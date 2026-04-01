@@ -37,12 +37,20 @@ import { requireApiSuccess } from "@/lib/api-client";
 
 type CacheStatusPayload = {
   fileMeta: {
-    sha: string | null;
+    commitSha: string | null;
     status: string;
     error: string | null;
     updatedAt: string;
     lastCheckedAt: string;
   } | null;
+  folderMeta: Array<{
+    path: string;
+    context: string;
+    status: string;
+    commitSha: string | null;
+    targetCommitSha: string | null;
+    updatedAt: string;
+  }>;
   fileCount: number;
   permissionCount: number;
   config: {
@@ -252,6 +260,7 @@ export function CachePage({
           description="This will clear file, config, and permission cache for this repository/branch."
           confirmLabel="Clear all"
           variant="default"
+          size="default"
           disabled={loading || actionLoading != null}
           onConfirm={async () =>
             runAction("clear-all-cache", "All cache cleared")
@@ -265,7 +274,7 @@ export function CachePage({
   useRepoHeader({ header: headerNode });
 
   const remoteSha = data?.branchHeadSha ?? null;
-  const localSha = data?.fileMeta?.sha ?? null;
+  const localSha = data?.fileMeta?.commitSha ?? null;
   const isOutOfSync = !!remoteSha && !!localSha && remoteSha !== localSha;
   const canReconcile = !!data && isOutOfSync;
   const shortSha = (sha: string | null | undefined) =>
@@ -286,6 +295,10 @@ export function CachePage({
               <div className="divide-y rounded-md border">
                 <div className="flex items-center justify-between gap-3 px-3 py-2">
                   <span className="text-muted-foreground">Files cached</span>
+                  <Skeleton className="h-4 w-10" />
+                </div>
+                <div className="flex items-center justify-between gap-3 px-3 py-2">
+                  <span className="text-muted-foreground">Folder caches</span>
                   <Skeleton className="h-4 w-10" />
                 </div>
                 <div className="flex items-center justify-between gap-3 px-3 py-2">
@@ -337,7 +350,8 @@ export function CachePage({
               <CardHeader>
                 <CardTitle className="text-base">Config</CardTitle>
                 <CardDescription>
-                  Cache of the configuration file (<code>.pages.yml</code>).
+                  Cache of the configuration file (
+                  <code className="text-[13px]">.pages.yml</code>).
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-sm flex-1">
@@ -423,6 +437,10 @@ export function CachePage({
                   <span className="font-medium">{data.fileCount}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 px-3 py-2">
+                  <span className="text-muted-foreground">Folder caches</span>
+                  <span className="font-medium">{data.folderMeta.length}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 px-3 py-2">
                   <span className="text-muted-foreground">Cache SHA</span>
                   <span className="font-mono font-medium">
                     {shortSha(localSha)}
@@ -504,7 +522,8 @@ export function CachePage({
               <CardHeader>
                 <CardTitle className="text-base">Config</CardTitle>
                 <CardDescription>
-                  Cache of the configuration file (<code>.pages.yml</code>).
+                  Cache of the configuration file (
+                  <code className="text-[13px]">.pages.yml</code>).
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-sm flex-1">

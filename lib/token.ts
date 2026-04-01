@@ -16,20 +16,29 @@ import { User } from "@/types/user";
 import { getGithubAccount } from "@/lib/github-account";
 import { createHttpError } from "@/lib/api-error";
 
+const installationTokenRefreshInFlight = new Map<number, Promise<string>>();
+
 // Get a token for a user (including collagborators who need to provide an owner/repo scope).
-const getToken = cache(async (user: User, owner: string, repo: string, verifyGithubAccess: boolean = false) => {
+const getToken = cache(async (
+  user: User,
+  owner: string,
+  repo: string,
+  verifyGithubAccess: boolean = false,
+) => {
   const githubAccount = await getGithubAccount(user.id);
   if (githubAccount?.accessToken) {
-    if (!verifyGithubAccess) return {
-      token: githubAccount.accessToken,
-      source: "user" as const,
-    };
-
     const hasGithubAccess = await canAccessRepoWithToken(githubAccount.accessToken, owner, repo);
     if (hasGithubAccess) return {
       token: githubAccount.accessToken,
       source: "user" as const,
     };
+
+    if (verifyGithubAccess) {
+      throw createHttpError(
+        `You do not have permission to access "${owner}/${repo}".`,
+        403,
+      );
+    }
   }
 
   const permission = await db.query.collaboratorTable.findFirst({
@@ -68,21 +77,22 @@ const getInstallationToken = cache(async (owner: string, repo: string) => {
   if (!repoInstallation) throw new Error(`Installation token not found for "${owner}/${repo}".`);
 
   const installationId = repoInstallation.data.id;
+  const tokenData = await db.query.githubInstallationTokenTable.findFirst({
+    where: eq(githubInstallationTokenTable.installationId, installationId)
+  });
 
-  return db.transaction(async (tx) => {
-    // Prevent duplicate token refresh/insert under concurrent requests for the same installation.
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(${installationId})`);
+  if (tokenData && Date.now() < tokenData.expiresAt.getTime() - 60_000) {
+    const token = await decrypt(tokenData.ciphertext, tokenData.iv);
+    if (!token) throw new Error(`Token could not be retrieved and/or decrypted.`);
+    return token;
+  }
 
-    let tokenData = await tx.query.githubInstallationTokenTable.findFirst({
-      where: eq(githubInstallationTokenTable.installationId, installationId)
-    });
+  const existingRefresh = installationTokenRefreshInFlight.get(installationId);
+  if (existingRefresh) {
+    return existingRefresh;
+  }
 
-    if (tokenData && Date.now() < tokenData.expiresAt.getTime() - 60_000) {
-      const token = await decrypt(tokenData.ciphertext, tokenData.iv);
-      if (!token) throw new Error(`Token could not be retrieved and/or decrypted.`);
-      return token;
-    }
-
+  const refreshJob = (async () => {
     const installationToken = await app.octokit.request(
       "POST /app/installations/{installation_id}/access_tokens",
       {
@@ -94,7 +104,7 @@ const getInstallationToken = cache(async (owner: string, repo: string) => {
     const expiresAt = new Date(installationToken.data.expires_at);
 
     if (tokenData) {
-      await tx.update(githubInstallationTokenTable).set({
+      await db.update(githubInstallationTokenTable).set({
         ciphertext,
         iv,
         expiresAt
@@ -102,16 +112,30 @@ const getInstallationToken = cache(async (owner: string, repo: string) => {
         eq(githubInstallationTokenTable.id, tokenData.id)
       );
     } else {
-      await tx.insert(githubInstallationTokenTable).values({
+      await db.insert(githubInstallationTokenTable).values({
         ciphertext,
         iv,
         installationId,
         expiresAt
+      }).onConflictDoUpdate({
+        target: githubInstallationTokenTable.installationId,
+        set: {
+          ciphertext,
+          iv,
+          expiresAt,
+        },
       });
     }
 
     return installationToken.data.token;
-  });
+  })();
+
+  installationTokenRefreshInFlight.set(installationId, refreshJob);
+  try {
+    return await refreshJob;
+  } finally {
+    installationTokenRefreshInFlight.delete(installationId);
+  }
 });
 
 // Get the GitHub user token.

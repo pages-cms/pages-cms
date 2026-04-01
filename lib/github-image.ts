@@ -35,13 +35,25 @@ const getRelativeUrl = (
   if (path.startsWith("https://raw.githubusercontent.com/")) {
     const pattern = new RegExp(`^https://raw\\.githubusercontent\\.com/${owner}/${repo}/${encodeURIComponent(branch)}/`, "i");
     relativePath = path.replace(pattern, "");
-    relativePath = relativePath.split("?")[0];
   }
+
+  relativePath = relativePath.split("#")[0]?.split("?")[0] || relativePath;
+  relativePath = decodePathSafely(relativePath);
 
   return encode ? encodePath(relativePath) : relativePath;
 }
 
 // Get the raw.githubusercontent.com URL for an image.
+const resolvePathAgainstEntry = (normalizedPath: string, entryPath?: string) => {
+  if (!entryPath) return normalizedPath;
+
+  const parentPath = getParentPath(normalizePath(entryPath));
+  if (!parentPath) return normalizedPath;
+
+  const candidatePath = normalizePath(`${parentPath}/${normalizedPath}`);
+  return candidatePath;
+};
+
 const getRawUrl = async (
   owner: string,
   repo: string,
@@ -49,75 +61,101 @@ const getRawUrl = async (
   name: string,
   path: string,
   isPrivate = false,
-  decode = false
+  decode = false,
+  entryPath?: string,
 ) => {
   const decodedPath = decode ? decodePathSafely(path) : path;
   const normalizedInputPath = normalizeImagePathInput(decodedPath);
   if (!normalizedInputPath) return null;
-  
+
+  const isExplicitRelative = decodedPath.trim().startsWith("./") || decodedPath.trim().startsWith("../");
+  const entryRelativePath = resolvePathAgainstEntry(normalizedInputPath, entryPath);
+
+  const candidatePaths = [] as string[];
+
+  if (isExplicitRelative && entryRelativePath && entryRelativePath !== normalizedInputPath) {
+    candidatePaths.push(entryRelativePath);
+  }
+
+  candidatePaths.push(normalizedInputPath);
+
+  if (!isExplicitRelative && entryRelativePath && entryRelativePath !== normalizedInputPath) {
+    candidatePaths.push(entryRelativePath);
+  }
+
   if (isPrivate) {
-    const filename = canonicalizeFileName(normalizedInputPath);
-    if (!filename) return null;
-    const parentPath = getParentPath(normalizedInputPath);
-    
-    const parentFullPath = `${owner}/${repo}/${encodeURIComponent(branch)}/${parentPath}`;
-    
-    if (requests[parentFullPath]) {
-      try {
-        await requests[parentFullPath];
-      } finally {
-        delete requests[parentFullPath];
-      }
-      return cache[parentFullPath]?.files?.[filename];
-    }
+    const tryFetchForPath = async (candidatePath: string): Promise<string | null> => {
+      const filename = canonicalizeFileName(candidatePath);
+      if (!filename) return null;
 
-    const cacheExists = cache[parentFullPath]?.files?.[filename];
-    const cacheExpired = !cache[parentFullPath]?.time || (Date.now() - cache[parentFullPath].time > ttl);
-    
-    if (cacheExists && !cacheExpired) {
-      return cacheExists;
-    }
-    
-    if (cacheExpired || !cacheExists) {
-      delete cache[parentFullPath];
-      
-      if (!requests[parentFullPath]) {
-        requests[parentFullPath] = fetch(
-          `/api/${owner}/${repo}/${encodeURIComponent(branch)}/media/${encodeURIComponent(name)}/${encodeURIComponent(parentPath)}?nocache=true`
-        )
-          .then((response) => requireApiSuccess<any>(response, "Failed to fetch media"))
-          .catch(err => {
-            delete requests[parentFullPath];
-            throw err;
+      const parentPath = getParentPath(candidatePath);
+      const parentFullPath = `${owner}/${repo}/${encodeURIComponent(branch)}/${parentPath}`;
+
+      if (requests[parentFullPath]) {
+        try {
+          await requests[parentFullPath];
+        } finally {
+          delete requests[parentFullPath];
+        }
+        return cache[parentFullPath]?.files?.[filename] ?? null;
+      }
+
+      const cacheExists = cache[parentFullPath]?.files?.[filename];
+      const cacheExpired = !cache[parentFullPath]?.time || (Date.now() - cache[parentFullPath].time > ttl);
+
+      if (cacheExists && !cacheExpired) {
+        return cacheExists;
+      }
+
+      if (cacheExpired || !cacheExists) {
+        delete cache[parentFullPath];
+
+        if (!requests[parentFullPath]) {
+          requests[parentFullPath] = fetch(
+            `/api/${owner}/${repo}/${encodeURIComponent(branch)}/media/${encodeURIComponent(name)}/${encodeURIComponent(parentPath)}?nocache=true`
+          )
+            .then((response) => requireApiSuccess<any>(response, "Failed to fetch media"))
+            .catch(err => {
+              delete requests[parentFullPath];
+              throw err;
+            });
+        }
+
+        let response;
+        try {
+          response = await requests[parentFullPath];
+        } finally {
+          delete requests[parentFullPath];
+        }
+
+        if (!cache[parentFullPath] && response?.status === "success") {
+          cache[parentFullPath] = {
+            time: Date.now(),
+            files: {},
+          };
+          response.data.forEach((file: any) => {
+            const canonicalName = canonicalizeFileName(
+              typeof file?.path === "string" && file.path ? file.path : file?.name || "",
+            );
+            if (canonicalName) cache[parentFullPath].files[canonicalName] = file.url;
           });
+        } else if (response?.status === "error") {
+          throw new Error(response.message);
+        }
       }
 
-      let response;
-      try {
-        response = await requests[parentFullPath];
-      } finally {
-        delete requests[parentFullPath];
-      }
-      
-      if (!cache[parentFullPath] && response.status === "success") {
-        cache[parentFullPath] = {
-          time: Date.now(),
-          files: {}
-        };
-        response.data.forEach((file: any) => {
-          const canonicalName = canonicalizeFileName(
-            typeof file?.path === "string" && file.path ? file.path : file?.name || "",
-          );
-          if (canonicalName) cache[parentFullPath].files[canonicalName] = file.url;
-        });
-      } else if (response.status === "error") {
-        throw new Error(response.message);
-      }
+      return cache[parentFullPath]?.files?.[filename] ?? null;
+    };
+
+    for (const candidatePath of candidatePaths) {
+      const url = await tryFetchForPath(candidatePath);
+      if (url) return url;
     }
 
-    return cache[parentFullPath]?.files?.[filename];
+    return null;
   } else {
-    return `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(branch)}/${encodeURI(normalizedInputPath)}`;
+    const requestedPath = candidatePaths[0] || normalizedInputPath;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(branch)}/${encodeURI(requestedPath)}`;
   }
 };
 
