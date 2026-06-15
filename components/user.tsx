@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import { useUser } from "@/contexts/user-context";
 import { signOut } from "@/lib/auth-client";
 import { getInitialsFromName } from "@/lib/utils/avatar";
@@ -18,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { ArrowUpRight, Settings, LogOut } from "lucide-react";
 
 export function User({
   className,
@@ -30,6 +30,7 @@ export function User({
   align?: "start" | "center" | "end";
 }) {
   const { user } = useUser();
+  const t = useTranslations("UserMenu");
   const { theme, setTheme } = useTheme();
 
   if (!user) return null;
@@ -68,22 +69,22 @@ export function User({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="w-40 text-xs text-muted-foreground font-medium">
-          Theme
+          {t("theme")}
         </DropdownMenuLabel>
         <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
           <DropdownMenuRadioItem value="light" onClick={onClick}>
-            Light
+            {t("light")}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="dark" onClick={onClick}>
-            Dark
+            {t("dark")}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="system" onClick={onClick}>
-            System
+            {t("system")}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/settings">Settings</Link>
+          <Link href="/settings">{t("settings")}</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -94,7 +95,7 @@ export function User({
             window.location.assign("/sign-in");
           }}
         >
-          Sign out
+          {t("signOut")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

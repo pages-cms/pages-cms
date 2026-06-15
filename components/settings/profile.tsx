@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { getInitialsFromName } from "@/lib/utils/avatar";
 import {
@@ -30,6 +31,7 @@ type ProfileProps = {
 
 export function Profile({ name, email, githubUsername }: ProfileProps) {
   const router = useRouter();
+  const t = useTranslations("ProfileCard");
   const [displayName, setDisplayName] = useState(name?.trim() || "");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -50,13 +52,16 @@ export function Profile({ name, email, githubUsername }: ProfileProps) {
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.status) {
-        throw new Error(payload?.message || "Failed to update profile.");
+        throw new Error(payload?.message || t("updateFailed"));
       }
 
-      toast.success("Profile updated.");
+      toast.success(t("updated"));
       router.refresh();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update profile.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : t("updateFailed");
       toast.error(message);
     } finally {
       setIsSaving(false);
@@ -66,8 +71,8 @@ export function Profile({ name, email, githubUsername }: ProfileProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Profile</CardTitle>
-        <CardDescription>Manage the information displayed to other users.</CardDescription>
+        <CardTitle>{t("title")}</CardTitle>
+        <CardDescription>{t("desc")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -80,7 +85,7 @@ export function Profile({ name, email, githubUsername }: ProfileProps) {
           <div className="grid w-full items-center gap-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
-                Name
+                {t("name")}
               </Label>
               <div className="col-span-3">
                 <Input
@@ -95,7 +100,7 @@ export function Profile({ name, email, githubUsername }: ProfileProps) {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="picture" className="text-right">
-                Picture
+                {t("picture")}
               </Label>
               <div className="col-span-3">
                 <Avatar className="h-24 w-24 rounded-md">
@@ -123,7 +128,7 @@ export function Profile({ name, email, githubUsername }: ProfileProps) {
           onClick={() => void handleSave()}
           disabled={!canSave}
         >
-          Save profile
+          {t("save")}
           {isSaving && <Loader className="ml-2 h-4 w-4 animate-spin" />}
         </Button>
       </CardFooter>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useUser } from "@/contexts/user-context";
 import { Button } from "@/components/ui/button";
 import { getGithubInstallationUrl } from "@/lib/github-app";
@@ -13,12 +14,13 @@ import { ArrowUpRight, Ban, EllipsisVertical } from "lucide-react";
 
 const Installations = () => {
   const { user } = useUser();
+  const t = useTranslations("Installations");
 
   if (!user || !user.accounts) {
     return (
       <div className="text-sm text-muted-foreground h-[50px] px-6 flex justify-center items-center bg-accent rounded-md">
         <Ban className="h-4 w-4 mr-2" />
-        No account with the Github application installed.
+        {t("empty")}
       </div>
     );
   }
@@ -42,7 +44,7 @@ const Installations = () => {
             <DropdownMenuTrigger asChild>
               <Button size="icon-xs" variant="outline" className="ml-auto">
                 <EllipsisVertical className="h-4 w-4" />
-                <span className="sr-only">Installation actions</span>
+                <span className="sr-only">{t("actions")}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -52,7 +54,7 @@ const Installations = () => {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Manage GitHub App
+                  {t("manage")}
                   <ArrowUpRight className="size-3 text-muted-foreground ml-auto" />
                 </a>
               </DropdownMenuItem>
