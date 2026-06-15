@@ -1,0 +1,107 @@
+{
+  "LanguageSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "de": "German"
+  },
+  "Loading": {
+    "text": "Loading..."
+  },
+  "HomePage": {
+    "title": "Projects",
+    "recent": "Recently visited",
+    "open": "Open a project",
+    "template": "Create from a template",
+    "installTitle": "Install the GitHub App",
+    "installDesc": "Install the GitHub App on at least one account before you can open or create projects.",
+    "installCta": "Install GitHub App",
+    "noneTitle": "No repositories yet",
+    "noneDesc": "You need an invitation to a repository before you can collaborate. Ask a repository owner or organization admin to invite you."
+  },
+  "SettingsPage": {
+    "back": "Go home",
+    "title": "Settings",
+    "authTitle": "Authentication",
+    "authDesc": "Your sign-in methods and linked identity providers.",
+    "instTitle": "Installations",
+    "instDesc": "Manage the accounts the GitHub application is installed on."
+  },
+  "ProfileCard": {
+    "title": "Profile",
+    "desc": "Manage the information displayed to other users.",
+    "name": "Name",
+    "picture": "Picture",
+    "save": "Save profile",
+    "updated": "Profile updated.",
+    "updateFailed": "Failed to update profile."
+  },
+  "Identities": {
+    "email": "Email",
+    "github": "GitHub",
+    "connected": "Connected",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "actions": "GitHub actions",
+    "manage": "Manage on GitHub",
+    "disconnectFailed": "Failed to disconnect GitHub account.",
+    "disconnected": "GitHub account disconnected."
+  },
+  "Installations": {
+    "empty": "No account with the GitHub application installed.",
+    "actions": "Installation actions",
+    "manage": "Manage GitHub App"
+  },
+  "AboutDialog": {
+    "title": "About Pages CMS",
+    "desc": "Open source CMS for static sites. Edit directly on GitHub with a clean interface.",
+    "version": "Version",
+    "website": "Website",
+    "docs": "Docs",
+    "github": "GitHub",
+    "updateTo": "Update to"
+  },
+  "RepoSidebar": {
+    "viewGithub": "View on GitHub",
+    "branches": "Branches",
+    "manageBranches": "Manage branches",
+    "allProjects": "All projects",
+    "content": "Content",
+    "media": "Media",
+    "recent": "Recently visited",
+    "actions": "Actions",
+    "admin": "Admin",
+    "cache": "Cache",
+    "collaborators": "Collaborators",
+    "configuration": "Configuration"
+  },
+  "AuthPage": {
+    "title": "Sign in to Pages CMS",
+    "github": "Sign in with GitHub",
+    "or": "Or",
+    "emailPlaceholder": "Email",
+    "continueEmail": "Continue with email",
+    "invalidEmail": "Invalid email",
+    "codeSent": "We sent you a sign-in code.",
+    "enterCode": "Enter the 6-digit code.",
+    "startGithubFailed": "Could not start GitHub sign-in. Please try again.",
+    "legalPrefix": "By clicking continue, you agree to our",
+    "terms": "Terms of Service",
+    "and": "and",
+    "privacy": "Privacy Policy",
+    "githubEmailMissing": "GitHub did not return an email for this account. For local dev, restart the app and try again (email fallback is enabled), or make sure the app has email permission and re-authorize it in GitHub Settings > Applications.",
+    "githubDenied": "GitHub denied profile access. Re-authorize Pages CMS in GitHub Settings > Applications > Authorized GitHub Apps / Authorized OAuth Apps, then try again.",
+    "otpTitle": "Verify your login",
+    "otpDesc": "Enter the 6-digit code sent to {email}.",
+    "verifyCode": "Verify code",
+    "resendCode": "Resend code",
+    "signInAnotherWay": "Sign in another way"
+  },
+  "UserMenu": {
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  }
+}
