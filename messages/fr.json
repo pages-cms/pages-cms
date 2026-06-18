@@ -1,0 +1,141 @@
+{
+  "LanguageSwitcher": {
+    "label": "Langue",
+    "en": "Anglais",
+    "de": "Allemand",
+    "es": "Espagnol",
+    "fr": "Français"
+  },
+  "Loading": {
+    "text": "Chargement..."
+  },
+  "HomePage": {
+    "title": "Projets",
+    "recent": "Visités récemment",
+    "open": "Ouvrir un projet",
+    "template": "Créer à partir d'un modèle",
+    "installTitle": "Installer l'application GitHub",
+    "installDesc": "Installez l'application GitHub sur au moins un compte avant de pouvoir ouvrir ou créer des projets.",
+    "installCta": "Installer l'application GitHub",
+    "noneTitle": "Aucun dépôt pour le moment",
+    "noneDesc": "Vous avez besoin d'une invitation à un dépôt avant de pouvoir collaborer. Demandez au propriétaire du dépôt ou à l'administrateur de l'organisation de vous inviter."
+  },
+  "SettingsPage": {
+    "back": "Retour à l'accueil",
+    "title": "Paramètres",
+    "authTitle": "Authentification",
+    "authDesc": "Vos méthodes de connexion et fournisseurs d'identité liés.",
+    "instTitle": "Installations",
+    "instDesc": "Gérez les comptes sur lesquels l'application GitHub est installée."
+  },
+  "ProfileCard": {
+    "title": "Profil",
+    "desc": "Gérez les informations affichées pour les autres utilisateurs.",
+    "name": "Nom",
+    "picture": "Image",
+    "save": "Enregistrer le profil",
+    "updated": "Profil mis à jour.",
+    "updateFailed": "Échec de la mise à jour du profil."
+  },
+  "Identities": {
+    "email": "E-mail",
+    "github": "GitHub",
+    "connected": "Connecté",
+    "connect": "Connecter",
+    "disconnect": "Déconnecter",
+    "actions": "Actions GitHub",
+    "manage": "Gérer sur GitHub",
+    "disconnectFailed": "Échec de la déconnexion du compte GitHub.",
+    "disconnected": "Compte GitHub déconnecté."
+  },
+  "Installations": {
+    "empty": "Aucun compte avec l'application GitHub installée.",
+    "actions": "Actions d'installation",
+    "manage": "Gérer l'application GitHub"
+  },
+  "AboutDialog": {
+    "title": "À propos de Pages CMS",
+    "desc": "CMS open source pour sites statiques. Modifiez directement sur GitHub avec une interface claire.",
+    "version": "Version",
+    "website": "Site web",
+    "docs": "Documentation",
+    "github": "GitHub",
+    "updateTo": "Mettre à jour vers"
+  },
+  "RepoSidebar": {
+    "viewGithub": "Voir sur GitHub",
+    "branches": "Branches",
+    "manageBranches": "Gérer les branches",
+    "allProjects": "Tous les projets",
+    "content": "Contenu",
+    "media": "Médias",
+    "recent": "Visités récemment",
+    "actions": "Actions",
+    "admin": "Administration",
+    "cache": "Cache",
+    "collaborators": "Collaborateurs",
+    "configuration": "Configuration"
+  },
+  "AuthPage": {
+    "title": "Connectez-vous à Pages CMS",
+    "github": "Se connecter avec GitHub",
+    "or": "Ou",
+    "emailPlaceholder": "E-mail",
+    "continueEmail": "Continuer avec e-mail",
+    "invalidEmail": "E-mail invalide",
+    "codeSent": "Nous vous avons envoyé un code de connexion.",
+    "enterCode": "Saisissez le code à 6 chiffres.",
+    "startGithubFailed": "Impossible de démarrer la connexion GitHub. Veuillez réessayer.",
+    "legalPrefix": "En cliquant sur continuer, vous acceptez nos",
+    "terms": "Conditions d'utilisation",
+    "and": "et",
+    "privacy": "Politique de confidentialité",
+    "githubEmailMissing": "GitHub n'a pas renvoyé d'e-mail pour ce compte. Pour le développement local, redémarrez l'application et réessayez (le repli e-mail est activé), ou assurez-vous que l'application a l'autorisation e-mail et réautorisez-la dans Paramètres GitHub > Applications.",
+    "githubDenied": "GitHub a refusé l'accès au profil. Réautorisez Pages CMS dans Paramètres GitHub > Applications > Applications GitHub autorisées / Applications OAuth autorisées, puis réessayez.",
+    "otpTitle": "Vérifiez votre connexion",
+    "otpDesc": "Saisissez le code à 6 chiffres envoyé à {email}.",
+    "verifyCode": "Vérifier le code",
+    "resendCode": "Renvoyer le code",
+    "signInAnotherWay": "Se connecter autrement"
+  },
+  "UserMenu": {
+    "theme": "Thème",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système",
+    "settings": "Paramètres",
+    "signOut": "Se déconnecter"
+  },
+  "InviteSignIn": {
+    "unavailableTitle": "Invitation indisponible",
+    "unavailableDesc": "Cette invitation n'est plus disponible.",
+    "unavailableLinkDesc": "Ce lien d'invitation est invalide.",
+    "signIn": "Se connecter",
+    "wrongAccountTitle": "Mauvais compte",
+    "wrongAccountDesc": "Cette invitation a été envoyée à un autre compte.",
+    "signOut": "Se déconnecter",
+    "goHome": "Retour à l'accueil",
+    "unableToSendCode": "Impossible d'envoyer le code de connexion.",
+    "enterCode": "Saisissez le code à 6 chiffres.",
+    "unableToClaim": "Impossible de réclamer cette invitation.",
+    "unableToVerify": "Impossible de vérifier le code."
+  },
+  "GithubAuthExpired": {
+    "title": "Session GitHub expirée",
+    "desc": "Votre session GitHub a expiré. Vous devez vous reconnecter.",
+    "signInAnotherWay": "Se connecter autrement"
+  },
+  "NotFoundPage": {
+    "title": "Page introuvable",
+    "desc": "La page ou la ressource que vous avez demandée est introuvable.",
+    "goHome": "Retour à l'accueil"
+  },
+  "ErrorPage": {
+    "title": "Une erreur est survenue",
+    "goHome": "Retour à l'accueil",
+    "tryAgain": "Réessayer"
+  },
+  "AdminButton": {
+    "label": "Panneau d'administration"
+  }
+}

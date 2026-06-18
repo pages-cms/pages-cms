@@ -10,6 +10,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useConfig } from "@/contexts/config-context";
 import { useRepo } from "@/contexts/repo-context";
 import { useUser } from "@/contexts/user-context";
@@ -89,6 +90,7 @@ type NavigationNode = {
 };
 
 function RepoSwitcher() {
+  const t = useTranslations("RepoSidebar");
   const router = useRouter();
   const { owner, repo, branches = [] } = useRepo();
   const { config } = useConfig();
@@ -195,13 +197,13 @@ function RepoSwitcher() {
                 target="_blank"
                 rel="noreferrer"
               >
-                View on GitHub
+                {t("viewGithub")}
                 <ArrowUpRight className="size-3 text-muted-foreground ml-auto" />
               </a>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Branches
+              {t("branches")}
             </DropdownMenuLabel>
             <DropdownMenuRadioGroup
               value={currentBranch}
@@ -215,13 +217,13 @@ function RepoSwitcher() {
             </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
             <DialogTrigger asChild>
-              <DropdownMenuItem>Manage branches</DropdownMenuItem>
+              <DropdownMenuItem>{t("manageBranches")}</DropdownMenuItem>
             </DialogTrigger>
             {recentRepos.length > 0 && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  Recently visited
+                  {t("recent")}
                 </DropdownMenuLabel>
                 {recentRepos.map((visit) => (
                   <DropdownMenuItem
@@ -244,14 +246,14 @@ function RepoSwitcher() {
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/">All projects</Link>
+              <Link href="/">{t("allProjects")}</Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Manage branches</DialogTitle>
+          <DialogTitle>{t("manageBranches")}</DialogTitle>
         </DialogHeader>
         <RepoBranches />
       </DialogContent>
@@ -260,6 +262,7 @@ function RepoSwitcher() {
 }
 
 export function RepoSidebar() {
+  const t = useTranslations("RepoSidebar");
   const pathname = usePathname();
   const { user } = useUser();
   const { config } = useConfig();
@@ -314,9 +317,9 @@ export function RepoSidebar() {
     return media.map((item: any) => ({
       type: "media",
       name: item.name || "default",
-      label: item.label || item.name || "Media",
+      label: item.label || item.name || t("media"),
     }));
-  }, [config]);
+  }, [config, t]);
 
   const adminItems = useMemo<NavItem[]>(() => {
     if (!config) return [];
@@ -329,7 +332,7 @@ export function RepoSidebar() {
     if (canManageRepo && isCacheEnabled(configObject)) {
       items.push({
         key: "admin-cache",
-        label: "Cache",
+        label: t("cache"),
         href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/cache`,
         icon: <Database className="size-4" />,
       });
@@ -338,14 +341,14 @@ export function RepoSidebar() {
     if (canManageRepo) {
       items.push({
         key: "admin-actions",
-        label: "Actions",
+        label: t("actions"),
         href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/actions`,
         icon: <ListVideo className="size-4" />,
       });
 
       items.push({
         key: "admin-collaborators",
-        label: "Collaborators",
+        label: t("collaborators"),
         href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/collaborators`,
         icon: <Users className="size-4" />,
       });
@@ -354,14 +357,14 @@ export function RepoSidebar() {
     if (canManageRepo && isConfigEnabled(configObject)) {
       items.push({
         key: "admin-configuration",
-        label: "Configuration",
+        label: t("configuration"),
         href: `/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/configuration`,
         icon: <Settings className="size-4" />,
       });
     }
 
     return items;
-  }, [config, user]);
+  }, [config, t, user]);
   const rootActions = useMemo(
     () => getRootActions(config?.object),
     [config?.object],
@@ -526,26 +529,26 @@ export function RepoSidebar() {
     );
   }
 
-  const renderNavigationGroup = (label: string, nodes: NavigationNode[]) => {
+  const renderNavigationGroup = (key: string, label: string, nodes: NavigationNode[]) => {
     if (nodes.length === 0) return null;
 
     return (
-      <SidebarGroup>
+      <SidebarGroup key={key}>
         <SidebarGroupLabel>{label}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {nodes.map((node) => renderNavigationNode(node, `${label}-${node.name}`))}
+            {nodes.map((node) => renderNavigationNode(node, `${key}-${node.name}`))}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
     );
   };
 
-  const renderFlatGroup = (label: string, items: NavItem[]) => {
+  const renderFlatGroup = (key: string, label: string, items: NavItem[]) => {
     if (items.length === 0) return null;
 
     return (
-      <SidebarGroup>
+      <SidebarGroup key={key}>
         <SidebarGroupLabel>{label}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -570,12 +573,12 @@ export function RepoSidebar() {
   };
 
   const groups = [
-    renderNavigationGroup("Content", contentNavigation),
-    renderNavigationGroup("Media", mediaNavigation),
+    renderNavigationGroup("content", t("content"), contentNavigation),
+    renderNavigationGroup("media", t("media"), mediaNavigation),
     rootActions.length > 0 && config
       ? (
-        <SidebarGroup key="Actions">
-          <SidebarGroupLabel>Actions</SidebarGroupLabel>
+        <SidebarGroup key="actions">
+          <SidebarGroupLabel>{t("actions")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <RepoActionButtons
               actions={rootActions}
@@ -589,7 +592,7 @@ export function RepoSidebar() {
         </SidebarGroup>
       )
       : null,
-    renderFlatGroup("Admin", adminItems),
+    renderFlatGroup("admin", t("admin"), adminItems),
   ].filter(Boolean);
 
   return (

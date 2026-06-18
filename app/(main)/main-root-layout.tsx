@@ -1,6 +1,7 @@
 import { User } from "@/components/user";
 import { AdminButton } from "@/components/admin-button";
 import { About } from "@/components/about";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export function MainRootLayout({
   children,
@@ -13,6 +14,7 @@ export function MainRootLayout({
 				<div className="flex items-center gap-2 px-2 py-2 lg:px-4 lg:py-3">
 					<About/>
           <div className="ml-auto flex items-center gap-2">
+						<LanguageSwitcher />
             <AdminButton />
 					  <User align="end" />
           </div>

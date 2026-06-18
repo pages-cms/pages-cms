@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { headers } from "next/headers";
+import { getTranslations } from "next-intl/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
@@ -21,6 +22,7 @@ import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default async function Page() {
+  const t = await getTranslations("SettingsPage");
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -39,7 +41,7 @@ export default async function Page() {
 
   return (
     <MainRootLayout>
-      <DocumentTitle title="Settings" />
+      <DocumentTitle title={t("title")} />
       <div className="max-w-screen-sm mx-auto p-4 md:p-6 space-y-6">
         <Link
           className={cn(
@@ -49,11 +51,11 @@ export default async function Page() {
           href="/"
         >
           <ArrowLeft />
-          Go home
+          {t("back")}
         </Link>
         <header className="flex items-center mb-6">
           <h1 className="font-semibold tracking-tight text-lg md:text-2xl">
-            Settings
+            {t("title")}
           </h1>
         </header>
         <div className="flex flex-col relative flex-1 space-y-6">
@@ -65,9 +67,11 @@ export default async function Page() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Authentication</CardTitle>
+              <CardTitle>
+                {t("authTitle")}
+              </CardTitle>
               <CardDescription>
-                Your sign-in methods and linked identity providers.
+                {t("authDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -84,10 +88,10 @@ export default async function Page() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base md:text-lg">
-                  Installations
+                  {t("instTitle")}
                 </CardTitle>
                 <CardDescription>
-                  Manage the accounts the Github application is installed on.
+                  {t("instDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>

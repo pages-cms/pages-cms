@@ -5,6 +5,7 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { GithubAuthExpired } from "@/components/github-auth-expired";
 import { isGithubAuthError } from "@/lib/github-auth";
+import { useTranslations } from "next-intl";
 import {
   Empty,
   EmptyContent,
@@ -20,6 +21,8 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("ErrorPage");
+
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -31,7 +34,7 @@ export default function Error({
   return (
     <Empty className="absolute inset-0 border-0 rounded-none">
       <EmptyHeader>
-        <EmptyTitle>Something went wrong</EmptyTitle>
+        <EmptyTitle>{t("title")}</EmptyTitle>
         <EmptyDescription>{error.message}</EmptyDescription>
       </EmptyHeader>
       <EmptyContent className="flex-row justify-center gap-2">
@@ -39,13 +42,13 @@ export default function Error({
           className={buttonVariants({ variant: "default" })}
           href="/"
         >
-          Go home
+          {t("goHome")}
         </Link>
         <button
           className={buttonVariants({ variant: "outline" })}
           onClick={reset}
         >
-          Try again
+          {t("tryAgain")}
         </button>
       </EmptyContent>
     </Empty>

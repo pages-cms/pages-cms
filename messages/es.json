@@ -1,0 +1,141 @@
+{
+  "LanguageSwitcher": {
+    "label": "Idioma",
+    "en": "Inglés",
+    "de": "Alemán",
+    "es": "Español",
+    "fr": "Francés"
+  },
+  "Loading": {
+    "text": "Cargando..."
+  },
+  "HomePage": {
+    "title": "Proyectos",
+    "recent": "Visitados recientemente",
+    "open": "Abrir un proyecto",
+    "template": "Crear desde una plantilla",
+    "installTitle": "Instalar la aplicación de GitHub",
+    "installDesc": "Instala la aplicación de GitHub en al menos una cuenta antes de poder abrir o crear proyectos.",
+    "installCta": "Instalar aplicación de GitHub",
+    "noneTitle": "Aún no hay repositorios",
+    "noneDesc": "Necesitas una invitación a un repositorio antes de poder colaborar. Pide al propietario del repositorio o al administrador de la organización que te invite."
+  },
+  "SettingsPage": {
+    "back": "Ir al inicio",
+    "title": "Ajustes",
+    "authTitle": "Autenticación",
+    "authDesc": "Tus métodos de inicio de sesión y proveedores de identidad vinculados.",
+    "instTitle": "Instalaciones",
+    "instDesc": "Gestiona las cuentas en las que está instalada la aplicación de GitHub."
+  },
+  "ProfileCard": {
+    "title": "Perfil",
+    "desc": "Gestiona la información que se muestra a otros usuarios.",
+    "name": "Nombre",
+    "picture": "Imagen",
+    "save": "Guardar perfil",
+    "updated": "Perfil actualizado.",
+    "updateFailed": "No se pudo actualizar el perfil."
+  },
+  "Identities": {
+    "email": "Correo electrónico",
+    "github": "GitHub",
+    "connected": "Conectado",
+    "connect": "Conectar",
+    "disconnect": "Desconectar",
+    "actions": "Acciones de GitHub",
+    "manage": "Gestionar en GitHub",
+    "disconnectFailed": "No se pudo desconectar la cuenta de GitHub.",
+    "disconnected": "Cuenta de GitHub desconectada."
+  },
+  "Installations": {
+    "empty": "Ninguna cuenta con la aplicación de GitHub instalada.",
+    "actions": "Acciones de instalación",
+    "manage": "Gestionar aplicación de GitHub"
+  },
+  "AboutDialog": {
+    "title": "Acerca de Pages CMS",
+    "desc": "CMS de código abierto para sitios estáticos. Edita directamente en GitHub con una interfaz limpia.",
+    "version": "Versión",
+    "website": "Sitio web",
+    "docs": "Documentación",
+    "github": "GitHub",
+    "updateTo": "Actualizar a"
+  },
+  "RepoSidebar": {
+    "viewGithub": "Ver en GitHub",
+    "branches": "Ramas",
+    "manageBranches": "Gestionar ramas",
+    "allProjects": "Todos los proyectos",
+    "content": "Contenido",
+    "media": "Multimedia",
+    "recent": "Visitados recientemente",
+    "actions": "Acciones",
+    "admin": "Administración",
+    "cache": "Caché",
+    "collaborators": "Colaboradores",
+    "configuration": "Configuración"
+  },
+  "AuthPage": {
+    "title": "Inicia sesión en Pages CMS",
+    "github": "Iniciar sesión con GitHub",
+    "or": "O",
+    "emailPlaceholder": "Correo electrónico",
+    "continueEmail": "Continuar con correo electrónico",
+    "invalidEmail": "Correo electrónico no válido",
+    "codeSent": "Te enviamos un código de inicio de sesión.",
+    "enterCode": "Introduce el código de 6 dígitos.",
+    "startGithubFailed": "No se pudo iniciar el inicio de sesión con GitHub. Inténtalo de nuevo.",
+    "legalPrefix": "Al hacer clic en continuar, aceptas nuestros",
+    "terms": "Términos del servicio",
+    "and": "y",
+    "privacy": "Política de privacidad",
+    "githubEmailMissing": "GitHub no devolvió un correo electrónico para esta cuenta. Para desarrollo local, reinicia la aplicación e inténtalo de nuevo (el respaldo de correo está activado), o asegúrate de que la aplicación tenga permiso de correo y vuelve a autorizarla en Configuración de GitHub > Aplicaciones.",
+    "githubDenied": "GitHub denegó el acceso al perfil. Vuelve a autorizar Pages CMS en Configuración de GitHub > Aplicaciones > Aplicaciones autorizadas de GitHub / Aplicaciones OAuth autorizadas e inténtalo de nuevo.",
+    "otpTitle": "Verifica tu inicio de sesión",
+    "otpDesc": "Introduce el código de 6 dígitos enviado a {email}.",
+    "verifyCode": "Verificar código",
+    "resendCode": "Reenviar código",
+    "signInAnotherWay": "Iniciar sesión de otra manera"
+  },
+  "UserMenu": {
+    "theme": "Tema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema",
+    "settings": "Ajustes",
+    "signOut": "Cerrar sesión"
+  },
+  "InviteSignIn": {
+    "unavailableTitle": "Invitación no disponible",
+    "unavailableDesc": "Esta invitación ya no está disponible.",
+    "unavailableLinkDesc": "Este enlace de invitación no es válido.",
+    "signIn": "Iniciar sesión",
+    "wrongAccountTitle": "Cuenta incorrecta",
+    "wrongAccountDesc": "Esta invitación se envió a otra cuenta.",
+    "signOut": "Cerrar sesión",
+    "goHome": "Ir al inicio",
+    "unableToSendCode": "No se pudo enviar el código de inicio de sesión.",
+    "enterCode": "Introduce el código de 6 dígitos.",
+    "unableToClaim": "No se pudo reclamar esta invitación.",
+    "unableToVerify": "No se pudo verificar el código."
+  },
+  "GithubAuthExpired": {
+    "title": "Sesión de GitHub expirada",
+    "desc": "Tu sesión de GitHub ha expirado. Tendrás que iniciar sesión de nuevo.",
+    "signInAnotherWay": "Iniciar sesión de otra manera"
+  },
+  "NotFoundPage": {
+    "title": "Página no encontrada",
+    "desc": "La página o recurso que solicitaste no se pudo encontrar.",
+    "goHome": "Ir al inicio"
+  },
+  "ErrorPage": {
+    "title": "Algo salió mal",
+    "goHome": "Ir al inicio",
+    "tryAgain": "Intentar de nuevo"
+  },
+  "AdminButton": {
+    "label": "Panel de administración"
+  }
+}

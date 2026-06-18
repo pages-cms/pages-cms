@@ -17,7 +17,11 @@ type OtpVerificationFormProps = {
   pending: boolean;
   resendDisabled?: boolean;
   resendPending?: boolean;
+  title?: string;
+  description?: string;
   submitLabel?: string;
+  resendLabel?: string;
+  signInAnotherWayLabel?: string;
   onChange: (value: string) => void;
   onResend: () => void;
   onSignInAnotherWay?: () => void;
@@ -31,20 +35,26 @@ export function OtpVerificationForm({
   pending,
   resendDisabled,
   resendPending,
+  title = "Verify your login",
+  description,
   submitLabel = "Verify code",
+  resendLabel = "Resend code",
+  signInAnotherWayLabel = "Sign in another way",
   onChange,
   onResend,
   onSignInAnotherWay,
   onSubmit,
 }: OtpVerificationFormProps) {
+  const resolvedDescription = description || `Enter the 6-digit code sent to ${emailLabel}.`;
+
   return (
     <form className="flex w-full flex-col items-center gap-6" onSubmit={onSubmit}>
       <div className="space-y-2 text-center">
         <h1 className="text-lg font-medium tracking-tight">
-          Verify your login
+          {title}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Enter the 6-digit code sent to {emailLabel}.
+          {resolvedDescription}
         </p>
       </div>
 
@@ -79,7 +89,7 @@ export function OtpVerificationForm({
           type="button"
           variant="ghost"
         >
-          Resend code
+          {resendLabel}
           {resendPending && <Loader className="size-4 animate-spin" />}
         </Button>
         {onSignInAnotherWay && (
@@ -90,7 +100,7 @@ export function OtpVerificationForm({
             type="button"
             variant="ghost"
           >
-            Sign in another way
+            {signInAnotherWayLabel}
           </Button>
         )}
       </div>

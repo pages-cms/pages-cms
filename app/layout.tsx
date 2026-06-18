@@ -1,5 +1,7 @@
 import { Toaster } from "@/components/ui/sonner"
 import { Providers } from "@/components/providers";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { getBaseUrl } from "@/lib/base-url";
@@ -57,8 +59,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {  
+	const locale = await getLocale();
+
 	return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
@@ -66,9 +70,11 @@ export default async function RootLayout({
           jetbrainsMono.variable,
         )}
       >
-        <Providers user={null}>
-          {children}
-        </Providers>
+        <NextIntlClientProvider>
+          <Providers user={null}>
+            {children}
+          </Providers>
+        </NextIntlClientProvider>
         <Toaster/>
       </body>
     </html>
