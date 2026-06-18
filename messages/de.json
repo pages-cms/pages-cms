@@ -2,7 +2,9 @@
   "LanguageSwitcher": {
     "label": "Sprache",
     "en": "Englisch",
-    "de": "Deutsch"
+    "de": "Deutsch",
+    "es": "Spanisch",
+    "fr": "Französisch"
   },
   "Loading": {
     "text": "Lädt..."

@@ -1,6 +1,6 @@
 export const LANGUAGE_COOKIE_KEY = "locale";
 
-export const SUPPORTED_LANGUAGES = ["en", "de"] as const;
+export const SUPPORTED_LANGUAGES = ["en", "de", "es", "fr"] as const;
 
 export type Language = (typeof SUPPORTED_LANGUAGES)[number];
 

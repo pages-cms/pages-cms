@@ -19,6 +19,8 @@ import {
 const languageLabelKey = {
   en: "en",
   de: "de",
+  es: "es",
+  fr: "fr",
 } as const;
 
 export function LanguageSwitcher() {
