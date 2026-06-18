@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Loader } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { OtpVerificationForm } from "@/components/otp-verification-form";
@@ -28,6 +29,7 @@ type InviteState =
     };
 
 export function InviteSignIn({ token }: { token: string }) {
+  const t = useTranslations("InviteSignIn");
   const [state, setState] = useState<InviteState>({ status: "loading" });
   const [otp, setOtp] = useState("");
   const [pending, setPending] = useState<null | "send" | "verify" | "sign-out">(null);
@@ -81,7 +83,7 @@ export function InviteSignIn({ token }: { token: string }) {
         toast.error(result.error.message);
       }
     } catch {
-      toast.error("Unable to send sign-in code.");
+      toast.error(t("unableToSendCode"));
     } finally {
       setPending(null);
     }
@@ -90,7 +92,7 @@ export function InviteSignIn({ token }: { token: string }) {
   async function verifyOtp() {
     if (state.status !== "otp_required") return;
     if (otp.length !== 6) {
-      toast.error("Enter the 6-digit code.");
+      toast.error(t("enterCode"));
       return;
     }
 
@@ -121,10 +123,10 @@ export function InviteSignIn({ token }: { token: string }) {
         return;
       }
 
-      toast.error("Unable to claim this invitation.");
+      toast.error(t("unableToClaim"));
       setPending(null);
     } catch {
-      toast.error("Unable to verify code.");
+      toast.error(t("unableToVerify"));
       setPending(null);
     }
   }
@@ -143,12 +145,12 @@ export function InviteSignIn({ token }: { token: string }) {
     return (
       <Empty className={shellClassName}>
         <EmptyHeader>
-          <EmptyTitle>Invite unavailable</EmptyTitle>
-          <EmptyDescription>This invitation is no longer available.</EmptyDescription>
+          <EmptyTitle>{t("unavailableTitle")}</EmptyTitle>
+          <EmptyDescription>{t("unavailableDesc")}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <Link href="/sign-in" className={buttonVariants()}>
-            Sign in
+            {t("signIn")}
           </Link>
         </EmptyContent>
       </Empty>
@@ -159,8 +161,8 @@ export function InviteSignIn({ token }: { token: string }) {
     return (
       <Empty className={shellClassName}>
         <EmptyHeader>
-          <EmptyTitle>Wrong account</EmptyTitle>
-          <EmptyDescription>This invitation was sent to another account.</EmptyDescription>
+          <EmptyTitle>{t("wrongAccountTitle")}</EmptyTitle>
+          <EmptyDescription>{t("wrongAccountDesc")}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <Button
@@ -175,11 +177,11 @@ export function InviteSignIn({ token }: { token: string }) {
               }
             }}
           >
-            Sign out
+            {t("signOut")}
             {pending === "sign-out" && <Loader className="size-4 animate-spin" />}
           </Button>
           <Link href="/" className={buttonVariants({ variant: "outline" })}>
-            Go home
+            {t("goHome")}
           </Link>
         </EmptyContent>
       </Empty>

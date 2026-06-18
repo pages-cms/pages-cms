@@ -105,5 +105,37 @@
     "system": "System",
     "settings": "Settings",
     "signOut": "Sign out"
+  },
+  "InviteSignIn": {
+    "unavailableTitle": "Invite unavailable",
+    "unavailableDesc": "This invitation is no longer available.",
+    "unavailableLinkDesc": "This invitation link is invalid.",
+    "signIn": "Sign in",
+    "wrongAccountTitle": "Wrong account",
+    "wrongAccountDesc": "This invitation was sent to another account.",
+    "signOut": "Sign out",
+    "goHome": "Go home",
+    "unableToSendCode": "Unable to send sign-in code.",
+    "enterCode": "Enter the 6-digit code.",
+    "unableToClaim": "Unable to claim this invitation.",
+    "unableToVerify": "Unable to verify code."
+  },
+  "GithubAuthExpired": {
+    "title": "GitHub session expired",
+    "desc": "Your GitHub session has expired. You'll need to sign in again.",
+    "signInAnotherWay": "Sign in another way"
+  },
+  "NotFoundPage": {
+    "title": "Page not found",
+    "desc": "The page or resource you requested could not be found.",
+    "goHome": "Go home"
+  },
+  "ErrorPage": {
+    "title": "Something went wrong",
+    "goHome": "Go home",
+    "tryAgain": "Try again"
+  },
+  "AdminButton": {
+    "label": "Admin panel"
   }
 }

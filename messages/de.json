@@ -105,5 +105,37 @@
     "system": "System",
     "settings": "Einstellungen",
     "signOut": "Abmelden"
+  },
+  "InviteSignIn": {
+    "unavailableTitle": "Einladung nicht verfügbar",
+    "unavailableDesc": "Diese Einladung ist nicht mehr verfügbar.",
+    "unavailableLinkDesc": "Dieser Einladungslink ist ungültig.",
+    "signIn": "Anmelden",
+    "wrongAccountTitle": "Falsches Konto",
+    "wrongAccountDesc": "Diese Einladung wurde an ein anderes Konto gesendet.",
+    "signOut": "Abmelden",
+    "goHome": "Zur Startseite",
+    "unableToSendCode": "Anmeldecode konnte nicht gesendet werden.",
+    "enterCode": "Gib den 6-stelligen Code ein.",
+    "unableToClaim": "Diese Einladung konnte nicht angenommen werden.",
+    "unableToVerify": "Code konnte nicht bestätigt werden."
+  },
+  "GithubAuthExpired": {
+    "title": "GitHub-Sitzung abgelaufen",
+    "desc": "Deine GitHub-Sitzung ist abgelaufen. Du musst dich erneut anmelden.",
+    "signInAnotherWay": "Anders anmelden"
+  },
+  "NotFoundPage": {
+    "title": "Seite nicht gefunden",
+    "desc": "Die angeforderte Seite oder Ressource konnte nicht gefunden werden.",
+    "goHome": "Zur Startseite"
+  },
+  "ErrorPage": {
+    "title": "Etwas ist schiefgelaufen",
+    "goHome": "Zur Startseite",
+    "tryAgain": "Erneut versuchen"
+  },
+  "AdminButton": {
+    "label": "Admin-Bereich"
   }
 }
