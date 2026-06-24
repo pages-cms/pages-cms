@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
-import { randomBytes } from "node:crypto";
+import { createSign, randomBytes } from "node:crypto";
 import { execFile } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -50,7 +50,7 @@ async function main() {
       checks: "read",
       statuses: "read",
       contents: "write",
-      email_addresses: "read",
+      emails: "read",
       metadata: "read",
     },
     default_events: [
@@ -69,7 +69,6 @@ async function main() {
     hook_attributes: {
       url: webhookUrl,
       active: true,
-      secret: webhookSecret,
     },
   };
 
@@ -88,6 +87,13 @@ async function main() {
   });
 
   const converted = await exchangeManifestCode(code);
+
+  await configureWebhookSecret({
+    appId: converted.id,
+    pem: converted.pem,
+    secret: webhookSecret,
+  });
+
   const envPath = args.envPath ? resolve(process.cwd(), args.envPath) : "";
   const authSecret =
     process.env.BETTER_AUTH_SECRET ||
@@ -248,6 +254,45 @@ function renderAutoPostPage({ appCreationUrl, manifest }) {
     </script>
   </body>
 </html>`;
+}
+
+async function configureWebhookSecret({ appId, pem, secret }) {
+  const jwt = createAppJwt(appId, pem);
+  const response = await fetch("https://api.github.com/app/hook/config", {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ secret }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Failed to configure webhook secret (${response.status}): ${body}`,
+    );
+  }
+}
+
+function createAppJwt(appId, pem) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const payload = base64url(
+    JSON.stringify({ iat: now - 60, exp: now + 9 * 60, iss: String(appId) }),
+  );
+  const signingInput = `${header}.${payload}`;
+  const signer = createSign("RSA-SHA256");
+  signer.update(signingInput);
+  signer.end();
+  const signature = signer.sign(pem).toString("base64url");
+  return `${signingInput}.${signature}`;
+}
+
+function base64url(value) {
+  return Buffer.from(value).toString("base64url");
 }
 
 async function exchangeManifestCode(code) {
