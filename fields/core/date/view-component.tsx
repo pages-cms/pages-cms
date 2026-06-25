@@ -16,11 +16,13 @@ const ViewComponent = ({
   const firstValue = Array.isArray(value) ? value[0] : value;
   if (firstValue == null) return null;
   const extraValuesCount = Array.isArray(value) ? value.length - 1 : 0;
-  const inputFormat = field.options?.time ? "yyyy-MM-dd'T'HH:mm" : "yyyy-MM-dd";
-  const outputFormat = field.options?.time ? "MMM d, yyyy - HH:mm" : "MMM d, yyyy";
+  const inputType = field?.options?.time ? "datetime-local" : "date";
+  const outputFormat = inputType === "datetime-local"  ? "MMM d, yyyy - HH:mm" : "MMM d, yyyy";
 
   const formatDate = (date: string) => {
-    const parsedDate = parse(date, inputFormat, new Date());
+    const parsedDate = inputType === "datetime-local" 
+      ? new Date(`${date}Z`) 
+      : parse(date, "yyyy-MM-dd", new Date());
     if (!isValid(parsedDate)) {
       console.warn(`Date for field '${field.name}' is saved in the wrong format or invalid: ${date}.`);
       return null;

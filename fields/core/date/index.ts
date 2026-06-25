@@ -5,9 +5,10 @@ import { ViewComponent } from "./view-component";
 import { parse, format, isValid, isBefore, isAfter } from "date-fns";
 
 const defaultValue = (field: Field) => {
-  const inputType = field?.options?.time ? "datetime-local" : "date";
-  const inputFormat = inputType === "datetime-local" ? "yyyy-MM-dd'T'HH:mm" : "yyyy-MM-dd";
-  return format(new Date(), inputFormat);
+  const inputType = field?.options?.time ? "datetime-local" : "date";  
+  return (inputType === "datetime-local") 
+    ? new Date().toISOString().slice(0, 16)
+    : format(new Date(), "yyyy-MM-dd");
 };
 
 const read = (value: any, field: Field) => {
