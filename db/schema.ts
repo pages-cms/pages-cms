@@ -9,8 +9,15 @@ import {
   index,
   uniqueIndex,
   jsonb,
+  customType,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+
+const bytea = customType<{ data: Buffer; driverData: Buffer; notNull: true; default: false }>({
+  dataType() {
+    return "bytea";
+  },
+});
 
 const userTable = pgTable("user", {
   id: text("id").notNull().primaryKey(),
@@ -209,6 +216,18 @@ const actionRunTable = pgTable("action_run", {
   idx_action_run_workflowRunId: uniqueIndex("idx_action_run_workflowRunId").on(table.workflowRunId),
 }));
 
+const uploadChunkTable = pgTable("upload_chunk", {
+  id: serial("id").primaryKey(),
+  uploadId: text("upload_id").notNull(),
+  userId: text("user_id").notNull().references(() => userTable.id, { onDelete: "cascade" }),
+  chunkIdx: integer("chunk_idx").notNull(),
+  data: bytea("data").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("uq_upload_chunk_uploadId_chunkIdx").on(table.uploadId, table.chunkIdx),
+  index("idx_upload_chunk_createdAt").on(table.createdAt),
+]);
+
 export {
   userTable,
   sessionTable,
@@ -221,5 +240,6 @@ export {
   cacheFileTable,
   cacheFileMetaTable,
   cachePermissionTable,
-  actionRunTable
+  actionRunTable,
+  uploadChunkTable
 };

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { uploadMediaChunked } from "@/lib/utils/upload-media";
 
 type FolderCreateResult = {
   path: string;
@@ -56,35 +57,49 @@ const FolderCreate = ({
 
     setIsSubmitting(true);
     try {
-      const createPromise: Promise<{
+      let createPromise: Promise<{
         status: string;
         message?: string;
         data: FolderCreateResult;
-      }> = fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(fullNewPath + "/.gitkeep")}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          name,
-          content: "",
+      }>;
+
+      if (type === "media") {
+        createPromise = uploadMediaChunked({
+          file: new File([], ".gitkeep"),
+          owner: config.owner,
+          repo: config.repo,
+          branch: config.branch,
+          mediaName: name!,
+          targetPath: `${fullNewPath}/.gitkeep`,
           onConflict: "error",
-        }),
-      }).then(async (response) => {
-        const payload = await response.json().catch(() => null);
-        if (!response.ok) {
-          if (response.status === 409) {
-            throw new Error(`Folder \"${fullNewPath}\" already exists.`);
+        }).then((data) => ({ status: "success", data: data as FolderCreateResult }));
+      } else {
+        createPromise = fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(fullNewPath + "/.gitkeep")}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type,
+            name,
+            content: "",
+            onConflict: "error",
+          }),
+        }).then(async (response) => {
+          const payload = await response.json().catch(() => null);
+          if (!response.ok) {
+            if (response.status === 409) {
+              throw new Error(`Folder \"${fullNewPath}\" already exists.`);
+            }
+
+            throw new Error(payload?.message || "Failed to create folder");
           }
 
-          throw new Error(payload?.message || "Failed to create folder");
-        }
+          if (!payload || payload.status !== "success") {
+            throw new Error(payload?.message || "Failed to create folder");
+          }
 
-        if (!payload || payload.status !== "success") {
-          throw new Error(payload?.message || "Failed to create folder");
-        }
-
-        return payload;
-      });
+          return payload;
+        });
+      }
 
       await toast.promise(createPromise, {
         loading: `Creating folder "${fullNewPath}"`,

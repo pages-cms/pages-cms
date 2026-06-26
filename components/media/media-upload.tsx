@@ -6,7 +6,7 @@ import { getUploadFileName, joinPathSegments } from "@/lib/utils/file";
 import { toast } from "sonner";
 import { getSchemaByName } from "@/lib/schema";
 import { cn } from "@/lib/utils";
-import { requireApiSuccess } from "@/lib/api-client";
+import { uploadMediaChunked } from "@/lib/utils/upload-media";
 import type { FileSaveData } from "@/types/api";
 
 interface MediaUploadContextValue {
@@ -70,40 +70,20 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
           file.name,
           rename ?? configMedia?.rename,
         );
+        const fullPath = joinPathSegments([path ?? "", uploadFilename]);
 
-        const uploadPromise = (async () => {
-          const content = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const base64Content = (reader.result as string).replace(/^(.+,)/, "");
-              resolve(base64Content);
-            };
-            reader.onerror = () => reject(new Error("Failed to read file"));
-            reader.readAsDataURL(file);
-          });
-
-          const fullPath = joinPathSegments([path ?? "", uploadFilename]);
-          const response = await fetch(`/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(fullPath)}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "media",
-              name: configMedia.name,
-              content,
-            }),
-          });
-
-          const data = await requireApiSuccess<any>(
-            response,
-            "Failed to upload file",
-          );
-
-          return data.data as FileSaveData;
-        })();
+        const uploadPromise = uploadMediaChunked({
+          file,
+          owner: config.owner,
+          repo: config.repo,
+          branch: config.branch,
+          mediaName: configMedia.name,
+          targetPath: fullPath,
+        });
 
         await toast.promise(uploadPromise, {
           loading: `Uploading ${file.name}`,
-          success: (savedEntry) => {
+          success: (savedEntry: FileSaveData) => {
             onUpload?.(savedEntry);
             return `Uploaded ${file.name}`;
           },

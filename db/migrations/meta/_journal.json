@@ -92,6 +92,13 @@
       "when": 1778731770759,
       "tag": "0012_collaborator_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1782298049440,
+      "tag": "0013_upload_chunks",
+      "breakpoints": true
     }
   ]
 }

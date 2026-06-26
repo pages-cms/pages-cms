@@ -38,7 +38,7 @@ import {
   normalizeMediaPath,
   normalizePath,
 } from "@/lib/utils/file";
-import type { ApiResponse, FileSaveData } from "@/types/api";
+import { uploadMediaChunked } from "@/lib/utils/upload-media";
 import type { Field } from "@/types/field";
 import "./edit-component.css";
 
@@ -772,14 +772,6 @@ const EditComponent = forwardRef(
           );
         }
 
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result ?? ""));
-          reader.onerror = () =>
-            reject(new Error("Failed to read image file."));
-          reader.readAsDataURL(file);
-        });
-        const content = dataUrl.replace(/^(.+,)/, "");
         const uploadFilename = getUploadFileName(
           file.name,
           options.rename ?? mediaConfig.rename,
@@ -789,30 +781,16 @@ const EditComponent = forwardRef(
           uploadFilename,
         ]);
 
-        const response = await fetch(
-          `/api/${config.owner}/${config.repo}/${encodeURIComponent(config.branch)}/files/${encodeURIComponent(targetPath)}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "media",
-              name: mediaConfig.name,
-              content,
-            }),
-          },
-        );
-        if (!response.ok) {
-          throw new Error(
-            `Failed to upload file: ${response.status} ${response.statusText}`,
-          );
-        }
+        const saved = await uploadMediaChunked({
+          file,
+          owner: config.owner,
+          repo: config.repo,
+          branch: config.branch,
+          mediaName: mediaConfig.name,
+          targetPath,
+        });
 
-        const payload = (await response.json()) as ApiResponse<FileSaveData>;
-        if (payload.status !== "success") {
-          throw new Error(payload.message);
-        }
-
-        const uploadedPath = payload.data.path || targetPath;
+        const uploadedPath = saved.path || targetPath;
         const src = await toDisplayImageUrl(uploadedPath);
         return {
           src,
