@@ -268,7 +268,16 @@ const normalizeContentEntry = (
     }
   }
   if (item.filename == null && item.type === "collection") {
-    item.filename = "{year}-{month}-{day}-{primary}.md";
+    const formatExtensions: Record<string, string> = {
++      json: "json",
++      toml: "toml",
++      yaml: "yaml",
++      "json-frontmatter": "md",
++      "toml-frontmatter": "md",
++      "yaml-frontmatter": "md",
++    };
++    const ext = item.format != null ? formatExtensions[item.format] : undefined;
++    item.filename = `{year}-{month}-{day}-{primary}.${ext ?? "md"}`;
   }
   if (item.extension == null) {
     const filename = item.type === "file" ? item.path : item.filename;
