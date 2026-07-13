@@ -47,11 +47,13 @@ git clone https://github.com/pagescms/pagescms.git
 cd pagescms
 ```
 
-2. Start PostgreSQL locally:
+2. Start PostgreSQL locally (Docker Compose, data persisted in a volume):
 
 ```bash
-docker run --name pagescms-db -e POSTGRES_USER=pagescms -e POSTGRES_PASSWORD=pagescms -e POSTGRES_DB=pagescms -p 5432:5432 -d postgres:16
+npm run db:up
 ```
+
+Stop it later with `npm run db:down`.
 
 3. Install dependencies:
 
@@ -62,10 +64,11 @@ npm install
 4. Create `.env.local` with at least:
 
 ```bash
-DATABASE_URL=postgresql://pagescms:pagescms@localhost:5432/pagescms
 BETTER_AUTH_SECRET=your-random-secret
 CRYPTO_KEY=your-random-secret
 ```
+
+`DATABASE_URL` defaults to the local Docker database (see `.env.development`); set it in `.env.local` only if your database differs.
 
 Optional but useful:
 
