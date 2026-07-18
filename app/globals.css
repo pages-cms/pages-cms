@@ -124,3 +124,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Pointer-based drag handles must opt out of native touch scrolling. */
+.cursor-move {
+  touch-action: none;
+}
