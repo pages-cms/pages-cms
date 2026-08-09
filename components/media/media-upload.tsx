@@ -2,11 +2,12 @@
 
 import { useRef, cloneElement, useMemo, useCallback, createContext, useContext, useState } from "react";
 import { useConfig } from "@/contexts/config-context";
-import { getUploadFileName, joinPathSegments } from "@/lib/utils/file";
+import { getFileSize, getUploadFileName, joinPathSegments } from "@/lib/utils/file";
 import { toast } from "sonner";
 import { getSchemaByName } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 import { requireApiSuccess } from "@/lib/api-client";
+import { prepareImageUpload } from "@/lib/utils/image-upload";
 import type { FileSaveData } from "@/types/api";
 
 interface MediaUploadContextValue {
@@ -49,29 +50,34 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
     [media, config.object]
   );
 
-  const accept = useMemo(() => {
-    if (!configMedia?.extensions && !extensions) return undefined;
-    
-    const allowedExtensions = extensions 
+  const allowedExtensions = useMemo(() => {
+    return extensions
       ? configMedia?.extensions
         ? extensions.filter(ext => configMedia.extensions.includes(ext))
         : extensions
       : configMedia?.extensions;
+  }, [extensions, configMedia?.extensions]);
+
+  const accept = useMemo(() => {
+    if (!allowedExtensions) return undefined;
 
     return allowedExtensions?.length > 0
       ? allowedExtensions.map((extension: string) => `.${extension}`).join(",")
       : undefined;
-  }, [extensions, configMedia?.extensions]);
+  }, [allowedExtensions]);
 
   const handleFiles = useCallback(async (files: File[]) => {
     try {
       for (const file of files) {
-        const uploadFilename = getUploadFileName(
-          file.name,
-          rename ?? configMedia?.rename,
-        );
-
         const uploadPromise = (async () => {
+          const preparedUpload = await prepareImageUpload(file, {
+            allowedExtensions,
+          });
+          const uploadFile = preparedUpload.file;
+          const uploadFilename = getUploadFileName(
+            uploadFile.name,
+            rename ?? configMedia?.rename,
+          );
           const content = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
@@ -79,7 +85,7 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
               resolve(base64Content);
             };
             reader.onerror = () => reject(new Error("Failed to read file"));
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(uploadFile);
           });
 
           const fullPath = joinPathSegments([path ?? "", uploadFilename]);
@@ -98,13 +104,19 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
             "Failed to upload file",
           );
 
-          return data.data as FileSaveData;
+          return {
+            savedEntry: data.data as FileSaveData,
+            preparedUpload,
+          };
         })();
 
         await toast.promise(uploadPromise, {
-          loading: `Uploading ${file.name}`,
-          success: (savedEntry) => {
+          loading: `Preparing and uploading ${file.name}`,
+          success: ({ savedEntry, preparedUpload }) => {
             onUpload?.(savedEntry);
+            if (preparedUpload.optimized) {
+              return `Optimized and uploaded ${file.name} (${getFileSize(preparedUpload.originalSize)} → ${getFileSize(preparedUpload.finalSize)})`;
+            }
             return `Uploaded ${file.name}`;
           },
           error: (error: unknown) => error instanceof Error ? error.message : "Upload failed",
@@ -113,7 +125,7 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
     } catch (error) {
       console.error(error);
     }
-  }, [config, path, configMedia?.name, configMedia?.rename, onUpload, rename]);
+  }, [allowedExtensions, config, path, configMedia?.name, configMedia?.rename, onUpload, rename]);
 
   const contextValue = useMemo(() => ({
     handleFiles,
