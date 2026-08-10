@@ -38,6 +38,7 @@ import {
   normalizeMediaPath,
   normalizePath,
 } from "@/lib/utils/file";
+import { prepareImageUpload } from "@/lib/utils/image-upload";
 import type { ApiResponse, FileSaveData } from "@/types/api";
 import type { Field } from "@/types/field";
 import "./edit-component.css";
@@ -772,16 +773,20 @@ const EditComponent = forwardRef(
           );
         }
 
+        const preparedUpload = await prepareImageUpload(file, {
+          allowedExtensions,
+        });
+        const uploadFile = preparedUpload.file;
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(String(reader.result ?? ""));
           reader.onerror = () =>
             reject(new Error("Failed to read image file."));
-          reader.readAsDataURL(file);
+          reader.readAsDataURL(uploadFile);
         });
         const content = dataUrl.replace(/^(.+,)/, "");
         const uploadFilename = getUploadFileName(
-          file.name,
+          uploadFile.name,
           options.rename ?? mediaConfig.rename,
         );
         const targetPath = joinPathSegments([
