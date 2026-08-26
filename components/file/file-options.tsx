@@ -32,6 +32,7 @@ export function FileOptions({
   sha,
   type,
   name,
+  kind = "file",
   canDelete,
   canRename,
   portalProps,
@@ -43,6 +44,7 @@ export function FileOptions({
   sha: string;
   type: "collection" | "file" | "media" | "settings";
   name?: string;
+  kind?: "file" | "folder";
   canDelete?: boolean;
   canRename?: boolean;
   portalProps?: any;
@@ -116,7 +118,7 @@ export function FileOptions({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" portalProps={portalProps}>
             <DropdownMenuItem asChild>
-              <a href={`https://github.com/${config.owner}/${config.repo}/blob/${encodeURIComponent(config.branch)}/${path}`} target="_blank">
+              <a href={`https://github.com/${config.owner}/${config.repo}/${kind === "folder" ? "tree" : "blob"}/${encodeURIComponent(config.branch)}/${path}`} target="_blank">
                 View on GitHub
                 <ArrowUpRight className="size-3 text-muted-foreground ml-auto" />
               </a>
@@ -161,6 +163,7 @@ export function FileOptions({
           type={type}
           sha={sha}
           name={name}
+          kind={kind}
           onRename={onRename}
         />
       }

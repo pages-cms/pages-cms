@@ -93,24 +93,55 @@ function MediaHeaderActions({
 
 type MediaFolderTileProps = {
   item: MediaItem;
+  mediaName: string;
+  portalContainer: HTMLDivElement | null;
   onNavigate: (path: string) => void;
+  onRename: (path: string, newPath: string) => void;
 };
 
-const MediaFolderTile = memo(function MediaFolderTile({ item, onNavigate }: MediaFolderTileProps) {
+const MediaFolderTile = memo(function MediaFolderTile({
+  item,
+  mediaName,
+  portalContainer,
+  onNavigate,
+  onRename,
+}: MediaFolderTileProps) {
   return (
-    <button
-      className="hover:bg-muted focus:ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 outline-none rounded-md block w-full"
-      onClick={() => onNavigate(item.path)}
-    >
-      <div className="flex items-center justify-center aspect-video">
-        <Folder className="stroke-[0.5] h-[5.5rem] w-[5.5rem]"/>
-      </div>
-      <div className="flex items-center justify-center p-2">
-        <div className="overflow-hidden h-9">
-          <div className="text-sm font-medium truncate">{item.name}</div>
+    <div className="relative hover:bg-muted rounded-md">
+      <button
+        className="focus:ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 outline-none rounded-md block w-full"
+        onClick={() => onNavigate(item.path)}
+      >
+        <div className="flex items-center justify-center aspect-video">
+          <Folder className="stroke-[0.5] h-[5.5rem] w-[5.5rem]"/>
         </div>
-      </div>
-    </button>
+        <div className="flex items-center justify-center p-2 pr-10">
+          <div className="overflow-hidden h-9">
+            <div className="text-sm font-medium truncate">{item.name}</div>
+          </div>
+        </div>
+      </button>
+      <FileOptions
+        path={item.path}
+        sha={item.sha || ""}
+        type="media"
+        name={mediaName}
+        kind="folder"
+        canDelete={false}
+        onRename={onRename}
+        portalProps={{ container: portalContainer }}
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className="absolute right-2 bottom-2"
+          aria-label={`Options for ${item.name}`}
+        >
+          <EllipsisVertical />
+        </Button>
+      </FileOptions>
+    </div>
   );
 });
 
@@ -674,7 +705,13 @@ const MediaView = ({
                 {gridItems.map(({ item, isImage, displaySize }) => 
                   <li key={item.path}>
                     {item.type === "dir"
-                      ? <MediaFolderTile item={item} onNavigate={handleNavigate} />
+                      ? <MediaFolderTile
+                          item={item}
+                          mediaName={mediaConfig.name}
+                          portalContainer={filesGridRef.current}
+                          onNavigate={handleNavigate}
+                          onRename={handleRename}
+                        />
                       : <MediaFileTile
                           item={item}
                           mediaName={mediaConfig.name}
