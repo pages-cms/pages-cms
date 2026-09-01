@@ -33,6 +33,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AutomaticTextDirection } from "./automatic-text-direction";
 import SlashCommands from "./slash-command/commands";
 import type {
   ImagePickerContext,
@@ -297,6 +298,7 @@ export function Editor({
       TableRow,
       TableHeader,
       TableCell,
+      AutomaticTextDirection,
       Placeholder.configure({
         placeholder: ({
           node,

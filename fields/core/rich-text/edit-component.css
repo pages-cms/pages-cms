@@ -13,6 +13,10 @@
    @apply mb-0;
  }
 
+ :where(.cn-editor .tiptap [dir]) {
+   text-align: start;
+ }
+
  .cn-editor .tiptap h1 {
    @apply mt-8 mb-3 scroll-m-20 text-4xl font-bold tracking-tight text-balance;
  }
@@ -30,15 +34,15 @@
  }
 
  .cn-editor .tiptap ul {
-   @apply my-4 ml-6 list-disc;
+   @apply my-4 mx-6 list-disc;
  }
 
  .cn-editor .tiptap ol {
-   @apply my-4 ml-6 list-decimal;
+   @apply my-4 mx-6 list-decimal;
  }
 
  .cn-editor .tiptap blockquote {
-   @apply my-6 border-l-2 pl-6 italic;
+   @apply my-6 border-s-2 ps-6 italic;
  }
 
  .cn-editor .tiptap img {
@@ -55,6 +59,8 @@
 
  .cn-editor .tiptap code {
    @apply relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm;
+   direction: ltr;
+   unicode-bidi: isolate;
  }
 
  .cn-editor .tiptap pre {
@@ -71,7 +77,7 @@
 
  .cn-editor .tiptap th,
  .cn-editor .tiptap td {
-   @apply border px-3 py-2 text-left;
+   @apply border px-3 py-2 text-start;
  }
 
  .cn-editor .tiptap th {
