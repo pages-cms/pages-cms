@@ -7,13 +7,13 @@ const directionTextNodes = new Set(["heading", "paragraph"]);
 const rtlCharacterPattern = /[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufeff\u{10800}-\u{10fff}\u{1e800}-\u{1eeff}]/u;
 const letterPattern = /\p{Letter}/u;
 
-const getTextDirection = (text: string): "ltr" | "rtl" => {
+const getTextDirection = (text: string): "ltr" | "rtl" | null => {
   for (const character of text) {
     if (rtlCharacterPattern.test(character)) return "rtl";
     if (letterPattern.test(character)) return "ltr";
   }
 
-  return "ltr";
+  return null;
 };
 
 /**
@@ -23,11 +23,12 @@ const getTextDirection = (text: string): "ltr" | "rtl" => {
  * Direction is therefore a presentation detail and is not written to Markdown
  * or HTML output.
  *
- * Every semantic node receives an explicit direction based on its first strong
- * character. This keeps live content updates reliable and lets nested
- * paragraphs resolve independently from markers, quote borders, and table-cell
- * alignment. Code blocks remain left-to-right because source code is
- * conventionally displayed that way.
+ * A semantic node receives an explicit direction based on its first strong
+ * character. Empty and direction-neutral nodes inherit the surrounding
+ * document direction. This keeps live content updates reliable for both LTR
+ * and RTL document defaults, and lets nested paragraphs resolve independently
+ * from markers, quote borders, and table-cell alignment. Code blocks remain
+ * left-to-right because source code is conventionally displayed that way.
  */
 export const AutomaticTextDirection = Extension.create({
   name: "automaticTextDirection",
@@ -49,9 +50,11 @@ export const AutomaticTextDirection = Extension.create({
               }
 
               if (directionContainerNodes.has(nodeType) || directionTextNodes.has(nodeType)) {
-                decorations.push(
-                  Decoration.node(position, position + node.nodeSize, { dir: getTextDirection(node.textContent) }),
-                );
+                const direction = getTextDirection(node.textContent);
+
+                if (direction) {
+                  decorations.push(Decoration.node(position, position + node.nodeSize, { dir: direction }));
+                }
               }
             });
 
