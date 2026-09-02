@@ -2,7 +2,7 @@ import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
-const directionContainerNodes = new Set(["blockquote", "listItem", "tableCell", "tableHeader"]);
+const directionContainerNodes = new Set(["blockquote", "listItem", "table", "tableCell", "tableHeader"]);
 const directionTextNodes = new Set(["heading", "paragraph"]);
 const rtlCharacterPattern = /[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufeff\u{10800}-\u{10fff}\u{1e800}-\u{1eeff}]/u;
 const letterPattern = /\p{Letter}/u;
