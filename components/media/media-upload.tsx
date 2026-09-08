@@ -101,7 +101,7 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
           return data.data as FileSaveData;
         })();
 
-        await toast.promise(uploadPromise, {
+        toast.promise(uploadPromise, {
           loading: `Uploading ${file.name}`,
           success: (savedEntry) => {
             onUpload?.(savedEntry);
@@ -109,6 +109,16 @@ function MediaUploadRoot({ children, path, onUpload, media, extensions, multiple
           },
           error: (error: unknown) => error instanceof Error ? error.message : "Upload failed",
         });
+
+        // toast.promise() returns the toast id, not the promise, so awaiting it
+        // does not wait for the upload. Await the upload itself so files are
+        // sent one at a time: each upload is a commit, and concurrent commits
+        // to the same branch fail with "is at <sha> but expected <sha>".
+        try {
+          await uploadPromise;
+        } catch {
+          // Already reported by the toast; carry on with the remaining files.
+        }
       }
     } catch (error) {
       console.error(error);
